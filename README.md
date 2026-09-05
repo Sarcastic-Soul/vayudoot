@@ -51,8 +51,8 @@ Two decisions are load-bearing and are enforced by tests.
 
 **Live filing is off.** Every run writes to a local sandbox outbox. Setting
 `VAYUDOOT_LIVE_FILING=true` raises rather than sends, because no delivery
-transport is wired in on purpose. A hackathon project must not be able to email a
-real pollution control board.
+transport is wired in on purpose. An unattended prototype must not be able to
+email a real pollution control board.
 
 **Every committed authority email is non-routable**, on the reserved `.invalid`
 TLD. Authority names are real and public; the addresses are not. Real contact
@@ -62,9 +62,17 @@ Alongside those, classification confidence is surfaced to the user, a human
 confirms before anything is filed, and the drafting prompt forbids naming an
 accused party or claiming certainty the evidence does not support.
 
-## Architecture
+## Documentation
 
-See [`docs/architecture.md`](docs/architecture.md).
+| | |
+| --- | --- |
+| [`docs/architecture.md`](docs/architecture.md) | How the stages fit together and why |
+| [`docs/SCOPE.md`](docs/SCOPE.md) | What v0.1 is, and what it deliberately is not |
+| [`docs/deployment.md`](docs/deployment.md) | Free-tier deployment and where the cost is |
+| [`CLAUDE.md`](CLAUDE.md) | Working agreement and the constraints that must hold |
+| [`BUILD-LOG.md`](BUILD-LOG.md) | Decisions and reasoning, oldest first |
+
+## Architecture
 
 ```
                     ┌──────────────┐

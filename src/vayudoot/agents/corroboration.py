@@ -23,21 +23,21 @@ from .prompts import GROUND_STATION, METEOROLOGY, SATELLITE, SYNTHESIS
 def build_corroboration_graph():
     satellite = Agent(
         name="satellite",
-        model=build_model(temperature=0.0),
+        model=build_model(temperature=0.0, tier="fast"),
         system_prompt=SATELLITE,
         tools=[find_satellite_fire_detections],
         callback_handler=None,
     )
     ground = Agent(
         name="ground_station",
-        model=build_model(temperature=0.0),
+        model=build_model(temperature=0.0, tier="fast"),
         system_prompt=GROUND_STATION,
         tools=[get_nearby_air_quality],
         callback_handler=None,
     )
     weather = Agent(
         name="meteorology",
-        model=build_model(temperature=0.0),
+        model=build_model(temperature=0.0, tier="fast"),
         system_prompt=METEOROLOGY,
         tools=[get_wind_conditions],
         callback_handler=None,

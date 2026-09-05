@@ -13,7 +13,7 @@ from .prompts import JURISDICTION
 def build_jurisdiction_agent() -> Agent:
     return Agent(
         name="jurisdiction",
-        model=build_model(temperature=0.0),
+        model=build_model(temperature=0.0, tier="fast"),
         system_prompt=JURISDICTION,
         tools=[reverse_geocode, lookup_authority],
         callback_handler=None,

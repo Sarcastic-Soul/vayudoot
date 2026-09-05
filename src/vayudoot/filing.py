@@ -3,8 +3,8 @@
 SAFETY: live filing sends a formal complaint to a real regulator. It is disabled
 unless VAYUDOOT_LIVE_FILING is explicitly true AND a real transport is wired in,
 which it deliberately is not in this repository. Every demo run writes the
-complaint to a local sandbox outbox instead. A hackathon project must not be able
-to spam a pollution control board.
+complaint to a local sandbox outbox instead. An unattended prototype must not be
+able to spam a pollution control board.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """Filing safety is the one behaviour that must never regress.
 
-A hackathon project that can email a real pollution control board is a liability,
-so these tests assert the guard rails rather than the happy path.
+A prototype that can email a real pollution control board is a liability, so these
+tests assert the guard rails rather than the happy path.
 """
 
 import pytest
