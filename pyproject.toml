@@ -31,6 +31,10 @@ packages = ["src/vayudoot"]
 line-length = 100
 src = ["src", "tests"]
 
+[tool.ruff.lint]
+# E501 is not on by default; without it the declared line length is decorative.
+extend-select = ["E501", "I", "B"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 asyncio_mode = "auto"

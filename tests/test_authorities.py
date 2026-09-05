@@ -9,7 +9,9 @@ def test_known_state_and_category():
 
 
 def test_industrial_emission_routes_to_the_state_board():
-    out = lookup_authority(state="Karnataka", city="Bengaluru", pollution_type="industrial_emission")
+    out = lookup_authority(
+        state="Karnataka", city="Bengaluru", pollution_type="industrial_emission"
+    )
     assert out["authority_tier"] == "state"
     assert "Pollution Control Board" in out["authority_name"]
 

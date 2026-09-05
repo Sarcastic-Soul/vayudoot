@@ -7,7 +7,7 @@ venv/
 .env.local
 *.db
 *.sqlite3
-data/cases/
+/data/
 outbox/
 .pytest_cache/
 .ruff_cache/

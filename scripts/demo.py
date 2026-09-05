@@ -40,7 +40,10 @@ async def main() -> int:
 
     if case.evidence:
         e = case.evidence
-        print(f"EVIDENCE      {e.pollution_type.value}  {e.severity}  confidence {e.confidence:.2f}")
+        print(
+            f"EVIDENCE      {e.pollution_type.value}  {e.severity}  "
+            f"confidence {e.confidence:.2f}"
+        )
         print(f"              {', '.join(e.visible_indicators) or 'no indicators recorded'}")
     if case.corroboration:
         c = case.corroboration

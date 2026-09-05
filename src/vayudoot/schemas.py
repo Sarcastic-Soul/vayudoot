@@ -30,6 +30,40 @@ class CaseStatus(str, Enum):
     ESCALATED = "escalated"
     RESOLVED = "resolved"
     REJECTED = "rejected"
+    FAILED = "failed"
+
+
+class Stage(str, Enum):
+    """Where a case has reached in the pipeline.
+
+    `status` is the case's legal lifecycle; `stage` is how far the machinery has
+    got. They are separate because a case can be `draft` for two minutes while
+    four agents run, and the interface has to show something during those two
+    minutes.
+
+    There is no `failed` stage: a run that dies leaves `stage` parked on whatever
+    was running when it died, which is the thing worth knowing, and records the
+    failure in `status`.
+    """
+
+    RECEIVED = "received"
+    EVIDENCE = "evidence"
+    CORROBORATION = "corroboration"
+    JURISDICTION = "jurisdiction"
+    DRAFTING = "drafting"
+    COMPLETE = "complete"
+    HALTED = "halted"
+
+
+#: Stages in the order the pipeline runs them, for rendering a timeline.
+STAGE_ORDER: tuple[Stage, ...] = (
+    Stage.RECEIVED,
+    Stage.EVIDENCE,
+    Stage.CORROBORATION,
+    Stage.JURISDICTION,
+    Stage.DRAFTING,
+    Stage.COMPLETE,
+)
 
 
 class Report(BaseModel):
@@ -111,6 +145,7 @@ class Case(BaseModel):
     case_id: str
     report: Report
     status: CaseStatus = CaseStatus.DRAFT
+    stage: Stage = Stage.RECEIVED
     evidence: EvidencePacket | None = None
     corroboration: Corroboration | None = None
     jurisdiction: Jurisdiction | None = None
@@ -118,6 +153,7 @@ class Case(BaseModel):
     address: str = ""
     filed_at: datetime | None = None
     escalated_at: datetime | None = None
+    error: str = ""
     history: list[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

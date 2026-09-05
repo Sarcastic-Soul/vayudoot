@@ -44,7 +44,8 @@ def find_satellite_fire_detections(
         return {"error": "FIRMS_MAP_KEY is not configured", "detections": []}
 
     west, south, east, north = bbox_around(latitude, longitude, radius_km)
-    url = f"{_BASE}/{settings.firms_map_key}/{_SOURCE}/{west},{south},{east},{north}/{max(1, min(days, 10))}"
+    area = f"{west},{south},{east},{north}"
+    url = f"{_BASE}/{settings.firms_map_key}/{_SOURCE}/{area}/{max(1, min(days, 10))}"
 
     try:
         resp = httpx.get(url, timeout=30)

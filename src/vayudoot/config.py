@@ -72,6 +72,7 @@ class Settings(BaseSettings):
 
     # Storage
     vayudoot_case_dir: Path = Path("./data/cases")
+    vayudoot_upload_dir: Path = Path("./data/uploads")
 
     def model_id_for(self, tier: Tier = "primary") -> str:
         override = self.vayudoot_model_id if tier == "primary" else self.vayudoot_model_id_fast
