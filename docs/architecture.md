@@ -1,5 +1,7 @@
 # Architecture
 
+![Vayudoot architecture](architecture.svg)
+
 ## Why this shape
 
 The work being automated is a sequence with one genuine fan-out in the middle.
@@ -74,12 +76,40 @@ than sends. Escalation compares the filing timestamp against the statutory
 response window carried on the `Jurisdiction` object and re-files to the
 escalation authority when it lapses.
 
+### 6. Interface and HTTP surface — `api.py`, `web/`
+
+A full run is minutes of model calls, which no browser will wait through on a
+form submission. So `POST /reports` writes the case to disk, starts the pipeline
+as a background task, and answers `202` with a case id. The page then polls
+`GET /cases/{id}` and renders whatever has landed.
+
+That is why a case carries two fields rather than one. `status` is the case's
+legal lifecycle — `awaiting_confirmation`, `filed`, `escalated`, `rejected`.
+`stage` is how far the machinery has got — `received`, `evidence`,
+`corroboration`, `jurisdiction`, `drafting`, `complete`, `halted`. A case is
+`draft` for the whole run; without `stage` there would be nothing to show during
+it.
+
+The pipeline saves after every stage for the same reason: partial state has to be
+readable from disk the moment it exists, not at the end. A stage that raises is
+caught, and the case is left as `failed` with the exception recorded on it and
+`stage` parked on whatever was running when it died — a run that dies must leave
+a readable case rather than a 500 and no trace.
+
+The interface is three static files served by the same process. One deployment,
+one URL, no CORS. It is mounted last so it cannot shadow an API route. Two
+endpoints exist purely for it: `/cases/{id}/photo`, which serves the submitted
+photograph and refuses any path that does not resolve inside the uploads
+directory, and `/cases/{id}/envelope`, which returns the filed envelope exactly
+as it was written to the sandbox outbox — the point of the demo is that you can
+read what would have been sent.
+
 ## State
 
 `Case` is the single object that accumulates across stages, holding the report,
-every intermediate result, a status, and an append-only history. It is persisted
-as JSON by `store.py` because a case outlives the request that created it: a
-complaint filed today is chased for weeks. Replacing `store.py` with Postgres
+every intermediate result, a status, a stage, any error, and an append-only
+history. It is persisted as JSON by `store.py` because a case outlives the
+request that created it: a complaint filed today is chased for weeks. Replacing `store.py` with Postgres
 touches no other module.
 
 ## Provider abstraction
@@ -93,5 +123,6 @@ deployment path open without a rewrite.
 
 - No delivery transport. This is a safety property, not a gap.
 - JSON file storage rather than a database.
-- The authority table covers two states plus a generic fallback.
+- The authority table covers 24 states and union territories plus a generic
+  fallback. Adding another is a JSON edit.
 - No authentication on the API.

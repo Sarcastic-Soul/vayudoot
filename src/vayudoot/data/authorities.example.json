@@ -4,7 +4,12 @@
     "non-routable placeholder on the reserved .invalid TLD, deliberately, so that a",
     "misconfigured run cannot reach a real regulator. Real contact addresses belong in",
     "authorities.json, which overrides this file and is not committed.",
-    "Keys are lowercased state and city names as returned by reverse geocoding."
+    "Keys are lowercased state and city names as returned by reverse geocoding.",
+    "Coverage is the states and union territories most likely to appear in a demo,",
+    "each with its pollution control board, its one to three largest municipal",
+    "corporations, and the Central Pollution Control Board as the escalation body.",
+    "A state absent from this table still resolves, via default_state, to a generic",
+    "state board entry rather than failing."
   ],
   "categories": {
     "open_waste_burning": {
@@ -79,6 +84,562 @@
           "name": "Bruhat Bengaluru Mahanagara Palike",
           "office": "BBMP Head Office, N R Square, Bengaluru",
           "email": "bbmp@example.invalid"
+        },
+        "mysuru": {
+          "name": "Mysuru City Corporation",
+          "office": "Mysuru City Corporation, Sayyaji Rao Road, Mysuru",
+          "email": "mysuru-corporation@example.invalid"
+        },
+        "mangaluru": {
+          "name": "Mangaluru City Corporation",
+          "office": "Mangaluru City Corporation, Lalbagh, Mangaluru",
+          "email": "mangaluru-corporation@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "maharashtra": {
+      "state_board": {
+        "name": "Maharashtra Pollution Control Board",
+        "office": "MPCB, Kalpataru Point, Sion, Mumbai",
+        "email": "mpcb@example.invalid"
+      },
+      "municipal": {
+        "mumbai": {
+          "name": "Brihanmumbai Municipal Corporation",
+          "office": "BMC Head Office, Fort, Mumbai",
+          "email": "bmc@example.invalid"
+        },
+        "pune": {
+          "name": "Pune Municipal Corporation",
+          "office": "PMC Main Building, Shivajinagar, Pune",
+          "email": "pmc-pune@example.invalid"
+        },
+        "nagpur": {
+          "name": "Nagpur Municipal Corporation",
+          "office": "NMC Head Office, Civil Lines, Nagpur",
+          "email": "nmc-nagpur@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "tamil nadu": {
+      "state_board": {
+        "name": "Tamil Nadu Pollution Control Board",
+        "office": "TNPCB, Guindy, Chennai",
+        "email": "tnpcb@example.invalid"
+      },
+      "municipal": {
+        "chennai": {
+          "name": "Greater Chennai Corporation",
+          "office": "Ripon Building, Chennai",
+          "email": "gcc-chennai@example.invalid"
+        },
+        "coimbatore": {
+          "name": "Coimbatore City Municipal Corporation",
+          "office": "Corporation Office, Town Hall, Coimbatore",
+          "email": "coimbatore-corporation@example.invalid"
+        },
+        "madurai": {
+          "name": "Madurai Municipal Corporation",
+          "office": "Corporation Office, Tallakulam, Madurai",
+          "email": "madurai-corporation@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "uttar pradesh": {
+      "state_board": {
+        "name": "Uttar Pradesh Pollution Control Board",
+        "office": "UPPCB, Gomti Nagar, Lucknow",
+        "email": "uppcb@example.invalid"
+      },
+      "municipal": {
+        "lucknow": {
+          "name": "Lucknow Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Lalbagh, Lucknow",
+          "email": "lmc-lucknow@example.invalid"
+        },
+        "kanpur": {
+          "name": "Kanpur Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Motijheel, Kanpur",
+          "email": "kmc-kanpur@example.invalid"
+        },
+        "varanasi": {
+          "name": "Varanasi Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Sigra, Varanasi",
+          "email": "vmc-varanasi@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "west bengal": {
+      "state_board": {
+        "name": "West Bengal Pollution Control Board",
+        "office": "WBPCB, Paribesh Bhawan, Salt Lake, Kolkata",
+        "email": "wbpcb@example.invalid"
+      },
+      "municipal": {
+        "kolkata": {
+          "name": "Kolkata Municipal Corporation",
+          "office": "KMC Head Office, S N Banerjee Road, Kolkata",
+          "email": "kmc-kolkata@example.invalid"
+        },
+        "howrah": {
+          "name": "Howrah Municipal Corporation",
+          "office": "HMC Head Office, Howrah",
+          "email": "hmc-howrah@example.invalid"
+        },
+        "siliguri": {
+          "name": "Siliguri Municipal Corporation",
+          "office": "SMC Head Office, Siliguri",
+          "email": "smc-siliguri@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "telangana": {
+      "state_board": {
+        "name": "Telangana State Pollution Control Board",
+        "office": "TSPCB, Paryavaran Bhavan, Sanathnagar, Hyderabad",
+        "email": "tspcb@example.invalid"
+      },
+      "municipal": {
+        "hyderabad": {
+          "name": "Greater Hyderabad Municipal Corporation",
+          "office": "GHMC Head Office, Tank Bund Road, Hyderabad",
+          "email": "ghmc@example.invalid"
+        },
+        "warangal": {
+          "name": "Greater Warangal Municipal Corporation",
+          "office": "GWMC Head Office, Warangal",
+          "email": "gwmc@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "gujarat": {
+      "state_board": {
+        "name": "Gujarat Pollution Control Board",
+        "office": "GPCB, Paryavaran Bhavan, Sector 10-A, Gandhinagar",
+        "email": "gpcb@example.invalid"
+      },
+      "municipal": {
+        "ahmedabad": {
+          "name": "Ahmedabad Municipal Corporation",
+          "office": "AMC Head Office, Danapith, Ahmedabad",
+          "email": "amc-ahmedabad@example.invalid"
+        },
+        "surat": {
+          "name": "Surat Municipal Corporation",
+          "office": "SMC Head Office, Muglisara, Surat",
+          "email": "smc-surat@example.invalid"
+        },
+        "vadodara": {
+          "name": "Vadodara Municipal Corporation",
+          "office": "VMC Head Office, Khanderao Market, Vadodara",
+          "email": "vmc-vadodara@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "rajasthan": {
+      "state_board": {
+        "name": "Rajasthan State Pollution Control Board",
+        "office": "RSPCB, Jhalana Institutional Area, Jaipur",
+        "email": "rspcb@example.invalid"
+      },
+      "municipal": {
+        "jaipur": {
+          "name": "Jaipur Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Lal Kothi, Jaipur",
+          "email": "jmc-jaipur@example.invalid"
+        },
+        "jodhpur": {
+          "name": "Jodhpur Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Jodhpur",
+          "email": "jmc-jodhpur@example.invalid"
+        },
+        "kota": {
+          "name": "Kota Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Kota",
+          "email": "kmc-kota@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "punjab": {
+      "state_board": {
+        "name": "Punjab Pollution Control Board",
+        "office": "PPCB, Vatavaran Bhawan, Nabha Road, Patiala",
+        "email": "ppcb@example.invalid"
+      },
+      "municipal": {
+        "ludhiana": {
+          "name": "Municipal Corporation Ludhiana",
+          "office": "Municipal Corporation Head Office, Ludhiana",
+          "email": "mc-ludhiana@example.invalid"
+        },
+        "amritsar": {
+          "name": "Municipal Corporation Amritsar",
+          "office": "Municipal Corporation Head Office, Amritsar",
+          "email": "mc-amritsar@example.invalid"
+        },
+        "jalandhar": {
+          "name": "Municipal Corporation Jalandhar",
+          "office": "Municipal Corporation Head Office, Jalandhar",
+          "email": "mc-jalandhar@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "haryana": {
+      "state_board": {
+        "name": "Haryana State Pollution Control Board",
+        "office": "HSPCB, Sector 6, Panchkula",
+        "email": "hspcb@example.invalid"
+      },
+      "municipal": {
+        "gurugram": {
+          "name": "Municipal Corporation of Gurugram",
+          "office": "MCG Head Office, Sector 34, Gurugram",
+          "email": "mcg-gurugram@example.invalid"
+        },
+        "faridabad": {
+          "name": "Municipal Corporation Faridabad",
+          "office": "Municipal Corporation Head Office, Faridabad",
+          "email": "mc-faridabad@example.invalid"
+        },
+        "panchkula": {
+          "name": "Municipal Corporation Panchkula",
+          "office": "Municipal Corporation Head Office, Panchkula",
+          "email": "mc-panchkula@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "kerala": {
+      "state_board": {
+        "name": "Kerala State Pollution Control Board",
+        "office": "KSPCB, Pattom, Thiruvananthapuram",
+        "email": "kerala-spcb@example.invalid"
+      },
+      "municipal": {
+        "thiruvananthapuram": {
+          "name": "Thiruvananthapuram Municipal Corporation",
+          "office": "Corporation Office, Vikas Bhavan Road, Thiruvananthapuram",
+          "email": "tvm-corporation@example.invalid"
+        },
+        "kochi": {
+          "name": "Kochi Municipal Corporation",
+          "office": "Corporation Office, Ernakulam, Kochi",
+          "email": "kochi-corporation@example.invalid"
+        },
+        "kozhikode": {
+          "name": "Kozhikode Municipal Corporation",
+          "office": "Corporation Office, Kozhikode",
+          "email": "kozhikode-corporation@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "madhya pradesh": {
+      "state_board": {
+        "name": "Madhya Pradesh Pollution Control Board",
+        "office": "MPPCB, Paryavaran Parisar, E-5 Arera Colony, Bhopal",
+        "email": "mppcb@example.invalid"
+      },
+      "municipal": {
+        "bhopal": {
+          "name": "Bhopal Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Bhopal",
+          "email": "bmc-bhopal@example.invalid"
+        },
+        "indore": {
+          "name": "Indore Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Indore",
+          "email": "imc-indore@example.invalid"
+        },
+        "jabalpur": {
+          "name": "Jabalpur Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Jabalpur",
+          "email": "jmc-jabalpur@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "bihar": {
+      "state_board": {
+        "name": "Bihar State Pollution Control Board",
+        "office": "BSPCB, Beltron Bhawan, Shastri Nagar, Patna",
+        "email": "bspcb@example.invalid"
+      },
+      "municipal": {
+        "patna": {
+          "name": "Patna Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Maurya Lok, Patna",
+          "email": "pmc-patna@example.invalid"
+        },
+        "gaya": {
+          "name": "Gaya Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Gaya",
+          "email": "gmc-gaya@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "odisha": {
+      "state_board": {
+        "name": "State Pollution Control Board, Odisha",
+        "office": "Paribesh Bhawan, A/118 Nilakantha Nagar, Unit VIII, Bhubaneswar",
+        "email": "ospcb@example.invalid"
+      },
+      "municipal": {
+        "bhubaneswar": {
+          "name": "Bhubaneswar Municipal Corporation",
+          "office": "BMC Head Office, Vivekananda Marg, Bhubaneswar",
+          "email": "bmc-bhubaneswar@example.invalid"
+        },
+        "cuttack": {
+          "name": "Cuttack Municipal Corporation",
+          "office": "CMC Head Office, Cuttack",
+          "email": "cmc-cuttack@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "orissa": {
+      "state_board": {
+        "name": "State Pollution Control Board, Odisha",
+        "office": "Paribesh Bhawan, A/118 Nilakantha Nagar, Unit VIII, Bhubaneswar",
+        "email": "ospcb@example.invalid"
+      },
+      "municipal": {
+        "bhubaneswar": {
+          "name": "Bhubaneswar Municipal Corporation",
+          "office": "BMC Head Office, Vivekananda Marg, Bhubaneswar",
+          "email": "bmc-bhubaneswar@example.invalid"
+        },
+        "cuttack": {
+          "name": "Cuttack Municipal Corporation",
+          "office": "CMC Head Office, Cuttack",
+          "email": "cmc-cuttack@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "andhra pradesh": {
+      "state_board": {
+        "name": "Andhra Pradesh Pollution Control Board",
+        "office": "APPCB, Vijayawada",
+        "email": "appcb@example.invalid"
+      },
+      "municipal": {
+        "visakhapatnam": {
+          "name": "Greater Visakhapatnam Municipal Corporation",
+          "office": "GVMC Head Office, Visakhapatnam",
+          "email": "gvmc@example.invalid"
+        },
+        "vijayawada": {
+          "name": "Vijayawada Municipal Corporation",
+          "office": "VMC Head Office, Vijayawada",
+          "email": "vmc-vijayawada@example.invalid"
+        },
+        "guntur": {
+          "name": "Guntur Municipal Corporation",
+          "office": "GMC Head Office, Guntur",
+          "email": "gmc-guntur@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "assam": {
+      "state_board": {
+        "name": "Pollution Control Board, Assam",
+        "office": "PCBA, Bamunimaidam, Guwahati",
+        "email": "pcb-assam@example.invalid"
+      },
+      "municipal": {
+        "guwahati": {
+          "name": "Guwahati Municipal Corporation",
+          "office": "GMC Head Office, Panbazar, Guwahati",
+          "email": "gmc-guwahati@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "jharkhand": {
+      "state_board": {
+        "name": "Jharkhand State Pollution Control Board",
+        "office": "JSPCB, Doranda, Ranchi",
+        "email": "jspcb@example.invalid"
+      },
+      "municipal": {
+        "ranchi": {
+          "name": "Ranchi Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Ranchi",
+          "email": "rmc-ranchi@example.invalid"
+        },
+        "dhanbad": {
+          "name": "Dhanbad Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Dhanbad",
+          "email": "dmc-dhanbad@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "chhattisgarh": {
+      "state_board": {
+        "name": "Chhattisgarh Environment Conservation Board",
+        "office": "CECB, Paryavas Bhawan, North Block, Raipur",
+        "email": "cecb@example.invalid"
+      },
+      "municipal": {
+        "raipur": {
+          "name": "Raipur Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Raipur",
+          "email": "rmc-raipur@example.invalid"
+        },
+        "bhilai": {
+          "name": "Bhilai Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Bhilai",
+          "email": "bmc-bhilai@example.invalid"
+        },
+        "bilaspur": {
+          "name": "Bilaspur Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Bilaspur",
+          "email": "bmc-bilaspur@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "uttarakhand": {
+      "state_board": {
+        "name": "Uttarakhand Environment Protection and Pollution Control Board",
+        "office": "UEPPCB, Vasant Vihar, Dehradun",
+        "email": "ueppcb@example.invalid"
+      },
+      "municipal": {
+        "dehradun": {
+          "name": "Dehradun Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Dehradun",
+          "email": "dmc-dehradun@example.invalid"
+        },
+        "haridwar": {
+          "name": "Haridwar Municipal Corporation",
+          "office": "Nagar Nigam Head Office, Haridwar",
+          "email": "hmc-haridwar@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "himachal pradesh": {
+      "state_board": {
+        "name": "Himachal Pradesh State Pollution Control Board",
+        "office": "HPSPCB, Him Parivesh, Phase III, New Shimla",
+        "email": "hpspcb@example.invalid"
+      },
+      "municipal": {
+        "shimla": {
+          "name": "Shimla Municipal Corporation",
+          "office": "Municipal Corporation Head Office, The Mall, Shimla",
+          "email": "mc-shimla@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "goa": {
+      "state_board": {
+        "name": "Goa State Pollution Control Board",
+        "office": "GSPCB, Dempo Tower, Patto Plaza, Panaji",
+        "email": "gspcb@example.invalid"
+      },
+      "municipal": {
+        "panaji": {
+          "name": "Corporation of the City of Panaji",
+          "office": "CCP Head Office, Panaji",
+          "email": "ccp-panaji@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "chandigarh": {
+      "state_board": {
+        "name": "Chandigarh Pollution Control Committee",
+        "office": "CPCC, Paryavaran Bhawan, Sector 19-B, Chandigarh",
+        "email": "cpcc-chandigarh@example.invalid"
+      },
+      "municipal": {
+        "chandigarh": {
+          "name": "Municipal Corporation Chandigarh",
+          "office": "Municipal Corporation Head Office, Sector 17, Chandigarh",
+          "email": "mc-chandigarh@example.invalid"
         }
       },
       "escalation": {

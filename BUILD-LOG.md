@@ -72,3 +72,59 @@ requirements, and judging criteria live outside this repository. What is inside
 is the system and the reasoning. This is partly hygiene and partly practical:
 constraints borrowed from a specific deadline age badly, and a codebase organised
 around one is hard to point anywhere else.
+
+## 6 September 2026 — Day 0, evening
+
+**Split `status` from `stage`.** The interface has to show something during the
+two minutes a case spends being processed, and the case's legal status is
+`draft` for that entire time. Overloading `status` with `running_corroboration`
+would have mixed a lifecycle that matters legally with a progress bar that does
+not. So `Case` now carries both: `status` for where the case stands, `stage` for
+where the machinery is. The pipeline saves after every stage, so a poller reads
+partial state from disk the moment it exists rather than waiting for the run to
+finish.
+
+**Made `POST /reports` return before the run finishes.** A full run is minutes of
+model calls. The endpoint now writes the case, spawns the pipeline as a
+background task, and answers `202` with a case id; the page polls. The tasks are
+held in a module-level set because `asyncio` keeps only a weak reference to a
+running task, and an unreferenced task can be collected mid-run — which would
+have shown up as cases that silently stop advancing, on a free container, under
+load, and nowhere else.
+
+**A stage that raises leaves a readable case.** The whole run is wrapped, and a
+failure sets `status=failed` with the exception recorded on the case, and leaves
+`stage` on whatever was running when it died. There is deliberately no `failed`
+stage: overwriting the stage with `failed` would have thrown away the one fact
+worth keeping. Losing a run to a transient FIRMS timeout is acceptable; losing
+the evidence of where it died is not.
+
+**Tested the pipeline without a model.** `tests/fakes.py` replaces the four agent
+stages with deterministic ones, so ordering, checkpointing, the confidence floor,
+and the failure path are all exercised offline in half a second. The suite went
+from 12 tests to 32 and still needs no credentials, which is what makes it
+runnable on every commit rather than only when someone has keys loaded.
+
+**Kept the frontend inside the Python package.** `src/vayudoot/web/` — three
+static files, no build step, no bundler, no second deployment. Mounted last so it
+cannot shadow an API route. Two endpoints exist only for it: the photograph, and
+the filed envelope as written to the outbox. The envelope one matters for the
+demo: the claim is not "it would have sent something", it is "here is exactly
+what it would have sent".
+
+**Caught a packaging regression the tests could not see.** Adding `data/` to
+`.gitignore` — meant for the runtime case directory — also excluded
+`src/vayudoot/data/authorities.example.json` from the built wheel, because
+Hatchling honours VCS ignore patterns. Every test passed; a container build would
+have shipped a jurisdiction lookup with no table in it. Narrowed the pattern to
+`/data/` and verified by listing the wheel's contents, then by running the built
+image and asking it to resolve an authority.
+
+**Verified the deployment target rather than assuming it.** Built the image, ran
+it, checked `/health`, the interface, and a jurisdiction lookup from inside the
+container. The Dockerfile runs as uid 1000 on port 7860 because that is what
+Hugging Face Spaces expects.
+
+**Widened the authority table to 24 states and union territories.** Names are
+real and public; all 107 addresses remain on `.invalid`. The generic fallback is
+still there, and the agent is still told to say when it landed on it.

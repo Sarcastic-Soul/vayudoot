@@ -1,0 +1,17 @@
+.git/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+data/
+outbox/
+tests/
+docs/
+scripts/
+.env
+.env.local
+uv.lock
+BUILD-LOG.md
+CLAUDE.md

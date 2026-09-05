@@ -23,22 +23,24 @@ That sentence is the whole target. Anything that does not serve it is out.
 - [x] Jurisdiction resolution against a data-driven authority table
 - [x] Complaint drafting in English plus the region's main language
 - [x] Sandboxed filing with a statutory-window escalation timer
-- [ ] One real end-to-end run against a real photograph, start to finish
+- [ ] One real end-to-end run against a real photograph, start to finish —
+      needs credentials; every stage is exercised offline by the test suite
 
 ### Interface
-- [ ] A single-page web interface: submit a report, see the case, confirm filing
-- [ ] Mobile browser first — this is used standing in front of the problem
-- [ ] Case timeline showing every stage's output, not just the final complaint
-- [ ] A map of submitted cases
+- [x] A single-page web interface: submit a report, see the case, confirm filing
+- [x] Mobile browser first — this is used standing in front of the problem
+- [x] Case timeline showing every stage's output, not just the final complaint
+- [x] A map of submitted cases
 
 ### Delivery
-- [ ] Deployed on a public URL, free tier, no credit card
-- [ ] Frontend served by the same FastAPI process, so there is one deployment
-- [ ] `README.md` and `docs/architecture.md` accurate to what actually ships
-- [ ] Architecture diagram as an image, not only the ASCII sketch
+- [ ] Deployed on a public URL, free tier, no credit card — `Dockerfile` is
+      written and the image runs; the Space itself is not up yet
+- [x] Frontend served by the same FastAPI process, so there is one deployment
+- [x] `README.md` and `docs/architecture.md` accurate to what actually ships
+- [x] Architecture diagram as an image, not only the ASCII sketch
 
 ### Data
-- [ ] Authority table covering enough regions for the demo location to resolve
+- [x] Authority table covering enough regions for the demo location to resolve
       to a specific authority rather than the generic fallback
 
 ---

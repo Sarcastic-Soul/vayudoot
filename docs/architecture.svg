@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1610" width="1080" height="1610"
+     font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+     role="img" aria-label="Vayudoot architecture: a citizen photograph is classified, corroborated by a three-way parallel agent graph, given a jurisdiction, drafted into a complaint, held at a human confirmation gate, then filed to a sandbox outbox and escalated when the statutory window lapses.">
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a93a3"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <!-- ============================ title ============================ -->
+  <text x="40" y="36" font-size="17" font-weight="600" fill="#6b7280">Vayudoot — citizen photograph → filed, tracked complaint</text>
+  <text x="40" y="56" font-size="11.5" fill="#9ca3af">Strands Agents SDK · a pipeline with one genuine fan-out</text>
+
+  <text x="880" y="36" font-size="13" font-weight="600" fill="#6b7280">Case · store.py</text>
+  <text x="880" y="54" font-size="11" fill="#9ca3af">one JSON object, every stage</text>
+
+  <!-- ==================== Case state rail (right) ==================== -->
+  <rect x="880" y="68" width="180" height="1352" rx="12"
+        fill="#8a93a3" fill-opacity="0.05" stroke="#9ca3af" stroke-width="1.2" stroke-dasharray="5 5"/>
+
+  <g stroke="#9ca3af" stroke-width="1" stroke-dasharray="2 4">
+    <line x1="712" y1="112"  x2="876" y2="112"/>
+    <line x1="712" y1="240"  x2="876" y2="240"/>
+    <line x1="862" y1="676"  x2="876" y2="676"/>
+    <line x1="712" y1="843"  x2="876" y2="843"/>
+    <line x1="712" y1="968"  x2="876" y2="968"/>
+    <line x1="712" y1="1220" x2="876" y2="1220"/>
+    <line x1="712" y1="1368" x2="876" y2="1368"/>
+  </g>
+  <g font-size="11" fill="#6b7280">
+    <text x="898" y="116">+ report</text>
+    <text x="898" y="244">+ evidence</text>
+    <text x="898" y="680">+ corroboration</text>
+    <text x="898" y="847">+ jurisdiction</text>
+    <text x="898" y="972">+ complaint · address</text>
+    <text x="898" y="1224">+ filed_at · status</text>
+    <text x="898" y="1372">+ escalated_at</text>
+    <text x="898" y="1400" fill="#9ca3af">+ append-only history</text>
+  </g>
+
+  <!-- ============================ citizen ============================ -->
+  <rect x="190" y="76" width="520" height="72" rx="10"
+        fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="212" y="104" font-size="14" font-weight="600" fill="#6b7280">Citizen report — geotagged photograph + note</text>
+  <text x="212" y="126" font-size="12" fill="#9ca3af">Web UI (FastAPI) · POST /reports · image, latitude, longitude</text>
+
+  <line x1="450" y1="148" x2="450" y2="176" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- ========================= 1. evidence ========================= -->
+  <rect x="190" y="176" width="520" height="97" rx="10"
+        fill="#3b82f6" fill-opacity="0.10" stroke="#3b82f6" stroke-width="1.6"/>
+  <text x="212" y="206" font-size="17" font-weight="600" fill="#3b82f6">1 · Evidence</text>
+  <rect x="610" y="188" width="78" height="22" rx="11"
+        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
+  <text x="649" y="203" font-size="11" fill="#3b82f6" text-anchor="middle">primary</text>
+  <text x="212" y="232" font-size="12" fill="#6b7280">one agent, no tools · photograph passed as a multimodal image block</text>
+  <text x="212" y="253" font-size="12" fill="#6b7280">→ EvidencePacket (structured output): type, severity, confidence</text>
+
+  <line x1="450" y1="273" x2="450" y2="299" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- ==================== confidence floor decision ==================== -->
+  <polygon points="350,340 450,299 550,340 450,381"
+           fill="#f59e0b" fill-opacity="0.12" stroke="#f59e0b" stroke-width="1.8"/>
+  <text x="450" y="345" font-size="13" font-weight="600" fill="#d97706" text-anchor="middle">confidence ≥ 0.55 ?</text>
+
+  <line x1="350" y1="340" x2="296" y2="340" stroke="#f59e0b" stroke-width="1.7" marker-end="url(#arrowAmber)"/>
+  <text x="322" y="332" font-size="11" fill="#d97706" text-anchor="middle">no</text>
+
+  <rect x="40" y="306" width="252" height="68" rx="10"
+        fill="#f59e0b" fill-opacity="0.12" stroke="#f59e0b" stroke-width="1.6"/>
+  <text x="62" y="332" font-size="13" font-weight="600" fill="#d97706">Halt · status: rejected</text>
+  <text x="62" y="354" font-size="11" fill="#6b7280">flagged for human review</text>
+
+  <line x1="450" y1="381" x2="450" y2="409" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+  <text x="462" y="399" font-size="11" fill="#6b7280">yes</text>
+
+  <!-- ======================= 2. corroboration ======================= -->
+  <rect x="40" y="409" width="820" height="329" rx="14"
+        fill="#8a93a3" fill-opacity="0.05" stroke="#9ca3af" stroke-width="1.3" stroke-dasharray="6 5"/>
+  <text x="62" y="439" font-size="17" font-weight="600" fill="#3b82f6">2 · Corroboration — a Strands GraphBuilder graph</text>
+  <text x="62" y="459" font-size="12" fill="#9ca3af">three independent entry nodes run in parallel; one synthesis node joins them</text>
+
+  <!-- satellite -->
+  <rect x="53" y="480" width="254" height="112" rx="9"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.5"/>
+  <text x="71" y="506" font-size="14" font-weight="600" fill="#0d9488">satellite</text>
+  <rect x="237" y="490" width="52" height="20" rx="10"
+        fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
+  <text x="263" y="504" font-size="10.5" fill="#0d9488" text-anchor="middle">fast</text>
+  <text x="71" y="528" font-size="11.5" fill="#6b7280">find_satellite_fire_detections()</text>
+  <text x="71" y="548" font-size="11.5" fill="#9ca3af">source · NASA FIRMS VIIRS</text>
+  <text x="71" y="568" font-size="11.5" fill="#9ca3af">thermal anomalies nearby</text>
+
+  <!-- ground_station -->
+  <rect x="323" y="480" width="254" height="112" rx="9"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.5"/>
+  <text x="341" y="506" font-size="14" font-weight="600" fill="#0d9488">ground_station</text>
+  <rect x="507" y="490" width="52" height="20" rx="10"
+        fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
+  <text x="533" y="504" font-size="10.5" fill="#0d9488" text-anchor="middle">fast</text>
+  <text x="341" y="528" font-size="11.5" fill="#6b7280">get_nearby_air_quality()</text>
+  <text x="341" y="548" font-size="11.5" fill="#9ca3af">source · OpenAQ v3</text>
+  <text x="341" y="568" font-size="11.5" fill="#9ca3af">PM2.5 / PM10 nearby monitors</text>
+
+  <!-- meteorology -->
+  <rect x="593" y="480" width="254" height="112" rx="9"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.5"/>
+  <text x="611" y="506" font-size="14" font-weight="600" fill="#0d9488">meteorology</text>
+  <rect x="777" y="490" width="52" height="20" rx="10"
+        fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
+  <text x="803" y="504" font-size="10.5" fill="#0d9488" text-anchor="middle">fast</text>
+  <text x="611" y="528" font-size="11.5" fill="#6b7280">get_wind_conditions()</text>
+  <text x="611" y="548" font-size="11.5" fill="#9ca3af">source · Open-Meteo</text>
+  <text x="611" y="568" font-size="11.5" fill="#9ca3af">back-traces the plume upwind</text>
+
+  <!-- fan-in -->
+  <g fill="none" stroke="#8a93a3" stroke-width="1.7">
+    <polyline points="180,592 180,612 330,612 330,632" marker-end="url(#arrow)"/>
+    <line x1="450" y1="592" x2="450" y2="632" marker-end="url(#arrow)"/>
+    <polyline points="720,592 720,612 570,612 570,632" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- synthesis -->
+  <rect x="250" y="632" width="400" height="88" rx="9"
+        fill="#3b82f6" fill-opacity="0.10" stroke="#3b82f6" stroke-width="1.6"/>
+  <text x="272" y="658" font-size="14" font-weight="600" fill="#3b82f6">synthesis</text>
+  <rect x="552" y="642" width="78" height="20" rx="10"
+        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
+  <text x="591" y="656" font-size="10.5" fill="#3b82f6" text-anchor="middle">primary</text>
+  <text x="272" y="680" font-size="11.5" fill="#6b7280">no tools · joins the three streams</text>
+  <text x="272" y="700" font-size="11.5" fill="#6b7280">→ Corroboration (structured output)</text>
+
+  <line x1="450" y1="738" x2="450" y2="766" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- ======================== 3. jurisdiction ======================== -->
+  <rect x="190" y="766" width="520" height="118" rx="10"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.6"/>
+  <text x="212" y="796" font-size="17" font-weight="600" fill="#0d9488">3 · Jurisdiction</text>
+  <rect x="632" y="778" width="56" height="20" rx="10"
+        fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
+  <text x="660" y="792" font-size="10.5" fill="#0d9488" text-anchor="middle">fast</text>
+  <text x="212" y="822" font-size="12" fill="#6b7280">reverse_geocode() · Nominatim</text>
+  <text x="212" y="843" font-size="12" fill="#6b7280">lookup_authority() · JSON authority table — data, not code</text>
+  <text x="212" y="864" font-size="12" fill="#6b7280">→ Jurisdiction: authority, statute, response window, escalation tier</text>
+
+  <line x1="450" y1="884" x2="450" y2="912" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- ========================== 4. drafting ========================== -->
+  <rect x="190" y="912" width="520" height="97" rx="10"
+        fill="#3b82f6" fill-opacity="0.10" stroke="#3b82f6" stroke-width="1.6"/>
+  <text x="212" y="942" font-size="17" font-weight="600" fill="#3b82f6">4 · Drafting</text>
+  <rect x="610" y="924" width="78" height="20" rx="10"
+        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
+  <text x="649" y="938" font-size="10.5" fill="#3b82f6" text-anchor="middle">primary</text>
+  <text x="212" y="968" font-size="12" fill="#6b7280">one agent · cites only the statute it was handed, names no party</text>
+  <text x="212" y="989" font-size="12" fill="#6b7280">→ Complaint: subject, body in English + local-language translation</text>
+
+  <line x1="450" y1="1009" x2="450" y2="1039" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- ==================== human confirmation gate ==================== -->
+  <rect x="124" y="1033" width="652" height="109" rx="16"
+        fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-opacity="0.35"/>
+  <rect x="130" y="1039" width="640" height="97" rx="12"
+        fill="#f59e0b" fill-opacity="0.14" stroke="#f59e0b" stroke-width="2.5"/>
+  <text x="450" y="1071" font-size="15" font-weight="700" letter-spacing="1.5"
+        fill="#d97706" text-anchor="middle">HUMAN CONFIRMATION GATE</text>
+  <text x="450" y="1095" font-size="12.5" fill="#6b7280" text-anchor="middle">the pipeline stops here — status: AWAITING_CONFIRMATION</text>
+  <text x="450" y="1116" font-size="12.5" fill="#6b7280" text-anchor="middle">nothing is filed until a person calls POST /cases/{id}/confirm</text>
+
+  <line x1="450" y1="1136" x2="450" y2="1164" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- =========================== 5. filing =========================== -->
+  <rect x="190" y="1164" width="520" height="118" rx="10"
+        fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="212" y="1194" font-size="17" font-weight="600" fill="#6b7280">5 · Filing</text>
+  <rect x="602" y="1176" width="86" height="20" rx="10"
+        fill="#f59e0b" fill-opacity="0.20" stroke="#f59e0b" stroke-width="1"/>
+  <text x="645" y="1190" font-size="10.5" fill="#d97706" text-anchor="middle">SANDBOX</text>
+  <text x="212" y="1220" font-size="12" fill="#6b7280">writes an .eml envelope to a local sandbox outbox · status: filed</text>
+  <text x="212" y="1241" font-size="12" fill="#d97706">live filing raises rather than sends — no delivery transport</text>
+  <text x="212" y="1262" font-size="12" fill="#d97706">is wired in, deliberately. Every authority address is .invalid</text>
+
+  <line x1="450" y1="1282" x2="450" y2="1312" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+  <text x="462" y="1302" font-size="11" fill="#6b7280">timer · response window lapses</text>
+
+  <!-- ========================= 6. escalation ========================= -->
+  <rect x="190" y="1312" width="520" height="97" rx="10"
+        fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="212" y="1342" font-size="17" font-weight="600" fill="#6b7280">6 · Escalation</text>
+  <text x="212" y="1368" font-size="12" fill="#6b7280">no acknowledgement within response_window_days of filed_at</text>
+  <text x="212" y="1389" font-size="12" fill="#6b7280">re-file to the escalation authority · status: escalated</text>
+
+  <polyline points="190,1360 112,1360 112,1230 186,1230"
+            fill="none" stroke="#8a93a3" stroke-width="1.7" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <text x="100" y="1300" font-size="10.5" fill="#6b7280" text-anchor="middle"
+        transform="rotate(-90 100 1300)">re-filed to the next tier</text>
+
+  <!-- ============================ legend ============================ -->
+  <rect x="40" y="1452" width="580" height="128" rx="10"
+        fill="none" stroke="#9ca3af" stroke-width="1.1" stroke-dasharray="4 4"/>
+
+  <rect x="62" y="1470" width="78" height="22" rx="11"
+        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
+  <text x="101" y="1485" font-size="11" fill="#3b82f6" text-anchor="middle">primary</text>
+  <text x="156" y="1485" font-size="12" fill="#6b7280">judgement — reading a photograph, drafting a complaint</text>
+
+  <rect x="62" y="1504" width="78" height="22" rx="11"
+        fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
+  <text x="101" y="1519" font-size="11" fill="#0d9488" text-anchor="middle">fast</text>
+  <text x="156" y="1519" font-size="12" fill="#6b7280">mechanical — call one tool, summarise what it returned</text>
+
+  <rect x="62" y="1538" width="78" height="22" rx="6"
+        fill="#f59e0b" fill-opacity="0.16" stroke="#f59e0b" stroke-width="1"/>
+  <text x="101" y="1553" font-size="11" fill="#d97706" text-anchor="middle">safety</text>
+  <text x="156" y="1553" font-size="12" fill="#6b7280">human control — the pipeline stops and a person decides</text>
+
+  <!-- ====================== safety properties ====================== -->
+  <rect x="640" y="1452" width="420" height="128" rx="10"
+        fill="none" stroke="#f59e0b" stroke-width="1.1" stroke-opacity="0.5" stroke-dasharray="4 4"/>
+  <text x="662" y="1484" font-size="12.5" font-weight="600" fill="#d97706">Safety properties</text>
+  <text x="662" y="1510" font-size="11" fill="#6b7280">· no delivery transport is wired in — by design</text>
+  <text x="662" y="1532" font-size="11" fill="#6b7280">· every authority address is on the reserved .invalid TLD</text>
+  <text x="662" y="1554" font-size="11" fill="#6b7280">· filing happens only after an explicit human confirm</text>
+</svg>
