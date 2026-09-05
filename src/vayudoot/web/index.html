@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Vayudoot — pollution complaint agent</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🜁</text></svg>">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1>Vayudoot</h1>
+      <p>Photograph to filed complaint</p>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab is-active" data-view="report" role="tab">Report</button>
+    <button class="tab" data-view="cases" role="tab">Cases</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ────────────────────────────── report ────────────────────────────── -->
+  <section id="view-report" class="view is-active">
+    <form id="report-form" novalidate>
+      <label class="photo-field">
+        <input type="file" id="photo" name="image" accept="image/*" capture="environment" hidden>
+        <div class="photo-drop" id="photo-drop">
+          <img id="photo-preview" alt="" hidden>
+          <div class="photo-hint" id="photo-hint">
+            <strong>Add the photograph</strong>
+            <span>Tap to use the camera, or choose a file</span>
+          </div>
+        </div>
+      </label>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="coords">Location</label>
+          <button type="button" class="link" id="locate">Use my location</button>
+        </div>
+        <div class="coords">
+          <input type="number" id="latitude" step="any" placeholder="Latitude" required
+                 inputmode="decimal" autocomplete="off">
+          <input type="number" id="longitude" step="any" placeholder="Longitude" required
+                 inputmode="decimal" autocomplete="off">
+        </div>
+        <p class="help" id="geo-status">Jurisdiction is decided by these coordinates, so they
+          need to be where the pollution is — not where you are standing later.</p>
+        <div id="pick-map" class="pick-map" hidden></div>
+      </div>
+
+      <div class="field">
+        <label for="note">What did you see?</label>
+        <textarea id="note" rows="3"
+                  placeholder="Waste being burnt behind the market since about 8pm. Thick smoke."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="contact">Your contact <span class="muted">(optional)</span></label>
+        <input type="text" id="contact" placeholder="Email or phone" autocomplete="off">
+      </div>
+
+      <button type="submit" class="primary" id="submit">Run the case</button>
+      <p class="disclaimer">Nothing is sent to any authority. The complaint is drafted and held
+        for your confirmation, and filing writes to a local sandbox outbox.</p>
+      <p class="error" id="form-error" hidden></p>
+    </form>
+  </section>
+
+  <!-- ─────────────────────────────── case ─────────────────────────────── -->
+  <section id="view-case" class="view">
+    <div class="case-head">
+      <button type="button" class="link back" id="case-back">← All cases</button>
+      <h2 id="case-id">—</h2>
+      <div class="case-meta">
+        <span class="pill" id="case-status">—</span>
+        <span class="muted" id="case-address"></span>
+      </div>
+    </div>
+
+    <img id="case-photo" class="case-photo" alt="Submitted photograph" hidden>
+
+    <ol class="timeline" id="timeline"></ol>
+
+    <div class="complaint" id="complaint" hidden>
+      <div class="complaint-head">
+        <h3 id="complaint-subject"></h3>
+        <div class="lang-toggle" id="lang-toggle" hidden>
+          <button type="button" class="is-active" data-lang="en">English</button>
+          <button type="button" data-lang="local" id="lang-local"></button>
+        </div>
+      </div>
+      <pre id="complaint-body"></pre>
+      <p class="statutes muted" id="complaint-statutes"></p>
+    </div>
+
+    <div class="actions" id="case-actions"></div>
+
+    <details class="envelope" id="envelope-box" hidden>
+      <summary>Filed envelope (sandbox outbox)</summary>
+      <pre id="envelope"></pre>
+    </details>
+
+    <details class="history">
+      <summary>Case history</summary>
+      <ul id="history"></ul>
+    </details>
+  </section>
+
+  <!-- ────────────────────────────── cases ─────────────────────────────── -->
+  <section id="view-cases" class="view">
+    <div id="cases-map" class="cases-map"></div>
+    <ul class="case-list" id="case-list"></ul>
+    <p class="muted empty" id="cases-empty" hidden>No cases yet. Submit a report to start one.</p>
+  </section>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
