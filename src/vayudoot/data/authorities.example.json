@@ -1,0 +1,102 @@
+{
+  "_comment": [
+    "Jurisdiction table. Authority NAMES are real and public; every EMAIL here is a",
+    "non-routable placeholder on the reserved .invalid TLD, deliberately, so that a",
+    "misconfigured run cannot reach a real regulator. Real contact addresses belong in",
+    "authorities.json, which overrides this file and is not committed.",
+    "Keys are lowercased state and city names as returned by reverse geocoding."
+  ],
+  "categories": {
+    "open_waste_burning": {
+      "tier": "municipal",
+      "statute": "Solid Waste Management Rules, 2016",
+      "section": "Rule 15, duties of local authorities",
+      "response_window_days": 15
+    },
+    "crop_residue_burning": {
+      "tier": "state",
+      "statute": "Air (Prevention and Control of Pollution) Act, 1981",
+      "section": "Section 19, restrictions on emissions in an air pollution control area",
+      "response_window_days": 15
+    },
+    "industrial_emission": {
+      "tier": "state",
+      "statute": "Air (Prevention and Control of Pollution) Act, 1981",
+      "section": "Section 31A, power to issue directions",
+      "response_window_days": 30
+    },
+    "construction_dust": {
+      "tier": "municipal",
+      "statute": "Construction and Demolition Waste Management Rules, 2016",
+      "section": "Rule 4, duties of the waste generator",
+      "response_window_days": 15
+    },
+    "vehicle_emission": {
+      "tier": "state",
+      "statute": "Motor Vehicles Act, 1988",
+      "section": "Section 190(2), driving a vehicle in an unsafe or polluting condition",
+      "response_window_days": 30
+    },
+    "default": {
+      "tier": "state",
+      "statute": "Air (Prevention and Control of Pollution) Act, 1981",
+      "section": "Section 31A, power to issue directions",
+      "response_window_days": 30
+    }
+  },
+  "states": {
+    "delhi": {
+      "state_board": {
+        "name": "Delhi Pollution Control Committee",
+        "office": "DPCC, ISBT Building, Kashmere Gate, Delhi",
+        "email": "dpcc@example.invalid"
+      },
+      "municipal": {
+        "delhi": {
+          "name": "Municipal Corporation of Delhi",
+          "office": "MCD Civic Centre, Minto Road, New Delhi",
+          "email": "mcd@example.invalid"
+        },
+        "new delhi": {
+          "name": "New Delhi Municipal Council",
+          "office": "NDMC, Palika Kendra, New Delhi",
+          "email": "ndmc@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "karnataka": {
+      "state_board": {
+        "name": "Karnataka State Pollution Control Board",
+        "office": "KSPCB, Church Street, Bengaluru",
+        "email": "kspcb@example.invalid"
+      },
+      "municipal": {
+        "bengaluru": {
+          "name": "Bruhat Bengaluru Mahanagara Palike",
+          "office": "BBMP Head Office, N R Square, Bengaluru",
+          "email": "bbmp@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    }
+  },
+  "default_state": {
+    "state_board": {
+      "name": "State Pollution Control Board",
+      "office": "Regional office for the reported district",
+      "email": "state-board@example.invalid"
+    },
+    "municipal": {},
+    "escalation": {
+      "name": "Central Pollution Control Board",
+      "email": "cpcb@example.invalid"
+    }
+  }
+}
