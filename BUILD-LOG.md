@@ -523,3 +523,34 @@ build step and Node in the container, which trades the free-tier deployment
 property for tooling this size of app does not need. The other direction —
 Jinja2, already a dependency, plus htmx — is coherent but a larger rewrite, and
 the polling loop is genuinely client state rather than a server render.
+
+## Day 1 — a statute the authority could not enforce
+
+The first vehicle emission case addressed the Chhattisgarh Environment
+Conservation Board and cited Motor Vehicles Act Section 190(2). A state pollution
+control board has no power under the Motor Vehicles Act — 190(2) is enforced by
+the transport authority and the police — so the complaint would have arrived at a
+body that could not act on the section it quoted.
+
+Two ways out. Add a transport tier and route there, which is more correct for a
+complaint about one identifiable polluting vehicle but costs a schema change and
+a transport department entry for all 24 regions, written from memory of
+department names. Or align the statute to the authority already being used, which
+is one line.
+
+Took the second, and it is not merely the cheaper option. The Air Act has a
+provision aimed squarely at this: Section 20, instructions for ensuring standards
+for emissions from automobiles, under which the State Government acts in
+consultation with the State Board and instructs the vehicle registering
+authority. That names the Board's actual role in vehicular emissions, which
+Section 19 — air pollution control areas, and the hook used for crop residue
+burning — does not.
+
+It also fits what the system can actually see. A photograph of traffic and haze
+is an area condition. Section 190(2) targets a specific vehicle being driven,
+which a wide shot cannot establish, so citing it was overreaching on the evidence
+as well as misdirecting the complaint.
+
+Verified live: a vehicle emission report in Raipur now resolves to the board
+under Section 20 with a 30-day window escalating to the CPCB. Pinned with a test
+that asserts the category never cites the Motor Vehicles Act again.

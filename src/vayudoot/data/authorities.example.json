@@ -38,8 +38,8 @@
     },
     "vehicle_emission": {
       "tier": "state",
-      "statute": "Motor Vehicles Act, 1988",
-      "section": "Section 190(2), driving a vehicle in an unsafe or polluting condition",
+      "statute": "Air (Prevention and Control of Pollution) Act, 1981",
+      "section": "Section 20, instructions for ensuring standards for emissions from automobiles",
       "response_window_days": 30
     },
     "default": {

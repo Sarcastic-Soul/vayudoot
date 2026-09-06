@@ -83,3 +83,15 @@ def test_the_published_table_never_carries_a_routable_address():
     emails += [m.get("email", "") for r in table["regions"] for m in r["municipal"]]
     emails.append(table["fallback"]["state_board"]["email"])
     assert emails and all(e.endswith(".invalid") for e in emails)
+
+
+def test_a_category_never_cites_a_statute_its_authority_cannot_enforce():
+    """Vehicle emission used to be routed to the state pollution control board
+    while citing Motor Vehicles Act Section 190(2), which that board has no power
+    under — 190(2) is enforced by the transport authority and the police. The
+    Air Act's Section 20 is the provision that names the State Board's role in
+    vehicular emissions, so the authority and the statute now agree."""
+    rule = lookup_authority("Delhi", "New Delhi", "vehicle_emission")
+    assert rule["authority_tier"] == "state"
+    assert "Air (Prevention and Control of Pollution) Act" in rule["statute"]
+    assert "Motor Vehicles Act" not in rule["statute"]
