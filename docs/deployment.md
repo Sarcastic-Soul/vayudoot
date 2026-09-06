@@ -83,6 +83,12 @@ all — which is the point of the split.
    ids. That needs a GPU to host a vision model; without one the evidence stage
    is the part that suffers first.
 
+Before deploying, check the container carries everything: the pack template, the
+vendored ES modules and the authority table all ship in the wheel, and
+`.dockerignore` excludes `docs/`, `tests/` and `scripts/` but not
+`src/vayudoot/templates` or `src/vayudoot/web/vendor`. A missing authority table
+once passed every test and would have shipped an empty lookup.
+
 **Develop against the test fakes. Spend the daily quota on real runs only.**
 The whole pipeline runs offline in `pytest` in half a second; a debugging
 loop against a live provider will eat a day's reports before lunch.
