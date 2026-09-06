@@ -43,6 +43,18 @@ def build_model(temperature: float | None = None, tier: Tier = "primary") -> Any
     if provider == "ollama":
         from strands.models.ollama import OllamaModel
 
-        return OllamaModel(host=settings.ollama_host, model_id=model_id)
+        # The same provider serves a local daemon and Ollama Cloud; the only
+        # difference is the host and a bearer token. Sending an empty header
+        # would break a local daemon, so it is only added when a key is set.
+        client_args: dict[str, Any] = {}
+        if settings.ollama_api_key:
+            client_args["headers"] = {"Authorization": f"Bearer {settings.ollama_api_key}"}
+
+        return OllamaModel(
+            host=settings.ollama_host,
+            model_id=model_id,
+            ollama_client_args=client_args or None,
+            temperature=temp,
+        )
 
     raise ValueError(f"Unknown model provider: {provider}")

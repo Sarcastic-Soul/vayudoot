@@ -32,9 +32,14 @@ DEFAULT_MODEL_IDS: dict[str, dict[str, str]] = {
         "primary": "gemini-3.5-flash",
         "fast": "gemini-3.5-flash-lite",
     },
+    # Ollama defaults are the Ollama Cloud free-tier models rather than local
+    # ones, because a laptop that cannot host a vision model is the common case.
+    # gemma4:31b is multimodal, which the evidence stage requires; nothing else on
+    # the free tier reads an image. Point OLLAMA_HOST at localhost and override
+    # both ids to run locally instead.
     "ollama": {
-        "primary": "llama3.2",
-        "fast": "llama3.2",
+        "primary": "gemma4:31b",
+        "fast": "gpt-oss:20b",
     },
 }
 
@@ -56,6 +61,7 @@ class Settings(BaseSettings):
     aws_region: str = "us-west-2"
     gemini_api_key: str = ""
     ollama_host: str = "http://localhost:11434"
+    ollama_api_key: str = ""
 
     # Evidence sources
     firms_map_key: str = ""

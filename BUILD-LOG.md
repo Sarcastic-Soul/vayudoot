@@ -206,3 +206,33 @@ model quality is visible in the output.
 
 Recorded the budget in `CLAUDE.md` next to the tier rule, so the next person to
 reach for `primary` knows it costs three reports a day.
+
+## Day 1 — checked the free tiers properly instead of assuming
+
+Two assumptions turned out wrong, and both mattered.
+
+**Groq's free tier has no vision model.** The published list is gpt-oss-120b/20b,
+qwen3-27b, compound, prompt-guard, whisper, orpheus — nothing that reads an
+image. So Groq cannot serve the evidence stage at all, which was the premise of
+putting it anywhere useful. Its limits are also throughput rather than context:
+30 RPM, 1000 RPD, 8K tokens per minute, 200K per day. The 8K is a per-minute
+meter, not a context window, and the three corroboration agents fire in parallel
+with tool payloads, so the fast tier is the one placement that would actually hit
+it. Left Groq out.
+
+**Ollama Cloud's free tier can serve everything.** `gemma4:31b` is multimodal
+with a 256K context, which makes it the only free option that covers the
+evidence stage as well as drafting. It needed no new provider — the `ollama`
+branch already existed, and hosted Ollama differs from a local daemon only by
+host and a bearer token. Added `OLLAMA_API_KEY`, passed through
+`ollama_client_args` as an Authorization header, and only when a key is set,
+because sending an empty one breaks a local daemon.
+
+Changed the Ollama defaults from `llama3.2` to `gemma4:31b` and `gpt-oss:20b`.
+A laptop that cannot host a vision model is the common case here, so defaulting
+to local model ids optimised for the setup nobody in this project has. Running
+locally is still one host and two model ids away.
+
+The free quota is published as session and weekly percentages rather than
+request counts, so unlike Gemini there is no arithmetic to do in advance — watch
+the meter.

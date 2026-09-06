@@ -49,9 +49,24 @@ Three ways to pay for it, in order of preference:
    VAYUDOOT_MODEL_ID=gemini-3.5-flash        # primary
    VAYUDOOT_MODEL_ID_FAST=gemini-3.5-flash-lite
    ```
-3. **Ollama locally** for development. `VAYUDOOT_MODEL_PROVIDER=ollama`. Free,
-   private, and good enough for exercising control flow. Not good enough for the
-   photograph classification.
+3. **Ollama Cloud free tier.** `VAYUDOOT_MODEL_PROVIDER=ollama` with
+   `OLLAMA_HOST=https://ollama.com` and a key from
+   <https://ollama.com/settings/keys>. The same provider covers a local daemon
+   and the hosted one — the difference is a host and a bearer token.
+
+   This is the only free option that can serve *both* primary agents, because
+   `gemma4:31b` reads images and carries 256K of context. That matters: the
+   evidence stage needs a multimodal model, and neither Groq's free tier nor a
+   laptop without a GPU offers one. The defaults are the cloud model ids for
+   that reason; running locally means overriding both.
+
+   The quota is published as session and weekly percentages rather than request
+   counts, so treat it as opaque and watch the meter in the Ollama console.
+
+4. **Ollama on your own machine.** `OLLAMA_HOST=http://localhost:11434`, no key.
+   Free and private, and good enough for exercising control flow, but it needs a
+   GPU to host a vision model — without one the evidence stage is the part that
+   suffers first.
 
 **Develop against Ollama or fixtures. Spend credits on real runs only.**
 
