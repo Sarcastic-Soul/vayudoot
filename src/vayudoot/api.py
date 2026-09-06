@@ -12,7 +12,7 @@ import asyncio
 import logging
 import uuid
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -20,12 +20,13 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import filing, lifecycle, store
+from . import clustering, filing, lifecycle, store
+from .agents import draft_rti_application
 from .config import settings
 from .images import UnsupportedImage, normalise, suffix_for
 from .pipeline import new_case, run
 from .ratelimit import limiter
-from .schemas import Case, CaseStatus, Report
+from .schemas import Case, CaseStatus, Cluster, Report
 from .tools.authorities import authority_table
 from .tools.geocode import reverse_geocode, search_places
 
@@ -238,6 +239,18 @@ def authorities() -> dict:
     return authority_table()
 
 
+@app.get("/clusters", response_model=list[Cluster])
+def list_clusters() -> list[Cluster]:
+    """Repeat reports of the same problem at the same place, strongest first.
+
+    Derived from the case store on every call rather than stored, because
+    membership changes the moment a new report arrives and a cached copy would
+    be wrong within the hour. The store is JSON files and a cluster pass is pure
+    arithmetic over them, so recomputing costs nothing worth caching.
+    """
+    return clustering.clusters()
+
+
 @app.get("/cases", response_model=list[Case])
 def list_cases() -> list[Case]:
     return store.all_cases()
@@ -246,6 +259,17 @@ def list_cases() -> list[Case]:
 @app.get("/cases/{case_id}", response_model=Case)
 def get_case(case_id: str) -> Case:
     return _require(case_id)
+
+
+@app.get("/cases/{case_id}/cluster", response_model=Cluster | None)
+def get_case_cluster(case_id: str) -> Cluster | None:
+    """The pattern this case currently belongs to, or null if it is a one-off.
+
+    Recomputed, not read from `case.cluster_id`. That field records what the
+    drafting stage saw at the time; a case filed as a one-off can become the
+    first member of a pattern weeks later, and this is the endpoint that says so.
+    """
+    return clustering.cluster_for(_require(case_id))
 
 
 @app.get("/cases/{case_id}/photo")
@@ -305,6 +329,65 @@ def _not_due(case: Case) -> str:
     if case.status not in filing.ESCALATION_CLOCK:
         return f"Case is {case.status.value}; only a filed or acknowledged case can be escalated"
     return "The statutory response window has not yet lapsed"
+
+
+@app.post("/cases/{case_id}/rti", response_model=Case)
+async def draft_rti(case_id: str, redraft: bool = False) -> Case:
+    """Draft a Right to Information application for a complaint that was ignored.
+
+    A separate act from escalation, not a step inside it. Escalation re-files the
+    same complaint to the tier above; this asks the *original* authority, through
+    its Public Information Officer, what is on the file — a different addressee,
+    a different statute, and a duty to reply within thirty days that the original
+    complaint never carried. A citizen may do either, both, or neither, and an
+    application made in their own name with their own fee cannot be an automatic
+    consequence of a timer.
+
+    Nothing is sent. The application is held on the case for a person to complete
+    and file themselves; there is no transport here and no envelope written.
+
+    The draft is cached on the case because it costs a primary-tier model call.
+    Pass `redraft=true` to spend another one deliberately.
+    """
+    case = _require(case_id)
+    if case.rti is not None and not redraft:
+        return case
+    if not filing.rti_available(case):
+        raise HTTPException(409, _rti_not_available(case))
+
+    case.rti = await draft_rti_application(case)
+    case.rti_drafted_at = datetime.now(UTC)
+    case.log(
+        "RTI application drafted under the Right to Information Act, 2005. Held for the "
+        "citizen to complete and file in their own name; nothing has been sent."
+    )
+    store.save(case)
+    return case
+
+
+@app.get("/cases/{case_id}/rti", response_class=PlainTextResponse)
+def get_rti_text(case_id: str) -> str:
+    """The drafted application as filing-ready text, for printing or pasting."""
+    case = _require(case_id)
+    if case.rti is None:
+        raise HTTPException(404, f"No RTI application has been drafted for {case.case_id}")
+    return case.rti.body_en
+
+
+def _rti_not_available(case: Case) -> str:
+    """Why an RTI cannot be drafted yet, which is not always a matter of time."""
+    if case.status not in filing.RTI_FROM:
+        return (
+            f"Case is {case.status.value}; an RTI application asks what was done about a "
+            "complaint that was actually filed and then went unanswered"
+        )
+    if case.filed_at is None or case.jurisdiction is None:
+        return "This case has no filed complaint to ask about"
+    days = case.jurisdiction.response_window_days
+    return (
+        f"The {days}-day statutory window since filing has not lapsed. Ask what was done "
+        "only once the authority is actually late."
+    )
 
 
 @app.post("/cases/{case_id}/acknowledge", response_model=Case)

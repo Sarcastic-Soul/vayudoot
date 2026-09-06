@@ -95,6 +95,37 @@ def escalation_due(case: Case) -> bool:
     return datetime.now(UTC) >= started_at + timedelta(days=case.jurisdiction.response_window_days)
 
 
+#: Statuses an RTI application can be drafted from. A case that was never filed
+#: has no complaint to ask about; a resolved or withdrawn one has nothing left to
+#: ask. Escalated is included deliberately — escalating to the tier above and
+#: asking the original authority what it did with the complaint are different
+#: acts against different offices, and a citizen may well want both.
+RTI_FROM: tuple[CaseStatus, ...] = (
+    CaseStatus.FILED,
+    CaseStatus.ACKNOWLEDGED,
+    CaseStatus.ESCALATED,
+)
+
+
+def rti_available(case: Case) -> bool:
+    """True when a case has gone unanswered long enough to justify an RTI.
+
+    The clock runs from `filed_at` and nothing restarts it, which is the one
+    place this differs from `escalation_due`. An acknowledgement restarts the
+    escalation clock because it is a promise to act and deserves a fresh window.
+    It does not restart this one: the question an RTI asks is "what is on the
+    file about the complaint I filed on that date", and a receipt is not an
+    answer to it. An escalated case is past its window by definition and stays
+    eligible.
+    """
+    if case.status not in RTI_FROM:
+        return False
+    if case.jurisdiction is None or case.complaint is None or case.filed_at is None:
+        return False
+    window = timedelta(days=case.jurisdiction.response_window_days)
+    return datetime.now(UTC) >= case.filed_at + window
+
+
 def escalate(case: Case) -> Path:
     """Re-file to the next authority tier once the response window has lapsed."""
     if case.complaint is None or case.jurisdiction is None:

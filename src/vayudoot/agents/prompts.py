@@ -104,6 +104,65 @@ a penalty, whichever fits.
 Do not exaggerate. Do not accuse a named party. Do not claim certainty the evidence does
 not support. Overstating a complaint is the fastest way to have it dismissed.
 
+If the case carries a PATTERN OF REPEAT REPORTS block, that pattern is the strongest
+thing in the complaint and belongs near the top of the body. A single sighting asks an
+authority to believe a stranger; a recurring one at a fixed location asks it to explain a
+failure it can check against its own file. State how many reports, over what period, from
+when, and quote the cluster reference so the authority can be asked about it again.
+
+Be exact about who reported. The block separates identified reporters from anonymous
+submissions because the system cannot tell whether anonymous reports came from one
+neighbour or twenty. Never describe reports as independent, as coming from multiple
+residents, or as community-wide unless the identified-reporter count actually supports it.
+Overstating that is the kind of claim an authority can disprove, and disproving one claim
+discredits the rest.
+
+If there is no such block, say nothing at all about repetition. A first report is a first
+report.
+
 Also produce a translation of the body into the main local language of the region, and
 name that language. If the region's main language is English, leave the translation empty.
+"""
+
+RTI = """\
+You are drafting a Right to Information application under the Right to Information Act,
+2005, for an Indian citizen whose pollution complaint has gone unanswered past the
+statutory window.
+
+This is not a second complaint and it must not read like one. An RTI application asks a
+public authority to disclose information it already holds. It cannot demand action, ask
+for an opinion, ask what the authority intends to do, or argue the merits of the original
+complaint. Section 2(f) defines information as material held in records; anything phrased
+as a demand or a grievance is refused, and the applicant loses thirty days finding out.
+
+So convert every grievance into a question about a record. "Why has nothing been done"
+becomes "the file notings, inspection reports and correspondence recorded against
+complaint reference X". "Take action against them" becomes "the action taken report, if
+any, recorded against complaint reference X, with its date". Asking for the reason *as
+recorded in the file* is proper; asking an officer to justify themselves is not.
+
+Write numbered questions that are specific, answerable from a file, and confined to the
+complaint given to you. Each should name the record wanted and the period it covers. Ask
+at least: whether the complaint was received and under what reference number; what action
+was taken and on what date; which officer or inspection team was assigned; what any
+inspection or measurement recorded; and, if no action was taken, the file notings
+recording that. Do not pad the list — an application with thirty questions is refused as
+disproportionate diversion of resources.
+
+Address the application to the Public Information Officer of the public authority given to
+you, by designation only. You do not know the officer's name, the office's RTI address, or
+any reference number, and you must not invent them. Wherever the applicant has to supply
+something no record can give you — their name, their address, the fee instrument, the
+authority's real RTI channel — write a clearly bracketed placeholder in the text and list
+it in `placeholders`.
+
+Note the fee as it stands under the RTI Rules, and how it is paid. Note the appeal route
+under section 19(1): a first appeal to the First Appellate Authority of the same public
+authority within thirty days of the reply or of the thirty-day deadline lapsing, and a
+second appeal to the Information Commission after that. State these as the routes that
+exist, not as advice about whether the applicant should use them or would succeed.
+
+Also produce a translation into the main local language of the region and name that
+language; section 6(1) allows an application in English, Hindi, or the official language
+of the area. If that language is English, leave the translation empty.
 """

@@ -14,6 +14,7 @@ from vayudoot.schemas import (
     EvidencePacket,
     Jurisdiction,
     PollutionType,
+    RTIApplication,
 )
 
 
@@ -64,6 +65,54 @@ def complaint() -> Complaint:
         cited_statutes=["Solid Waste Management Rules, 2016, Rule 15"],
         requested_action="Inspection and a direction to stop.",
     )
+
+
+def rti_application() -> RTIApplication:
+    """What the RTI agent would return, minus the model.
+
+    `body_en` is left empty on purpose: it is assembled by `agents.rti.render_rti`
+    after the model answers, so a fake that filled it in would hide the renderer
+    from every test that goes through the endpoint.
+    """
+    return RTIApplication(
+        public_authority="Municipal Corporation of Delhi",
+        pio_designation="The Public Information Officer",
+        office_address="MCD Civic Centre, Minto Road, New Delhi",
+        subject="Information on action taken on a complaint of open waste burning",
+        preamble=(
+            "A complaint of open waste burning was filed with your office and no reply has "
+            "been received within the statutory window."
+        ),
+        questions=[
+            "The reference number under which the said complaint was registered.",
+            "The action taken report, if any, recorded against that complaint, with its date.",
+            "The name and designation of the officer to whom the complaint was assigned.",
+        ],
+        fee_note="Application fee of Rs. 10, payable by [FEE INSTRUMENT].",
+        appeal_note=(
+            "First appeal under Section 19(1) to the First Appellate Authority of this "
+            "public authority within thirty days."
+        ),
+        placeholders=["Applicant name", "Postal address", "Fee instrument"],
+        body_local="",
+        local_language="Hindi",
+    )
+
+
+class StubAgent:
+    """Stands in for a Strands `Agent`.
+
+    Records the prompt it was given, which is how a test can assert what a stage
+    actually told the model, and answers with a fixed structured output.
+    """
+
+    def __init__(self, output):
+        self.output = output
+        self.prompts: list[str] = []
+
+    async def invoke_async(self, prompt, structured_output_model=None, **kwargs):
+        self.prompts.append(prompt)
+        return type("Result", (), {"structured_output": self.output})()
 
 
 def patch_stages(monkeypatch, module, *, confidence: float = 0.9, fail_at: str = "") -> None:

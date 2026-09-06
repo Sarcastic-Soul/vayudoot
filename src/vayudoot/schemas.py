@@ -184,6 +184,97 @@ class Complaint(BaseModel):
     requested_action: str = ""
 
 
+class ClusterMember(BaseModel):
+    """One report's place in a repeat pattern."""
+
+    case_id: str
+    observed_at: datetime
+    latitude: float
+    longitude: float
+    status: CaseStatus
+    distance_km: float = Field(description="Distance from the cluster's centre")
+
+
+class Cluster(BaseModel):
+    """Repeat reports of the same problem at the same place.
+
+    Not a stage output: it is derived from the case store on demand rather than
+    stored, because membership changes every time a new report arrives and a
+    cached copy would be wrong within the hour. `cluster_id` is stable, so a
+    complaint can cite it and the citation keeps resolving as the group grows.
+    """
+
+    cluster_id: str
+    pollution_type: PollutionType
+    centre_latitude: float
+    centre_longitude: float
+    radius_km: float = Field(description="Greatest distance from the centre to a member")
+    report_count: int
+    first_reported_at: datetime
+    last_reported_at: datetime
+    span_days: int
+    #: Distinct non-empty reporter contacts. Repeat reports from one person are
+    #: worth less than the same count from many, and this is the only part of
+    #: that question the data can answer.
+    distinct_reporters: int = 0
+    #: Reports with no contact at all. These may be one person or twenty; nothing
+    #: stored can tell, so they are counted apart rather than assumed independent.
+    anonymous_reports: int = 0
+    authority_name: str = ""
+    address: str = ""
+    members: list[ClusterMember] = Field(default_factory=list)
+
+
+class RTIApplication(BaseModel):
+    """A Right to Information application under the RTI Act, 2005.
+
+    A different document from `Complaint`, not a stronger version of one. A
+    complaint asks an authority to act; an RTI application asks it to disclose
+    what is already written in a file, which is why it carries a statutory
+    thirty-day duty to reply and an appeal route when it does not.
+    """
+
+    public_authority: str = Field(description="The public authority holding the records")
+    pio_designation: str = Field(
+        default="The Public Information Officer",
+        description=(
+            "Address the officer by designation. The officer's name is not known to this "
+            "system and must never be invented."
+        ),
+    )
+    office_address: str = Field(
+        default="", description="The office address as supplied. Never invented."
+    )
+    subject: str
+    preamble: str = Field(
+        default="",
+        description=(
+            "One paragraph: which complaint this concerns, when it was filed, under what "
+            "reference, and that the response window has lapsed."
+        ),
+    )
+    questions: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Numbered requests for information already held on a file. Never a demand for "
+            "action and never a request for an opinion; both are refused."
+        ),
+    )
+    fee_note: str = Field(default="", description="The application fee and how it is paid")
+    appeal_note: str = Field(
+        default="", description="The first-appeal route if no reply arrives within thirty days"
+    )
+    placeholders: list[str] = Field(
+        default_factory=list,
+        description="Everything a human must fill in before this can be filed",
+    )
+    body_local: str = ""
+    local_language: str = ""
+    #: The assembled application. Written by `agents.rti.render` after drafting,
+    #: not by the model, so the statutory scaffolding is identical every time.
+    body_en: str = ""
+
+
 class Case(BaseModel):
     """Everything known about one report, persisted across days."""
 
@@ -196,6 +287,11 @@ class Case(BaseModel):
     jurisdiction: Jurisdiction | None = None
     complaint: Complaint | None = None
     address: str = ""
+    #: The repeat-report pattern the complaint was drafted against, if there was
+    #: one. A record of what the drafting stage actually saw, not a live answer:
+    #: membership changes as reports arrive, so ask `GET /cases/{id}/cluster` for
+    #: the current group.
+    cluster_id: str = ""
     filed_at: datetime | None = None
     escalated_at: datetime | None = None
     # The lifecycle after filing. Every one of these is optional, because a case
@@ -209,6 +305,10 @@ class Case(BaseModel):
     resolution_note: str = ""
     #: Why the citizen took the complaint back.
     withdrawal_note: str = ""
+    #: An RTI application drafted once the statutory window lapsed. Held for the
+    #: citizen to file in their own name; nothing sends it.
+    rti: RTIApplication | None = None
+    rti_drafted_at: datetime | None = None
     error: str = ""
     history: list[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

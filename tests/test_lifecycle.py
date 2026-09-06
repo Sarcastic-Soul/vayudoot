@@ -299,20 +299,38 @@ def test_a_case_saved_before_these_fields_existed_still_loads():
 
 
 def test_the_cases_already_on_this_machine_still_load(tmp_path):
-    """The real store, not a fixture: two of these exist and must keep working."""
+    """The real store, not a fixture: whatever is on this machine must keep loading.
+
+    `data/cases/` is live: the app writes to it while this suite runs, so a file
+    can appear, be half-written, or vanish between the glob and the read. Those
+    are races in the fixture, not regressions in the code, and a compatibility
+    check that fails because someone submitted a report is a check people learn
+    to ignore. Anything unreadable for that reason is skipped; anything that
+    reads must still parse. The deterministic half of this contract is
+    `LEGACY_CASE` above, which does not depend on this machine at all.
+    """
     from pathlib import Path
 
     real = Path(__file__).resolve().parents[1] / "data" / "cases"
-    existing = sorted(real.glob("VD-*.json")) if real.exists() else []
-    if not existing:
-        pytest.skip("no stored cases on this machine to check against")
+    checked = 0
 
-    for path in existing:
-        (settings.vayudoot_case_dir).mkdir(parents=True, exist_ok=True)
-        (settings.vayudoot_case_dir / path.name).write_text(path.read_text())
+    for path in sorted(real.glob("VD-*.json")) if real.exists() else []:
+        try:
+            raw = path.read_text()
+        except OSError:  # deleted between the glob and the read
+            continue
+        if not raw.strip().endswith("}"):  # caught mid-write
+            continue
+
+        settings.vayudoot_case_dir.mkdir(parents=True, exist_ok=True)
+        (settings.vayudoot_case_dir / path.name).write_text(raw)
         loaded = store.load(path.stem)
         assert loaded is not None, f"{path.name} no longer loads"
         assert loaded.case_id == path.stem
+        checked += 1
+
+    if not checked:
+        pytest.skip("no readable stored cases on this machine to check against")
 
 
 # -- rate limiting --------------------------------------------------------

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from strands import Agent
 
+from ..clustering import describe
 from ..models import build_model
-from ..schemas import Complaint, Corroboration, EvidencePacket, Jurisdiction, Report
+from ..schemas import Cluster, Complaint, Corroboration, EvidencePacket, Jurisdiction, Report
 from .prompts import DRAFTING
 
 
@@ -24,8 +25,16 @@ async def draft_complaint(
     corroboration: Corroboration,
     jurisdiction: Jurisdiction,
     address: str = "",
+    cluster: Cluster | None = None,
+    case_id: str = "",
     agent: Agent | None = None,
 ) -> Complaint:
+    """Write the complaint.
+
+    `cluster` is optional and stays optional. A first report is the normal case
+    and must draft exactly as it always did; a repeat report gets one extra block
+    in the prompt. Nothing here requires a pattern to exist.
+    """
     agent = agent or build_drafting_agent()
 
     prompt = f"""Draft a formal complaint.
@@ -55,8 +64,32 @@ INDEPENDENT EVIDENCE
   Plausible upwind source: {corroboration.upwind_source_latitude}, \
 {corroboration.upwind_source_longitude}
   Notes: {corroboration.corroboration_notes}
-
+{_pattern_block(cluster, case_id)}
 Write the complaint body citing only the statute and section given above."""
 
     result = await agent.invoke_async(prompt, structured_output_model=Complaint)
     return result.structured_output
+
+
+def _pattern_block(cluster: Cluster | None, case_id: str) -> str:
+    """The repeat-report block, or nothing at all.
+
+    Absent rather than empty when there is no pattern: a block reading "reports:
+    1" invites the model to write a sentence about how this has only happened
+    once, which is an argument against the complaint.
+    """
+    if cluster is None:
+        return ""
+    return f"""
+PATTERN OF REPEAT REPORTS
+  {describe(cluster, case_id)}
+  Cluster reference: {cluster.cluster_id}
+  Reports in this pattern: {cluster.report_count}
+  First reported: {cluster.first_reported_at.date().isoformat()}
+  Most recent report: {cluster.last_reported_at.date().isoformat()}
+  Identified reporters: {cluster.distinct_reporters}
+  Anonymous submissions: {cluster.anonymous_reports}
+  (anonymous reports may be one person or many; the system cannot tell)
+  Pattern centre: {cluster.centre_latitude}, {cluster.centre_longitude}
+  Greatest distance from that centre: {cluster.radius_km:.3f} km
+"""

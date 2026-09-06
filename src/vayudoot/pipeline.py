@@ -14,9 +14,9 @@ from __future__ import annotations
 import logging
 import uuid
 
-from . import store
+from . import clustering, store
 from .agents import analyse_evidence, corroborate, draft_complaint, resolve_jurisdiction
-from .schemas import Case, CaseStatus, Report, Stage
+from .schemas import Case, CaseStatus, Cluster, Report, Stage
 from .tools.authorities import coverage_is_generic
 from .tools.geocode import reverse_geocode
 
@@ -112,8 +112,19 @@ async def _run_stages(report: Report, case: Case, checkpoint, persist: bool) -> 
     case.address = geo.get("display_name", "") if isinstance(geo, dict) else ""
 
     checkpoint(Stage.DRAFTING)
+    cluster = _pattern(case)
+    if cluster is not None:
+        case.cluster_id = cluster.cluster_id
+        case.log(clustering.describe(cluster, case.case_id))
+
     case.complaint = await draft_complaint(
-        report, case.evidence, case.corroboration, case.jurisdiction, case.address
+        report,
+        case.evidence,
+        case.corroboration,
+        case.jurisdiction,
+        case.address,
+        cluster=cluster,
+        case_id=case.case_id,
     )
     case.status = CaseStatus.AWAITING_CONFIRMATION
     case.log("Complaint drafted, awaiting citizen confirmation before filing")
@@ -122,3 +133,18 @@ async def _run_stages(report: Report, case: Case, checkpoint, persist: bool) -> 
     if persist:
         store.save(case)
     return case
+
+
+def _pattern(case: Case) -> Cluster | None:
+    """The repeat-report pattern this case belongs to, if there is one.
+
+    Never fatal. A complaint drafted without its pattern is weaker; a run that
+    dies because the pattern lookup hit a half-written case file on disk is
+    worse. The pipeline does not depend on a cluster existing and must not
+    depend on the lookup succeeding either.
+    """
+    try:
+        return clustering.cluster_for(case)
+    except Exception:
+        log.warning("Cluster lookup failed for case %s", case.case_id, exc_info=True)
+        return None

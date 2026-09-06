@@ -90,6 +90,30 @@ class Settings(BaseSettings):
     #: past this is refused before it is read into a container with little RAM.
     vayudoot_max_upload_bytes: int = 12 * 1024 * 1024
 
+    # Repeat-report clustering. Grouping is pure logic over stored cases, so
+    # these three numbers are the whole definition of "the same problem" — and
+    # each is a judgement about pollution, not a tuning knob.
+    #
+    #: How far apart two reports can be and still be one problem. 500 m is a
+    #: couple of street blocks: it holds together two sightings of one waste fire
+    #: photographed from either end of a lane, while keeping the next
+    #: neighbourhood out. It is also above a phone's GPS error in an urban canyon
+    #: (tens of metres) and above VIIRS's 375 m thermal pixel, so a tighter radius
+    #: would be splitting groups on noise the evidence cannot resolve anyway.
+    vayudoot_cluster_radius_km: float = 0.5
+    #: The longest gap between consecutive reports that still reads as one
+    #: ongoing pattern. 30 days is the default statutory response window, which
+    #: makes the pattern argument land where it bites: everything inside it
+    #: happened while the authority had the case and was obliged to act. Note
+    #: this is a maximum gap, not a maximum age — a site burning fortnightly for
+    #: six months is one pattern, not thirteen.
+    vayudoot_cluster_window_days: int = 30
+    #: Reports needed before a group is a pattern worth citing. Two sightings a
+    #: fortnight apart are a coincidence and citing them as a pattern invites the
+    #: dismissal; three is the smallest number that reads as recurrence. It also
+    #: keeps every one-off report out of the clusters listing.
+    vayudoot_cluster_min_reports: int = 3
+
     def provider_for(self, tier: Tier = "primary") -> Provider:
         if tier == "fast" and self.vayudoot_model_provider_fast:
             return self.vayudoot_model_provider_fast
