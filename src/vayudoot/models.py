@@ -2,7 +2,7 @@
 
 No module in this project constructs a provider directly. They all call
 `build_model()`, which reads the configured provider at runtime. Swapping the
-whole system from Amazon Bedrock to Google Gemini is one environment variable.
+whole system from Google Gemini to Ollama is one environment variable.
 """
 
 from __future__ import annotations
@@ -21,15 +21,6 @@ def build_model(temperature: float | None = None, tier: Tier = "primary") -> Any
     provider: Provider = settings.vayudoot_model_provider
     temp = settings.vayudoot_model_temperature if temperature is None else temperature
     model_id = settings.model_id_for(tier)
-
-    if provider == "bedrock":
-        from strands.models import BedrockModel
-
-        return BedrockModel(
-            model_id=model_id,
-            region_name=settings.aws_region,
-            temperature=temp,
-        )
 
     if provider == "gemini":
         from strands.models.gemini import GeminiModel

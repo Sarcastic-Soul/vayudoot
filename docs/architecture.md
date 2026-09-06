@@ -115,7 +115,7 @@ touches no other module.
 ## Provider abstraction
 
 `models.build_model()` is the only place a provider is constructed. This exists so
-that the same agent code runs on Bedrock or Gemini unchanged, which is the point
+that the same agent code runs on Gemini or Ollama unchanged, which is the point
 of the Strands provider abstraction and also what keeps the Google-hosted
 deployment path open without a rewrite.
 

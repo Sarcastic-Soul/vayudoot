@@ -12,7 +12,7 @@ from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-Provider = Literal["bedrock", "gemini", "ollama"]
+Provider = Literal["gemini", "ollama"]
 Tier = Literal["primary", "fast"]
 
 # Two tiers, because inference is the only real running cost of this project.
@@ -24,10 +24,6 @@ Tier = Literal["primary", "fast"]
 # call a tool and summarise. Running those on the primary model multiplies the
 # cost of every report for no gain in quality.
 DEFAULT_MODEL_IDS: dict[str, dict[str, str]] = {
-    "bedrock": {
-        "primary": "us.amazon.nova-pro-v1:0",
-        "fast": "us.amazon.nova-lite-v1:0",
-    },
     "gemini": {
         "primary": "gemini-3.5-flash",
         "fast": "gemini-3.5-flash-lite",
@@ -53,14 +49,13 @@ class Settings(BaseSettings):
     )
 
     # Model provider
-    vayudoot_model_provider: Provider = "bedrock"
+    vayudoot_model_provider: Provider = "gemini"
     vayudoot_model_id: str = ""
     vayudoot_model_id_fast: str = ""
     vayudoot_model_temperature: float = 0.2
 
-    aws_region: str = "us-west-2"
     gemini_api_key: str = ""
-    ollama_host: str = "http://localhost:11434"
+    ollama_host: str = "https://ollama.com"
     ollama_api_key: str = ""
 
     # Evidence sources

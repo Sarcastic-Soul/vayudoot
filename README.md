@@ -130,12 +130,13 @@ accused party or claiming certainty the evidence does not support.
 ## Model providers
 
 No module constructs a provider directly. `vayudoot.models.build_model()` reads
-the configured provider at runtime, so the same agent code runs on Amazon
-Bedrock, Google Gemini, Ollama Cloud, or a local Ollama daemon with one
-environment variable changed.
+the configured provider at runtime, so the same agent code runs on Google
+Gemini, Ollama Cloud, or a local Ollama daemon with one environment variable
+changed. Both are free tiers with no card, which is the constraint that picked
+them.
 
 ```bash
-VAYUDOOT_MODEL_PROVIDER=bedrock   # or gemini, ollama
+VAYUDOOT_MODEL_PROVIDER=gemini   # or ollama
 ```
 
 ## Data sources

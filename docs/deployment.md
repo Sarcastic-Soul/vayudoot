@@ -29,13 +29,13 @@ invocations. Four of them are mechanical tool-call-and-summarise steps and run o
 the cheap tier; only photograph reading and complaint drafting use the primary
 model.
 
-Three ways to pay for it, in order of preference:
+Two providers, both free tiers with no card. Amazon Bedrock was removed: it
+bills, and constraint 3 in `CLAUDE.md` says a dependency has to be free or
+already paid for.
 
-1. **AWS credits on Bedrock.** `VAYUDOOT_MODEL_PROVIDER=bedrock`. Credits are
-   finite — watch them, and do not run the pipeline in a loop while debugging.
-2. **Gemini free tier** via Google AI Studio. `VAYUDOOT_MODEL_PROVIDER=gemini`.
-   Genuinely free and no card, but the daily caps are the real budget: 20 requests
-   a day on the flash tier, 500 on flash-lite, and the pro models are paid.
+1. **Gemini free tier** via Google AI Studio. `VAYUDOOT_MODEL_PROVIDER=gemini`.
+   The daily caps are the real budget: 20 requests a day on the flash tier, 500
+   on flash-lite, and the pro models are paid.
 
    A report costs two primary requests (evidence and drafting) and roughly eight
    fast ones, so **the free tier is about ten reports a day** and the primary
@@ -49,26 +49,28 @@ Three ways to pay for it, in order of preference:
    VAYUDOOT_MODEL_ID=gemini-3.5-flash        # primary
    VAYUDOOT_MODEL_ID_FAST=gemini-3.5-flash-lite
    ```
-3. **Ollama Cloud free tier.** `VAYUDOOT_MODEL_PROVIDER=ollama` with
+
+2. **Ollama Cloud free tier.** `VAYUDOOT_MODEL_PROVIDER=ollama` with
    `OLLAMA_HOST=https://ollama.com` and a key from
-   <https://ollama.com/settings/keys>. The same provider covers a local daemon
-   and the hosted one — the difference is a host and a bearer token.
+   <https://ollama.com/settings/keys>.
 
    This is the only free option that can serve *both* primary agents, because
    `gemma4:31b` reads images and carries 256K of context. That matters: the
    evidence stage needs a multimodal model, and neither Groq's free tier nor a
    laptop without a GPU offers one. The defaults are the cloud model ids for
-   that reason; running locally means overriding both.
+   that reason.
 
    The quota is published as session and weekly percentages rather than request
    counts, so treat it as opaque and watch the meter in the Ollama console.
 
-4. **Ollama on your own machine.** `OLLAMA_HOST=http://localhost:11434`, no key.
-   Free and private, and good enough for exercising control flow, but it needs a
-   GPU to host a vision model — without one the evidence stage is the part that
-   suffers first.
+   The same provider also drives a local daemon — set
+   `OLLAMA_HOST=http://localhost:11434`, drop the key, and override both model
+   ids. That needs a GPU to host a vision model; without one the evidence stage
+   is the part that suffers first.
 
-**Develop against Ollama or fixtures. Spend credits on real runs only.**
+**Develop against the test fakes. Spend the daily quota on real runs only.**
+The whole pipeline runs offline in `pytest` in half a second; a debugging
+loop against a live provider will eat a day's reports before lunch.
 
 ### Compute
 

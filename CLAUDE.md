@@ -67,8 +67,7 @@ reports a day, so it needs to be worth that.
 
 - **Never construct a model provider directly.** Call `models.build_model()`. It
   is the only place a provider is instantiated, which is what lets the whole
-  system move between Bedrock, Gemini, and Ollama with one environment
-  variable.
+  system move between Gemini and Ollama with one environment variable.
 - **Stages hand each other typed objects**, not free text. Every stage returns a
   Pydantic model from `schemas.py` via Strands structured output. If you add a
   stage, give it a schema.
@@ -88,7 +87,8 @@ The Strands SDK moves quickly. Two things that memory gets wrong:
 
 - Structured output is `agent(prompt, structured_output_model=Model)`. The
   `Agent.structured_output()` method is deprecated.
-- Image content blocks are Bedrock-shaped:
+- Image content blocks use the SDK's Bedrock-shaped envelope, whatever the
+  configured provider is:
   `{"image": {"format": "jpeg", "source": {"bytes": ...}}}`.
 
 When unsure about the SDK, read the installed package

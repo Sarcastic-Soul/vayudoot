@@ -236,3 +236,30 @@ locally is still one host and two model ids away.
 The free quota is published as session and weekly percentages rather than
 request counts, so unlike Gemini there is no arithmetic to do in advance — watch
 the meter.
+
+## Day 1 — down to two providers
+
+Removed Amazon Bedrock. It bills, and constraint 3 says a dependency must be
+free or already paid for, so it was never really eligible; it survived this long
+because it was written before that constraint had teeth. Gone from the `Provider`
+literal, the default model table, `build_model()`, `Settings.aws_region`,
+`.env.example`, and the docs. The default provider is now `gemini`, which is
+what the project actually runs on.
+
+**Local Ollama was not a separate thing to remove.** Local and cloud are the same
+`ollama` branch — the difference is a host and a bearer token, which is why
+adding cloud support needed no new provider in the first place. What did change
+is the default host, from `http://localhost:11434` to `https://ollama.com`. The
+old default optimised for a machine with a GPU to spare, which is not the setup
+this project has. Local is still one environment variable away, and is still
+documented.
+
+Note that dropping the branch does not drop a dependency: `BedrockModel` lives in
+the base `strands-agents` package, so boto3 comes along regardless. This was
+about removing an option nobody can use, not about shrinking the install.
+
+Two providers left, both free tiers with no card:
+
+- `gemini` — verified end to end against live APIs, ~10 reports a day
+- `ollama` — Ollama Cloud, `gemma4:31b` for vision, quota published as opaque
+  percentages, not yet exercised against a real key
