@@ -60,7 +60,7 @@ Do not promote them to `primary` without a reason you can state.
 
 - **Never construct a model provider directly.** Call `models.build_model()`. It
   is the only place a provider is instantiated, which is what lets the whole
-  system move between Bedrock, Gemini, Anthropic, and Ollama with one environment
+  system move between Bedrock, Gemini, and Ollama with one environment
   variable.
 - **Stages hand each other typed objects**, not free text. Every stage returns a
   Pydantic model from `schemas.py` via Strands structured output. If you add a

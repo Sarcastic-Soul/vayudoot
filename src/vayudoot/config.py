@@ -12,7 +12,7 @@ from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-Provider = Literal["bedrock", "gemini", "anthropic", "ollama"]
+Provider = Literal["bedrock", "gemini", "ollama"]
 Tier = Literal["primary", "fast"]
 
 # Two tiers, because inference is the only real running cost of this project.
@@ -25,16 +25,12 @@ Tier = Literal["primary", "fast"]
 # cost of every report for no gain in quality.
 DEFAULT_MODEL_IDS: dict[str, dict[str, str]] = {
     "bedrock": {
-        "primary": "global.anthropic.claude-sonnet-4-6",
-        "fast": "global.anthropic.claude-haiku-4-5-20251001",
+        "primary": "us.amazon.nova-pro-v1:0",
+        "fast": "us.amazon.nova-lite-v1:0",
     },
     "gemini": {
         "primary": "gemini-2.5-flash",
         "fast": "gemini-2.5-flash-lite",
-    },
-    "anthropic": {
-        "primary": "claude-sonnet-4-6",
-        "fast": "claude-haiku-4-5-20251001",
     },
     "ollama": {
         "primary": "llama3.2",
@@ -59,7 +55,6 @@ class Settings(BaseSettings):
 
     aws_region: str = "us-west-2"
     gemini_api_key: str = ""
-    anthropic_api_key: str = ""
     ollama_host: str = "http://localhost:11434"
 
     # Evidence sources

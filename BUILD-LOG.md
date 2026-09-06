@@ -128,3 +128,23 @@ Hugging Face Spaces expects.
 **Widened the authority table to 24 states and union territories.** Names are
 real and public; all 107 addresses remain on `.invalid`. The generic fallback is
 still there, and the agent is still told to say when it landed on it.
+
+## Day 1 — dropped the Anthropic provider
+
+**Removed the direct Anthropic provider entirely.** It is off the table for this
+project, so it should not sit in the code as a half-supported option that nobody
+will ever exercise. Gone from the `Provider` literal, `DEFAULT_MODEL_IDS`,
+`build_model()`, `Settings.anthropic_api_key`, `.env.example`, the README, and
+the `strands-agents` extras. Three providers remain: Bedrock, Gemini, Ollama.
+
+**Changed the Bedrock defaults too.** They pointed at Claude models, which meant
+"do not use Claude" was not satisfied by deleting the direct provider alone.
+Bedrock now defaults to `us.amazon.nova-pro-v1:0` for the primary tier and
+`us.amazon.nova-lite-v1:0` for the fast tier. Both are multimodal, which the
+evidence stage needs, and both are Amazon's own models rather than a rebadged
+third party. `VAYUDOOT_MODEL_ID` still overrides either tier, so nothing is
+locked in.
+
+The provider abstraction earned itself here: removing one of four providers
+touched exactly one branch in `models.py` and one table in `config.py`. No agent,
+stage, or tool changed. Suite still 32 passing, ruff clean.

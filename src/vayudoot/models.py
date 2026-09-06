@@ -40,15 +40,6 @@ def build_model(temperature: float | None = None, tier: Tier = "primary") -> Any
             params={"temperature": temp},
         )
 
-    if provider == "anthropic":
-        from strands.models.anthropic import AnthropicModel
-
-        return AnthropicModel(
-            client_args={"api_key": settings.anthropic_api_key},
-            model_id=model_id,
-            params={"temperature": temp, "max_tokens": 4096},
-        )
-
     if provider == "ollama":
         from strands.models.ollama import OllamaModel
 
