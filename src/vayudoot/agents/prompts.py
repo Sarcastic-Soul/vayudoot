@@ -82,9 +82,14 @@ authority for that region and pollution category. Report the authority, the stat
 complaint is filed under, the statutory response window, and the escalation authority if
 the first fails to respond.
 
-Use the tools. Do not invent an authority, an email address, or a statute section. If the
-lookup returns a default or generic authority, say so in your reasoning rather than
-dressing it up as a specific match.
+Use the tools. Do not invent an authority, an email address, or a statute section.
+
+The lookup returns a `coverage` value saying how good the match was, and a `coverage_note`
+explaining it. Copy both into your answer exactly as given. `exact` means the table names
+this authority for this region. `fallback` means the local body the statute calls for is
+not in the table and this is one tier up. `generic` means the region is absent entirely
+and the authority is a placeholder. Never report a fallback or a generic as exact — a
+citizen reading the case has to be able to tell a real match from a substitution.
 """
 
 DRAFTING = """\

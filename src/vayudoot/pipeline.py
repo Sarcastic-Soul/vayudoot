@@ -17,6 +17,7 @@ import uuid
 from . import store
 from .agents import analyse_evidence, corroborate, draft_complaint, resolve_jurisdiction
 from .schemas import Case, CaseStatus, Report, Stage
+from .tools.authorities import coverage_is_generic
 from .tools.geocode import reverse_geocode
 
 log = logging.getLogger(__name__)
@@ -91,9 +92,21 @@ async def _run_stages(report: Report, case: Case, checkpoint, persist: bool) -> 
 
     checkpoint(Stage.JURISDICTION)
     case.jurisdiction = await resolve_jurisdiction(report, case.evidence)
+
+    # The agent reports its own coverage, so check the one case that can be
+    # checked: an address that only exists in the generic fallback entry means
+    # the region was not in the table, whatever the model claimed.
+    if coverage_is_generic(case.jurisdiction.email):
+        case.jurisdiction.coverage = "generic"
+
     case.log(
         f"Jurisdiction: {case.jurisdiction.authority_name} under {case.jurisdiction.statute}"
     )
+    if case.jurisdiction.coverage != "exact":
+        case.log(
+            f"Authority match is {case.jurisdiction.coverage}: "
+            f"{case.jurisdiction.coverage_note or 'not an exact entry in the authority table'}"
+        )
 
     geo = reverse_geocode(report.latitude, report.longitude)
     case.address = geo.get("display_name", "") if isinstance(geo, dict) else ""

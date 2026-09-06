@@ -31,6 +31,10 @@ That sentence is the whole target. Anything that does not serve it is out.
 - [x] Mobile browser first — this is used standing in front of the problem
 - [x] Case timeline showing every stage's output, not just the final complaint
 - [x] A map of submitted cases
+- [x] Location is chosen on a map, by search or by pin, never by typing
+      coordinates
+- [x] A coverage view listing every authority the instance can resolve to, and
+      an in-case warning when a match was a fallback or a placeholder
 
 ### Delivery
 - [ ] Deployed on a public URL, free tier, no credit card — `Dockerfile` is
@@ -42,6 +46,8 @@ That sentence is the whole target. Anything that does not serve it is out.
 ### Data
 - [x] Authority table covering enough regions for the demo location to resolve
       to a specific authority rather than the generic fallback
+- [x] The table's coverage is published and every fallback is reported on the
+      case that used it
 
 ---
 

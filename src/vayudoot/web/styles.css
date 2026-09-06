@@ -144,7 +144,51 @@ input:focus-visible, textarea:focus-visible, button:focus-visible {
   outline-offset: 1px;
 }
 
-.coords { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Location. The pin is the input; the coordinates are hidden fields it writes
+   into, so nothing here shows a citizen a number they did not ask for. */
+
+.place-search { position: relative; }
+
+.place-results {
+  position: absolute;
+  z-index: 500;
+  inset-inline: 0;
+  margin-top: 4px;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.place-results li button {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.place-results li button:hover { background: var(--bg); }
+.place-results li.muted { padding: 9px 10px; font-size: 13px; }
+
+.picked {
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.35;
+  margin: 2px 0 0;
+}
+
+.picked.is-loading { color: var(--ink-soft); font-weight: 400; }
+
 
 .help { font-size: 12px; color: var(--ink-soft); }
 
@@ -346,3 +390,99 @@ pre {
 .case-list .where { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
 
 .empty { padding: 24px 0; text-align: center; }
+
+
+/* ── coverage ────────────────────────────────────────────────────────────
+   The authority table's edges are the system's edges, so they are shown
+   rather than left to be discovered from a case that quietly fell back. */
+
+.coverage-warning {
+  padding: 11px 13px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  border-radius: var(--radius);
+}
+
+.coverage-warning[data-coverage="generic"] {
+  background: color-mix(in srgb, var(--bad) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+}
+
+.coverage-intro { margin-bottom: 14px; }
+.coverage-intro h2 { font-size: 17px; margin: 0 0 6px; }
+.coverage-intro p { font-size: 13px; line-height: 1.5; margin: 0 0 8px; color: var(--ink-soft); }
+
+.coverage-intro .warn {
+  padding: 10px 12px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  border-radius: var(--radius);
+}
+
+.coverage-intro code {
+  font-size: 12px;
+  padding: 1px 4px;
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+#coverage-filter { margin-bottom: 12px; }
+
+.coverage-categories {
+  width: 100%;
+  margin-bottom: 18px;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.coverage-categories th, .coverage-categories td {
+  padding: 7px 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+
+.coverage-categories th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); }
+
+.coverage-list { list-style: none; display: grid; gap: 10px; }
+
+.coverage-list > li {
+  padding: 12px 13px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.coverage-region h3 { font-size: 14px; margin: 0 0 2px; }
+.coverage-region p { font-size: 12.5px; margin: 0; }
+
+.coverage-cities { list-style: none; display: grid; gap: 5px; margin-top: 9px; }
+
+.coverage-cities li {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) 1.6fr;
+  gap: 4px 10px;
+  font-size: 12.5px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+}
+
+.coverage-cities li span:first-child { font-weight: 550; }
+
+.addr {
+  grid-column: 1 / -1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.coverage-list .none { font-size: 12.5px; margin: 8px 0 0; }
+
+@media (max-width: 420px) {
+  .coverage-cities li { grid-template-columns: 1fr; }
+}

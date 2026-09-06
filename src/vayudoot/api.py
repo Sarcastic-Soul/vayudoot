@@ -22,6 +22,8 @@ from .config import settings
 from .images import UnsupportedImage, normalise, suffix_for
 from .pipeline import new_case, run
 from .schemas import Case, CaseStatus, Report
+from .tools.authorities import authority_table
+from .tools.geocode import reverse_geocode, search_places
 
 log = logging.getLogger(__name__)
 
@@ -101,6 +103,32 @@ async def submit_report(
     store.save(case)
     _spawn(run(report, case=case))
     return case
+
+
+@app.get("/geocode")
+def geocode(lat: float | None = None, lon: float | None = None, q: str = "") -> dict:
+    """Resolve coordinates to an address, or a place name to coordinates.
+
+    The interface needs both so that a citizen never has to see a coordinate. It
+    is the same Nominatim service the pipeline uses, exposed for the map.
+    """
+    if q.strip():
+        return {"results": search_places(q)}
+    if lat is None or lon is None:
+        raise HTTPException(400, "Provide either q, or both lat and lon")
+    return reverse_geocode(lat, lon)
+
+
+@app.get("/authorities")
+def authorities() -> dict:
+    """The jurisdiction table this instance is running on.
+
+    Published deliberately. Jurisdiction is resolved from a fixed table, so its
+    coverage is the honest limit of the system, and a citizen should be able to
+    see whether their region is in it rather than discovering it from a case that
+    quietly resolved to a placeholder.
+    """
+    return authority_table()
 
 
 @app.get("/cases", response_model=list[Case])

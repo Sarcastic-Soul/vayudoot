@@ -1,4 +1,4 @@
-from vayudoot.tools.authorities import lookup_authority
+from vayudoot.tools.authorities import authority_table, coverage_is_generic, lookup_authority
 
 
 def test_known_state_and_category():
@@ -44,3 +44,42 @@ def test_every_committed_email_is_non_routable():
     found = list(emails(blob))
     assert found
     assert all(e.endswith(".invalid") for e in found), found
+
+
+def test_an_exact_municipal_match_is_reported_as_exact():
+    result = lookup_authority("Delhi", "New Delhi", "open_waste_burning")
+    assert result["coverage"] == "exact"
+    assert result["coverage_note"] == ""
+
+
+def test_a_missing_city_falls_back_and_says_so():
+    """The substitution used to be invisible: a state board read like a match."""
+    result = lookup_authority("Chhattisgarh", "Ambikapur", "open_waste_burning")
+    assert result["coverage"] == "fallback"
+    assert "Ambikapur" in result["coverage_note"]
+    assert result["authority_tier"] == "state"
+
+
+def test_a_state_level_category_is_exact_without_a_city():
+    result = lookup_authority("Chhattisgarh", "Raipur", "industrial_emission")
+    assert result["coverage"] == "exact"
+
+
+def test_an_unknown_region_is_reported_as_generic():
+    result = lookup_authority("Narnia", "Cair Paravel", "open_waste_burning")
+    assert result["coverage"] == "generic"
+    assert "not in the authority table" in result["coverage_note"]
+    assert coverage_is_generic(result["email"])
+
+
+def test_a_named_authority_is_not_mistaken_for_the_generic_one():
+    result = lookup_authority("Delhi", "New Delhi", "open_waste_burning")
+    assert not coverage_is_generic(result["email"])
+
+
+def test_the_published_table_never_carries_a_routable_address():
+    table = authority_table()
+    emails = [r["state_board"].get("email", "") for r in table["regions"]]
+    emails += [m.get("email", "") for r in table["regions"] for m in r["municipal"]]
+    emails.append(table["fallback"]["state_board"]["email"])
+    assert emails and all(e.endswith(".invalid") for e in emails)

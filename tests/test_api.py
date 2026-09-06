@@ -166,3 +166,26 @@ def test_case_round_trips_through_the_store(tmp_path):
     store.save(case)
     assert store.load("VD-STORE001").history == case.history
     assert store.load("VD-MISSING") is None
+
+
+async def test_the_authority_table_is_published(client):
+    """Coverage is the honest limit of the system, so it is visible up front."""
+    body = (await client.get("/authorities")).json()
+    assert body["region_count"] > 0 and body["municipal_count"] > 0
+    assert body["addresses_are_placeholders"] is True
+    assert all(
+        r["state_board"]["email"].endswith(".invalid") for r in body["regions"]
+    ), "the published table must not carry a routable address"
+
+
+async def test_geocode_needs_a_point_or_a_query(client):
+    assert (await client.get("/geocode")).status_code == 400
+
+
+async def test_a_fallback_authority_is_visible_on_the_case(client, monkeypatch):
+    patch_stages(monkeypatch, pipeline)
+    case_id = (await _submit(client))["case_id"]
+    await _drain()
+
+    body = (await client.get(f"/cases/{case_id}")).json()
+    assert body["jurisdiction"]["coverage"] in {"exact", "fallback", "generic"}

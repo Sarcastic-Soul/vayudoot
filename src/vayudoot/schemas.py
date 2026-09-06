@@ -126,6 +126,18 @@ class Corroboration(BaseModel):
 class Jurisdiction(BaseModel):
     """Stage 3 output: who is actually responsible for this location."""
 
+    coverage: Literal["exact", "fallback", "generic"] = Field(
+        default="exact",
+        description=(
+            "Copy the lookup tool's coverage value exactly. 'exact' means the table named "
+            "this authority for this region; 'fallback' means the local body was missing "
+            "and this is one tier up; 'generic' means the region is absent entirely and "
+            "this is a placeholder. Never upgrade a fallback or generic to exact."
+        ),
+    )
+    coverage_note: str = Field(
+        default="", description="Copy the lookup tool's coverage_note verbatim, or leave empty."
+    )
     authority_name: str
     authority_tier: Literal["municipal", "state", "central"]
     office: str = ""

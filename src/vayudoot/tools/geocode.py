@@ -11,6 +11,7 @@ import httpx
 from strands import tool
 
 _URL = "https://nominatim.openstreetmap.org/reverse"
+_SEARCH_URL = "https://nominatim.openstreetmap.org/search"
 _UA = "vayudoot/0.1 (pollution complaint agent; https://github.com/Sarcastic-Soul)"
 
 
@@ -57,3 +58,41 @@ def reverse_geocode(latitude: float, longitude: float) -> dict:
         "country": addr.get("country", ""),
         "country_code": addr.get("country_code", ""),
     }
+
+
+def search_places(query: str, limit: int = 5) -> list[dict]:
+    """Find coordinates for a place name.
+
+    Not a tool: the interface uses this so a citizen can name where the pollution
+    is instead of typing coordinates. Nobody knows their own latitude.
+    """
+    if not query.strip():
+        return []
+
+    try:
+        resp = httpx.get(
+            _SEARCH_URL,
+            params={
+                "q": query,
+                "format": "jsonv2",
+                "addressdetails": 1,
+                "limit": max(1, min(limit, 10)),
+                "countrycodes": "in",
+            },
+            headers={"User-Agent": _UA},
+            timeout=20,
+        )
+        resp.raise_for_status()
+        results = resp.json()
+    except Exception as exc:  # noqa: BLE001
+        return [{"error": f"Nominatim search failed: {exc}"}]
+
+    return [
+        {
+            "display_name": item.get("display_name", ""),
+            "latitude": float(item["lat"]),
+            "longitude": float(item["lon"]),
+        }
+        for item in results
+        if item.get("lat") and item.get("lon")
+    ]

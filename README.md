@@ -56,8 +56,15 @@ the case end to end.
 One page, served by the same FastAPI process that runs the agent, because this is
 used on a phone while standing in front of the problem.
 
-- Take the photograph, tap **Use my location**, drag the pin if the source is up
-  the road, and submit.
+- Take the photograph, then place the pin. The map is the location input: it is
+  there from the moment the page loads, the browser's location moves it if you
+  allow that, searching a place name moves it, and dragging or tapping always
+  works. What you read back is the address, not a coordinate — nobody knows their
+  own latitude.
+- A **Coverage** tab lists every authority this instance can resolve to, and says
+  plainly that all the addresses are `.invalid` placeholders. When a case falls
+  back to a broader authority than the statute names, or to the generic
+  placeholder, the case says so instead of presenting it as a match.
 - A run is minutes of model calls, so the submission returns immediately with a
   case id and the page polls it. Every stage's output appears as it lands —
   what the photograph was classified as and how confidently, what the satellite,
@@ -178,6 +185,8 @@ For a run without the browser, `uv run python scripts/demo.py photo.jpg 28.6139
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `POST` | `/reports` | Submit a photo and coordinates. Returns `202` with a case id and runs the pipeline in the background, or `415` if the file is not a readable image |
+| `GET` | `/authorities` | The jurisdiction table this instance runs on, and its coverage counts |
+| `GET` | `/geocode` | `?lat=&lon=` for an address, `?q=` to search a place. Backs the map |
 | `GET` | `/cases` | List all cases, newest first |
 | `GET` | `/cases/{id}` | One case, with every intermediate result, its `stage`, and its history |
 | `GET` | `/cases/{id}/photo` | The submitted photograph |

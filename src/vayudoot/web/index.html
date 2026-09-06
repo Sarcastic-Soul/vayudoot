@@ -22,6 +22,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab is-active" data-view="report" role="tab">Report</button>
     <button class="tab" data-view="cases" role="tab">Cases</button>
+    <button class="tab" data-view="coverage" role="tab">Coverage</button>
   </nav>
 </header>
 
@@ -43,18 +44,20 @@
 
       <div class="field">
         <div class="field-head">
-          <label for="coords">Location</label>
+          <label for="place">Where is it?</label>
           <button type="button" class="link" id="locate">Use my location</button>
         </div>
-        <div class="coords">
-          <input type="number" id="latitude" step="any" placeholder="Latitude" required
-                 inputmode="decimal" autocomplete="off">
-          <input type="number" id="longitude" step="any" placeholder="Longitude" required
-                 inputmode="decimal" autocomplete="off">
+        <div class="place-search">
+          <input type="text" id="place" placeholder="Search a place, or drag the pin"
+                 autocomplete="off" autocapitalize="off" spellcheck="false">
+          <ul class="place-results" id="place-results" hidden></ul>
         </div>
-        <p class="help" id="geo-status">Jurisdiction is decided by these coordinates, so they
-          need to be where the pollution is — not where you are standing later.</p>
-        <div id="pick-map" class="pick-map" hidden></div>
+        <div id="pick-map" class="pick-map"></div>
+        <p class="picked" id="picked-address">Drag the pin to where the pollution is.</p>
+        <p class="help">Jurisdiction is decided by this pin, so it needs to be where the
+          pollution is — not where you are standing later.</p>
+        <input type="hidden" id="latitude">
+        <input type="hidden" id="longitude">
       </div>
 
       <div class="field">
@@ -88,6 +91,8 @@
 
     <img id="case-photo" class="case-photo" alt="Submitted photograph" hidden>
 
+    <p class="coverage-warning" id="coverage-warning" hidden></p>
+
     <ol class="timeline" id="timeline"></ol>
 
     <div class="complaint" id="complaint" hidden>
@@ -120,6 +125,29 @@
     <div id="cases-map" class="cases-map"></div>
     <ul class="case-list" id="case-list"></ul>
     <p class="muted empty" id="cases-empty" hidden>No cases yet. Submit a report to start one.</p>
+  </section>
+
+  <!-- ───────────────────────────── coverage ───────────────────────────── -->
+  <section id="view-coverage" class="view">
+    <div class="coverage-intro">
+      <h2>Which authorities this instance knows</h2>
+      <p>Jurisdiction is resolved from a fixed table, not from a live registry. A region
+        that is not listed here still produces a case, but it resolves to a generic
+        placeholder rather than a named authority, and the case says so.</p>
+      <p class="warn" id="coverage-placeholder-note" hidden>
+        <strong>Every address below is a placeholder.</strong> They are on the reserved
+        <code>.invalid</code> domain, which cannot receive mail, so a misconfigured run
+        cannot reach a real regulator. The authority names are real and public.
+      </p>
+      <p class="muted" id="coverage-counts"></p>
+    </div>
+
+    <input type="search" id="coverage-filter" placeholder="Filter by state or city"
+           autocomplete="off" spellcheck="false">
+
+    <table class="coverage-categories" id="coverage-categories"></table>
+
+    <ul class="coverage-list" id="coverage-list"></ul>
   </section>
 
 </main>

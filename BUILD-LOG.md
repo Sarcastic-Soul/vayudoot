@@ -392,3 +392,47 @@ extensions including AVIF, HEIC, TIFF, BMP, JPEG 2000, ICO and PSD. Added AVIF,
 JPEG 2000 and a real HEIC to the parametrised tests, and confirmed all of them
 inside the built container rather than only in the development virtualenv, since
 pillow-heif and the AVIF decoder both depend on bundled native libraries.
+
+## Day 1 — coordinates are not a human unit, and coverage is not a secret
+
+Three fixes, all from the same review: the system was asking for things people do
+not know, and hiding things they need to.
+
+**The location field asked for latitude and longitude.** Two number inputs, and a
+map that was `hidden` until you pressed "Use my location" — so the default state
+of the form was two empty boxes nobody can fill. The map is now the input. It is
+present on load, geolocation moves the pin if the citizen allows it, a place
+search moves it if they do not, and dragging or tapping always works. Latitude
+and longitude became hidden fields the map writes into, and what is shown is the
+reverse-geocoded address. Added `GET /geocode` for both directions, since the
+address previously only existed server-side, mid-pipeline.
+
+The place search is debounced at 450 ms because Nominatim asks for at most one
+request a second and this is their free service.
+
+**The authority fallback was invisible.** If a category called for a municipal
+body and the city was not in the table, `lookup_authority` quietly reassigned the
+tier to `state` and returned the state board. Nothing downstream could tell that
+apart from a real match. A generic state board for an unknown region looked
+identical to a named authority for a known one.
+
+The tool now returns `coverage` — `exact`, `fallback`, `generic` — and a note
+explaining it. The `Jurisdiction` schema carries both, the prompt says to copy
+them and never to upgrade a fallback, and the case shows a warning for anything
+that is not exact. But asking a model to report its own accuracy is worth
+something, not everything, so the pipeline also checks the one thing that is
+deterministic: an email that only exists in the fallback entry means the region
+was absent, whatever the agent claimed.
+
+**The table itself is now published.** `GET /authorities` and a Coverage tab
+listing all 24 regions, 57 municipal bodies, the category-to-statute rules, and a
+plain statement that every address is a `.invalid` placeholder. Jurisdiction is
+resolved from a fixed table, so the table's edges are the system's edges, and a
+citizen should be able to see that before submitting rather than infer it from a
+case that quietly resolved to a placeholder. Publishing the addresses is also how
+the safety claim gets checked instead of trusted.
+
+**Still open:** vehicle emission routes to the state pollution control board while
+citing Motor Vehicles Act Section 190(2), which that board has no power to
+enforce. That is a legal call about which authority is right, not a bug in the
+lookup, and it is waiting on a decision.

@@ -86,8 +86,22 @@ authority table keyed by administrative region and pollution category.
 
 The table is JSON, not code. Pointing the system at another state or another
 country is a data change. The prompt forbids inventing an authority, an address,
-or a statute section, and requires the agent to say when it matched only a
-generic default.
+or a statute section.
+
+**Coverage is reported, not assumed.** A fixed table has edges, and the failure
+at those edges used to be silent: if a category called for a municipal body and
+the city was not listed, the lookup quietly returned the state board and relabelled
+the tier, so a substitution was indistinguishable from a match. The tool now
+returns `coverage` — `exact`, `fallback`, or `generic` — with a note explaining
+it, the agent copies both into the `Jurisdiction`, and the case shows a warning
+for anything other than `exact`.
+
+Asking the agent to report its own accuracy is only worth so much, so the
+pipeline checks the one thing that can be checked deterministically: an address
+that exists only in the generic fallback entry means the region was absent,
+whatever the model said. `GET /authorities` publishes the whole table, and the
+interface has a Coverage tab, so the limit is visible before a citizen submits
+rather than after.
 
 ### 4. Drafting — `agents/drafting.py`
 
