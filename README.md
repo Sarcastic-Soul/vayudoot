@@ -115,7 +115,6 @@ accused party or claiming certainty the evidence does not support.
 | [`docs/SCOPE.md`](docs/SCOPE.md) | What v0.1 is, and what it deliberately is not |
 | [`docs/deployment.md`](docs/deployment.md) | Free-tier deployment and where the cost is |
 | [`CLAUDE.md`](CLAUDE.md) | Working agreement and the constraints that must hold |
-| [`BUILD-LOG.md`](BUILD-LOG.md) | Decisions and reasoning, oldest first |
 
 ## Architecture
 

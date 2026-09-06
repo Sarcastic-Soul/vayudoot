@@ -106,8 +106,18 @@ When unsure about the SDK, read the installed package
 The user authors commits alone. Do not add a `Co-Authored-By` trailer or any
 generated-with attribution.
 
-## Log your decisions
+## Record decisions where they are enforced
 
-`BUILD-LOG.md` is an append-only record of what was decided and what was learned,
-newest last. Add to it when you make a real call, especially when you get
-something wrong and correct it. Keep entries about the engineering.
+There is no separate decision log. A reason that lives in its own file drifts
+away from the thing it justifies and is read by nobody; put it where someone will
+hit it while changing the code.
+
+- A constraint that must hold goes in this file, under Hard constraints.
+- A choice about how one module behaves goes in that module's docstring or next
+  to the line it explains.
+- A behaviour that must not regress goes in a test, with the reason in the test's
+  docstring.
+- Work that is planned, deferred, or deliberately not being done goes in
+  `docs/SCOPE.md`.
+
+If a decision fits none of those, it probably did not need writing down.

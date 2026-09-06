@@ -162,7 +162,8 @@ from a photograph and seriously harmful when wrong.
 ## Rules for changing this file
 
 Moving something from out-of-scope to in-scope is a decision, not a drive-by
-edit. Write down why in `BUILD-LOG.md` when you do it.
+edit. Write the reason next to the entry when you move it, in the entry itself —
+an item with no stated reason is an item nobody can argue with later.
 
 Adding something that appears on neither list means it was never considered.
 Consider it first.
