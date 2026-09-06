@@ -187,3 +187,22 @@ The evidence stage was exercised with a synthetic image, and correctly refused
 it: `unclear`, confidence 0.10, reasoning that it is an illustration rather than
 a photograph. The pipeline then halted at the 0.55 floor, which is the whole
 point of the floor. A real photograph is still the one thing untested.
+
+## Day 1 — the Gemini free tier is a request budget, not a rate limit
+
+The daily caps are 20 requests on the flash tier and 500 on flash-lite, with the
+pro models paid. That reframes the two-tier split: it is not about cost per token
+any more, it is about how many reports a day the thing can run at all.
+
+The split as built put three agents on primary — evidence, drafting, and the
+corroboration graph's synthesis node — which is six reports a day. Moved
+synthesis to the fast tier: it merges three summaries the source agents already
+wrote, reads no image, and calls no tool, so it is the one primary call that was
+not buying judgement. Two primary calls a report, ten reports a day.
+
+Evidence and drafting stay on primary and should. One reads a photograph and the
+other writes the document that a regulator reads; those are the two places where
+model quality is visible in the output.
+
+Recorded the budget in `CLAUDE.md` next to the tier rule, so the next person to
+reach for `primary` knows it costs three reports a day.

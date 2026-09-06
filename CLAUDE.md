@@ -53,8 +53,15 @@ Models come in two tiers, selected by `build_model(tier=...)`:
 - `fast` — mechanical: call one tool, summarise the output
 
 The corroboration graph runs three agents in parallel and each only calls a tool
-and summarises. Those, and the jurisdiction agent, are on `fast` deliberately.
-Do not promote them to `primary` without a reason you can state.
+and summarises. Those, the graph's synthesis node, and the jurisdiction agent are
+on `fast` deliberately. Do not promote them to `primary` without a reason you can
+state.
+
+Only two agents are on `primary`: evidence, which reads the photograph, and
+drafting, which writes the complaint. On the Gemini free tier that is the
+difference between ten reports a day and six — the primary model allows 20
+requests a day, the fast model 500. Adding a third primary agent costs three
+reports a day, so it needs to be worth that.
 
 ## Conventions
 

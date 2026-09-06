@@ -34,8 +34,21 @@ Three ways to pay for it, in order of preference:
 1. **AWS credits on Bedrock.** `VAYUDOOT_MODEL_PROVIDER=bedrock`. Credits are
    finite — watch them, and do not run the pipeline in a loop while debugging.
 2. **Gemini free tier** via Google AI Studio. `VAYUDOOT_MODEL_PROVIDER=gemini`.
-   Rate limited but genuinely free and no card. This is the fallback when credits
-   run out, and it costs one environment variable.
+   Genuinely free and no card, but the daily caps are the real budget: 20 requests
+   a day on the flash tier, 500 on flash-lite, and the pro models are paid.
+
+   A report costs two primary requests (evidence and drafting) and roughly eight
+   fast ones, so **the free tier is about ten reports a day** and the primary
+   quota is what runs out. That is why the corroboration synthesis node sits on
+   the fast tier despite doing judgement work: it would otherwise cut the daily
+   budget by a third. Watch the primary number, not the total.
+
+   Both tiers can be overridden without touching code:
+
+   ```bash
+   VAYUDOOT_MODEL_ID=gemini-3.5-flash        # primary
+   VAYUDOOT_MODEL_ID_FAST=gemini-3.5-flash-lite
+   ```
 3. **Ollama locally** for development. `VAYUDOOT_MODEL_PROVIDER=ollama`. Free,
    private, and good enough for exercising control flow. Not good enough for the
    photograph classification.

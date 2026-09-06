@@ -42,9 +42,13 @@ def build_corroboration_graph():
         tools=[get_wind_conditions],
         callback_handler=None,
     )
+    # Synthesis is on the fast tier too. It merges three summaries that the source
+    # agents already wrote; it reads no image and calls no tool. On the Gemini free
+    # tier the primary model allows 20 requests a day against the fast model's 500,
+    # so every avoidable primary call costs a whole report.
     synthesis = Agent(
         name="synthesis",
-        model=build_model(temperature=0.0),
+        model=build_model(temperature=0.0, tier="fast"),
         system_prompt=SYNTHESIS,
         callback_handler=None,
         structured_output_model=Corroboration,
