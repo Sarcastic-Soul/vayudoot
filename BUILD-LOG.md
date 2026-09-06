@@ -626,3 +626,37 @@ mount needed nothing — verified with `curl -I` rather than assumed. The interf
 test now asserts the paths that exist, and a second one asserts the modules come
 back with a JavaScript content type, because that failure mode is a blank page
 with nothing in the response to explain it.
+
+## Day 1 — reopening the scope, deliberately
+
+v0.1 froze scope hard, and that was right: the failure mode for a project like
+this is a broad demo where nothing works end to end. The schedule is no longer
+the binding constraint, so `docs/SCOPE.md` gained a v0.2 section rather than
+having items quietly added to the v0.1 list. Moving something off the non-goals
+list is supposed to be a recorded decision, and there are now eight of them.
+
+Two are not new features at all. The case lifecycle was half-built —
+`ACKNOWLEDGED` and `RESOLVED` existed in the enum with nothing able to write
+them, so a filed case could never be recorded as answered and `escalation_due()`
+would report an answered case as overdue forever. And the API has no rate limit
+while every report spends about ten metered model calls from a free tier, which
+on a public URL means one crawler ends the day's demo. Both are prerequisites
+for the deployment that was already in scope, not additions to it.
+
+Of the six that are genuinely new, the evaluation harness matters most and is
+the least visible. Corroboration has now been wrong twice, both times caught by
+a live run rather than a test, and prompts are being edited regularly with no
+way to tell whether an edit helped. Everything else is easier to justify and
+easier to build; this is the one that makes the rest safe.
+
+The three non-goals worth restating are restated in the file, because they are
+the ones most likely to be argued for now that there is time: live filing
+transport and timed escalation are safety properties rather than missing
+features, and identifying the responsible party stays out permanently.
+
+Two agents are running in parallel on the first wave — the lifecycle and
+hardening work in Python, and a visual design pass confined to `src/vayudoot/web`.
+The file boundary between them is the whole reason they can run at once.
+`BUILD-LOG.md`, `SCOPE.md` and `README.md` are excluded from both: an append-only
+decision log with three concurrent writers is a merge conflict waiting to
+happen, and the decisions are mine to record rather than theirs.

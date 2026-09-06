@@ -91,6 +91,74 @@ wrong.
 
 ---
 
+# Scope — v0.2
+
+v0.1 froze scope hard because the build window was short. That window is no
+longer the binding constraint, so the following moved from "reasonable idea" to
+"being built". Each entry says what it is and why it earns its place; the
+non-goals above that are not repeated here stay non-goals.
+
+## Finishing what v0.1 claimed
+
+- [ ] **Case lifecycle.** `ACKNOWLEDGED` and `RESOLVED` existed in the status
+      enum with nothing able to set them, so "track and escalate" was half true:
+      a case could be filed and escalated but never recorded as answered or
+      settled, and `escalation_due()` kept reporting an answered case as overdue.
+      Adds acknowledge, resolve and withdraw, and makes the escalation clock
+      respect them. This is not a new feature; it is an unfinished one.
+
+- [ ] **Rate limiting and upload caps.** `POST /reports` is open and each report
+      spends roughly ten metered model calls from a free tier. On a public URL
+      one crawler empties the day's budget. The upload path also reads an
+      unbounded body into memory before decoding it. Both are prerequisites for
+      the public deployment that was already in scope.
+
+## New capability
+
+- [ ] **Prompt evaluation harness.** The corroboration stage has been wrong twice
+      — once discarding its own structured output, once inventing corroboration
+      from a wind bearing — and both times only a live run caught it. Prompts are
+      now being edited regularly with no way to tell whether a change helped.
+      A fixture set with expected classifications, scored for accuracy and
+      confidence calibration, is what makes every other change safe.
+
+- [ ] **Clustering repeat reports.** Fifteen reports at one location over a month
+      is a categorically stronger complaint than one, and a pattern is the
+      argument a regulator actually acts on. Uses only data already stored and
+      needs no new external API.
+
+- [ ] **RTI follow-up drafting.** When the statutory window lapses, an Indian
+      citizen's real lever is not a second email — it is a Right to Information
+      application asking what action was taken. This is the most India-specific
+      thing the project can do, and it turns escalation from repetition into
+      something with legal weight.
+
+- [ ] **Evidence pack.** One document carrying the photograph, the corroboration
+      data, the map, the complaint and the timeline — something that can be
+      attached, printed, or handed to a journalist or an NGO.
+
+- [ ] **Public case register.** Cases are already deep-linkable; making one
+      shareable read-only turns individual complaints into a visible record,
+      which is where most of the accountability value lives.
+
+- [ ] **Multiple photographs per report.** One angle is often not enough to
+      classify confidently, and the confidence floor then halts a real event.
+
+## Still out of scope, and why
+
+The non-goals above stand, and three of them are worth restating because they
+are the ones most likely to be argued for now that the schedule has loosened.
+
+**A real delivery transport** and **automatic escalation on a timer** are safety
+properties rather than missing features. An unsupervised process acting on a
+legal deadline, or a misconfigured run reaching an actual regulator, is a
+different class of risk from a bug.
+
+**Identifying the responsible party** stays out permanently. It is unreliable
+from a photograph and seriously harmful when wrong.
+
+---
+
 ## Rules for changing this file
 
 Moving something from out-of-scope to in-scope is a decision, not a drive-by
