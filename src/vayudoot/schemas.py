@@ -82,7 +82,15 @@ class EvidencePacket(BaseModel):
     """Stage 1 output: what the photo shows."""
 
     pollution_type: PollutionType
-    confidence: float = Field(ge=0, le=1, description="0 to 1 confidence in the classification")
+    confidence: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "Calibrated 0 to 1 confidence in the classification. A photograph seen out of "
+            "context is never certain; 0.9 and above means unambiguous, 1.0 is not a "
+            "valid answer."
+        ),
+    )
     severity: Literal["low", "moderate", "high", "severe"]
     visible_indicators: list[str] = Field(
         default_factory=list, description="What in the image supports the classification"
@@ -106,7 +114,11 @@ class Corroboration(BaseModel):
     upwind_source_latitude: float | None = None
     upwind_source_longitude: float | None = None
     corroborated: bool = Field(
-        description="True when independent data supports the citizen's report"
+        description=(
+            "True only when a sensor returned a positive reading supporting the report: "
+            "a satellite thermal detection, or a station reporting elevated pollutants. "
+            "Wind data alone, or null and normal readings, are not corroboration."
+        )
     )
     corroboration_notes: str = ""
 

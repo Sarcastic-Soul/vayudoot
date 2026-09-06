@@ -296,3 +296,50 @@ in Kannada, which is the local-language resolution working as well.
 The trap this creates is quiet, so it has tests: reading fast model ids out of
 the primary provider's table would still produce a working agent, just the wrong
 one. `tests/test_models.py` pins that.
+
+## Day 1 — the first real photograph, and the bug it exposed
+
+Ran a real photograph of a plant with two active stacks through the whole
+pipeline from the browser. Everything mechanical worked: classified as
+`industrial_emission` with accurate visible indicators, reverse geocoded to
+Atal Nagar-Nava Raipur, resolved to the Chhattisgarh Environment Conservation
+Board under Section 31A of the Air Act with a 30-day window escalating to the
+CPCB, drafted in English and Hindi, filed to the sandbox outbox.
+
+Two things were wrong, and one of them mattered.
+
+**The corroboration stage reported `corroborated: true` on no evidence.** The
+satellite found nothing. The nearest station was 24.89 km away reporting normal
+levels — which is closer to evidence against than for. The only thing left was a
+wind bearing, and the synthesis agent used it to conclude there was "active
+transport from a west-southwest upwind source direction where industrial
+infrastructure is present". There is no tool in this project that can see whether
+industrial infrastructure is present anywhere. It made that up.
+
+The prompt invited it: "corroborated means at least one independent source is
+consistent with the reported event". Wind is consistent with every report ever
+filed, because wind always blows in some direction. Rewrote the definition to
+require a positive sensor reading — a satellite thermal detection, or a station
+reporting elevated levels of a pollutant the event would produce — and said
+explicitly that meteorology alone is never corroboration, that a normal reading
+is not corroboration at whatever distance, and that the agent may state where the
+upwind point is but not what is there. Tightened the schema description to match,
+since that is what the model actually sees for the field.
+
+Re-ran the same coordinates: `corroborated: false`, with notes that explain what
+each source returned and why a hyper-local industrial plume escapes all three.
+That is the honest answer, and it was available all along.
+
+This is the second time the corroboration stage has been the weak point, after
+the `NodeResult` unwrapping bug. It is the stage with the most room to be
+plausibly wrong, because a fabricated corroboration reads exactly like a real
+one. Worth remembering when reviewing its output.
+
+**Confidence came back as 1.00.** No classifier looking at a photograph out of
+context should be certain, and a 1.0 makes the 0.55 floor meaningless — nothing
+that always answers 1.0 can discriminate. Told the evidence prompt that
+confidence is a calibrated estimate rather than a rating of the photograph, that
+0.9 and up means unambiguous, and that 1.0 is not a valid answer, with the reason:
+a photograph cannot tell you what is burning, whether an emission is permitted, or
+whether a white plume is smoke rather than steam. The same photograph now returns
+0.95, which is a defensible number for two stacks visibly emitting.

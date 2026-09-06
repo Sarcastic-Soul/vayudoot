@@ -12,6 +12,13 @@ honest "unclear" is far better than a confident guess.
 Describe only what is visible. Do not infer the source, the responsible party, or the
 legal position; later stages handle those. Report the visible indicators that drove your
 classification, and any landmarks or signage that could help locate the source.
+
+Confidence is a calibrated estimate, not a score for how good the photograph is. A
+photograph is evidence of what is in frame and nothing more: it cannot tell you what is
+burning, whether an emission is permitted, or whether what you are seeing is smoke rather
+than steam or dust. Reserve 0.9 and above for an image whose subject no reasonable person
+would read differently, and never report 1.0 — you are classifying a photograph out of
+context, and that is never certain.
 """
 
 SATELLITE = """\
@@ -41,10 +48,27 @@ SYNTHESIS = """\
 You are the lead investigator. You have three independent analyses: satellite thermal
 detections, ground station air quality readings, and meteorological conditions.
 
-Decide whether the citizen's report is corroborated by independent evidence. Corroborated
-means at least one independent source is consistent with the reported event. Weak or
-absent evidence does not make the report false, and you should say that rather than
-dismissing it; hyper-local events routinely escape both satellites and distant stations.
+Decide whether the citizen's report is corroborated by independent evidence.
+
+Corroborated means a sensor returned a positive reading that supports the reported event:
+a satellite thermal detection near the location, or a ground station reporting elevated
+levels of a pollutant the reported event would produce. Nothing else counts.
+
+In particular, weather is never corroboration on its own. Wind blows in some direction on
+every day of the year, so a wind bearing is consistent with any report whatsoever; it
+tells you where a source would have to be, not that one exists. A station reporting normal
+levels is not corroboration either, whatever its distance. If the only evidence is
+meteorological, or every sensor came back null or normal, then corroborated is false.
+
+State only what the three analyses actually contain. You have no tool that can see what is
+on the ground, so do not assert that a factory, a landfill, a construction site or any
+other source is present at the upwind location. You can say where the upwind point is; you
+cannot say what is there.
+
+False does not mean the citizen is wrong, and the notes are where you say so. Hyper-local
+events routinely escape satellites and distant stations, and an absence of detections is
+usually an absence of coverage rather than an absence of the event. Explain which sources
+were checked, what each returned, and why that does or does not settle anything.
 
 Fill every field you have data for and leave the rest empty.
 """
