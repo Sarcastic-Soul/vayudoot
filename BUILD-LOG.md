@@ -263,3 +263,36 @@ Two providers left, both free tiers with no card:
 - `gemini` — verified end to end against live APIs, ~10 reports a day
 - `ollama` — Ollama Cloud, `gemma4:31b` for vision, quota published as opaque
   percentages, not yet exercised against a real key
+
+## Day 1 — one report, two free tiers
+
+Verified Ollama Cloud against a real key, stage by stage: connectivity, a tool
+call with structured output on `gpt-oss:20b`, vision on `gemma4:31b`, the
+parallel corroboration graph, bilingual drafting, and a full pipeline run from
+Mumbai coordinates through to a sandbox envelope. `gemma4:31b` refused the
+synthetic test image for the same reason Gemini did — that it is an illustration
+rather than a photograph — which is the judgement the confidence floor depends
+on, so both providers are usable for the evidence stage.
+
+Then split the tiers across both providers rather than loading one. Ollama's free
+quota is published as opaque session and weekly percentages, so putting all ten
+calls a report through it spends a budget nobody can measure. Gemini's is
+published precisely and the shape is lopsided: 20 requests a day on flash, 500 on
+flash-lite. The console also showed flash-lite hitting 15/15 RPM during testing —
+the three corroboration agents fire in parallel, so the per-minute ceiling is a
+real constraint, not just the daily one.
+
+`VAYUDOOT_MODEL_PROVIDER_FAST` now overrides the provider for the fast tier
+alone, resolved by `settings.provider_for(tier)`. `build_model()` is still the
+only place a provider is constructed; the tier abstraction grew a second
+dimension rather than being worked around.
+
+Shipped configuration is primary on Ollama Cloud, fast on Gemini flash-lite. Two
+calls a report against the opaque budget, eight against the 500-a-day one, and
+Gemini's scarce 20-a-day flash tier goes entirely unused. Verified live from
+Bengaluru coordinates: BBMP resolved as the authority and the complaint drafted
+in Kannada, which is the local-language resolution working as well.
+
+The trap this creates is quiet, so it has tests: reading fast model ids out of
+the primary provider's table would still produce a working agent, just the wrong
+one. `tests/test_models.py` pins that.

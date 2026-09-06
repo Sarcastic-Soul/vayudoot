@@ -58,10 +58,17 @@ on `fast` deliberately. Do not promote them to `primary` without a reason you ca
 state.
 
 Only two agents are on `primary`: evidence, which reads the photograph, and
-drafting, which writes the complaint. On the Gemini free tier that is the
-difference between ten reports a day and six — the primary model allows 20
-requests a day, the fast model 500. Adding a third primary agent costs three
-reports a day, so it needs to be worth that.
+drafting, which writes the complaint. The other eight calls a report makes are
+all `fast`. Adding a third primary agent raises the expensive count by half, so
+it needs a reason.
+
+**The two tiers can sit on different providers.** `VAYUDOOT_MODEL_PROVIDER_FAST`
+overrides the provider for the fast tier only, and `settings.provider_for(tier)`
+is the single thing that decides. That is deliberate, not incidental: it spreads
+one report across two free tiers, putting the eight mechanical calls where the
+request allowance is and the two judgement calls where the better model is. Keep
+`build_model()` as the only place a provider is constructed, and keep the
+decision in `provider_for()`.
 
 ## Conventions
 

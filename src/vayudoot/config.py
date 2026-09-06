@@ -48,8 +48,13 @@ class Settings(BaseSettings):
         protected_namespaces=(),
     )
 
-    # Model provider
+    # Model provider. The fast tier can run on a different provider from the
+    # primary one, which is how the running cost is spread across two free tiers:
+    # the eight mechanical calls a report makes go to whichever provider has the
+    # generous request allowance, and the two that need judgement go to whichever
+    # has the better model. Leave the fast one unset to use a single provider.
     vayudoot_model_provider: Provider = "gemini"
+    vayudoot_model_provider_fast: Provider | None = None
     vayudoot_model_id: str = ""
     vayudoot_model_id_fast: str = ""
     vayudoot_model_temperature: float = 0.2
@@ -70,9 +75,14 @@ class Settings(BaseSettings):
     vayudoot_case_dir: Path = Path("./data/cases")
     vayudoot_upload_dir: Path = Path("./data/uploads")
 
+    def provider_for(self, tier: Tier = "primary") -> Provider:
+        if tier == "fast" and self.vayudoot_model_provider_fast:
+            return self.vayudoot_model_provider_fast
+        return self.vayudoot_model_provider
+
     def model_id_for(self, tier: Tier = "primary") -> str:
         override = self.vayudoot_model_id if tier == "primary" else self.vayudoot_model_id_fast
-        return override or DEFAULT_MODEL_IDS[self.vayudoot_model_provider][tier]
+        return override or DEFAULT_MODEL_IDS[self.provider_for(tier)][tier]
 
     @property
     def model_id(self) -> str:

@@ -33,6 +33,21 @@ Two providers, both free tiers with no card. Amazon Bedrock was removed: it
 bills, and constraint 3 in `CLAUDE.md` says a dependency has to be free or
 already paid for.
 
+**Neither free tier is used alone.** A report makes two primary calls and about
+eight fast ones, and the two tiers can run on different providers, so the shipped
+configuration splits them:
+
+```bash
+VAYUDOOT_MODEL_PROVIDER=ollama        # primary: evidence, drafting
+VAYUDOOT_MODEL_PROVIDER_FAST=gemini   # fast: corroboration, jurisdiction
+```
+
+Ollama Cloud takes the two calls that need judgement, including the only one that
+reads an image. Gemini's flash-lite tier takes the eight mechanical ones, where
+500 requests a day is roughly sixty reports and nothing is spent from Ollama's
+opaque session budget. Gemini's flash tier, the 20-a-day one, is then not used at
+all — which is the point of the split.
+
 1. **Gemini free tier** via Google AI Studio. `VAYUDOOT_MODEL_PROVIDER=gemini`.
    The daily caps are the real budget: 20 requests a day on the flash tier, 500
    on flash-lite, and the pro models are paid.

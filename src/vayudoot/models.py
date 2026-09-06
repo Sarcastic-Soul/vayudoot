@@ -17,8 +17,10 @@ def build_model(temperature: float | None = None, tier: Tier = "primary") -> Any
 
     `tier` picks between the primary model, used where judgement matters, and the
     fast model, used by agents that only call a tool and summarise the result.
+    The two tiers may sit on different providers; `settings.provider_for()` is
+    the only thing that decides which.
     """
-    provider: Provider = settings.vayudoot_model_provider
+    provider: Provider = settings.provider_for(tier)
     temp = settings.vayudoot_model_temperature if temperature is None else temperature
     model_id = settings.model_id_for(tier)
 
