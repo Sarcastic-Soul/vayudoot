@@ -29,8 +29,8 @@ DEFAULT_MODEL_IDS: dict[str, dict[str, str]] = {
         "fast": "us.amazon.nova-lite-v1:0",
     },
     "gemini": {
-        "primary": "gemini-2.5-flash",
-        "fast": "gemini-2.5-flash-lite",
+        "primary": "gemini-3.5-flash",
+        "fast": "gemini-3.5-flash-lite",
     },
     "ollama": {
         "primary": "llama3.2",

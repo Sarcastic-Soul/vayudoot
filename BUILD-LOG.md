@@ -148,3 +148,42 @@ locked in.
 The provider abstraction earned itself here: removing one of four providers
 touched exactly one branch in `models.py` and one table in `config.py`. No agent,
 stage, or tool changed. Suite still 32 passing, ruff clean.
+
+## Day 1 — first live run, and what it caught
+
+**Gemini 2.5 is gone for new API keys.** `gemini-2.5-flash-lite` returned a 404
+saying the model "is no longer available to new users". Listed what the key can
+actually reach and moved the defaults to `gemini-3.5-flash` (primary) and
+`gemini-3.5-flash-lite` (fast). Both tiers answered on the first try afterwards.
+
+**The corroboration graph was silently discarding its own output.** `corroborate()`
+read `structured_output` off the `NodeResult`, but a graph node wraps an
+`AgentResult` rather than forwarding its attributes, so the attribute was always
+absent and every real run fell through to the empty "graph returned no structured
+synthesis" fallback. Satellite, ground station and meteorology all did their work;
+the synthesis agent produced a complete `Corroboration`; the pipeline threw it
+away and drafted complaints with no corroborating evidence in them.
+
+Nothing in the suite could see this, because the pipeline tests replace the whole
+stage with a fake. That is the right trade for testing control flow offline, but
+it leaves the seam between the SDK and this code untested. `_synthesis_output()`
+now reaches through to `node.result.structured_output`, falls back to the node's
+agent results, and `tests/test_corroboration_graph.py` pins both shapes with
+stubs. Suite is 36.
+
+The lesson is the one already written at the top of `CLAUDE.md`: verify against
+the installed SDK rather than assuming an attribute is where it reads like it
+should be. The fallback made it worse by being plausible — a wrong answer that
+looks like a legitimate "no evidence found" result is harder to notice than a
+crash.
+
+**Everything else answered on the first live run.** All four evidence tools
+returned real data for Delhi: FIRMS, OpenAQ (nearest CPCB station 16.87 km),
+Open-Meteo wind with the upwind back-trace, and Nominatim. Jurisdiction resolved
+to the New Delhi Municipal Council under Rule 15 with a 15-day window, and the
+drafting stage produced a properly addressed complaint in English and Hindi.
+
+The evidence stage was exercised with a synthetic image, and correctly refused
+it: `unclear`, confidence 0.10, reasoning that it is an illustration rather than
+a photograph. The pipeline then halted at the 0.55 floor, which is the whole
+point of the floor. A real photograph is still the one thing untested.

@@ -79,8 +79,7 @@ async def corroborate(
     )
 
     result = await graph.invoke_async(task)
-    node = result.results.get("synthesis")
-    structured = getattr(node, "structured_output", None) if node else None
+    structured = _synthesis_output(result)
 
     if structured is None:
         return Corroboration(
@@ -88,3 +87,26 @@ async def corroborate(
             corroboration_notes="Corroboration graph returned no structured synthesis.",
         )
     return structured
+
+
+def _synthesis_output(result) -> Corroboration | None:
+    """Dig the synthesis node's structured output out of the graph result.
+
+    A graph hands back a `NodeResult`, which wraps the `AgentResult` rather than
+    forwarding its attributes. Reading `structured_output` off the node itself
+    silently yields None on every run, so this reaches through to the agent
+    result, and falls back to the node's agent results for a multi-turn node.
+    """
+    node = result.results.get("synthesis")
+    if node is None:
+        return None
+
+    structured = getattr(node.result, "structured_output", None)
+    if structured is not None:
+        return structured
+
+    for agent_result in reversed(node.get_agent_results()):
+        structured = getattr(agent_result, "structured_output", None)
+        if structured is not None:
+            return structured
+    return None
