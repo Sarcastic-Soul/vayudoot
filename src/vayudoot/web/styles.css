@@ -1,32 +1,73 @@
 /* Vayudoot interface.
-   Mobile first: this is used standing in front of the problem, on a phone, in
-   daylight. Wide screens get the same layout, centred and capped. */
+
+   Mobile first, because this is used standing in front of the problem, on a
+   phone, in daylight. The shell is one grid: navigation and content. Where the
+   navigation sits is the only thing that changes with width — a bottom bar under
+   the thumb on a phone, an icon rail on a tablet, a labelled sidebar on a
+   desktop — so there is one layout to reason about rather than three.
+
+   Themes are three-state: the page follows the system unless the reader says
+   otherwise, and that choice is remembered. Every colour is a token, defined
+   once for light and re-declared for dark, so nothing is hardcoded past this
+   block. */
 
 :root {
-  --bg: #f7f7f5;
+  --bg: #f5f5f2;
   --surface: #ffffff;
-  --line: #e2e1dd;
-  --ink: #1c1c1a;
-  --ink-soft: #6b6a65;
-  --accent: #1d6f4c;
+  --surface-2: #fafaf8;
+  --line: #e0dfda;
+  --line-strong: #cbcac3;
+  --ink: #1a1a18;
+  --ink-soft: #63625d;
+  --accent: #1a6647;
+  --accent-soft: #e8f2ec;
   --accent-ink: #ffffff;
-  --warn: #a4600a;
-  --bad: #a02c23;
+  --warn: #8f5406;
+  --bad: #93261e;
   --radius: 12px;
+  --radius-sm: 8px;
+  --sidebar: 248px;
+  --page: 1080px;
+  --shadow: 0 1px 2px rgb(20 20 18 / 5%), 0 8px 24px rgb(20 20 18 / 4%);
+  color-scheme: light;
 }
 
+/* System preference, unless the reader has explicitly chosen light. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #16161a;
-    --surface: #1f1f24;
-    --line: #33333b;
-    --ink: #ececef;
-    --ink-soft: #a0a0aa;
-    --accent: #3fa06f;
-    --accent-ink: #0f1a14;
-    --warn: #d9a441;
-    --bad: #e0776c;
+  :root:not([data-theme="light"]) {
+    --bg: #131316;
+    --surface: #1c1c20;
+    --surface-2: #232329;
+    --line: #32323a;
+    --line-strong: #45454f;
+    --ink: #eeeef1;
+    --ink-soft: #a6a6b0;
+    --accent: #4bb083;
+    --accent-soft: #172a22;
+    --accent-ink: #0b1611;
+    --warn: #e0ac52;
+    --bad: #ea8478;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 22%);
+    color-scheme: dark;
   }
+}
+
+/* An explicit choice wins in both directions. */
+:root[data-theme="dark"] {
+  --bg: #131316;
+  --surface: #1c1c20;
+  --surface-2: #232329;
+  --line: #32323a;
+  --line-strong: #45454f;
+  --ink: #eeeef1;
+  --ink-soft: #a6a6b0;
+  --accent: #4bb083;
+  --accent-soft: #172a22;
+  --accent-ink: #0b1611;
+  --warn: #e0ac52;
+  --bad: #ea8478;
+  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 22%);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -35,42 +76,71 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-text-size-adjust: 100%;
 }
 
-h1, h2, h3 { margin: 0; line-height: 1.25; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.25; }
 p { margin: 0; }
-
-main {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 16px 16px 48px;
-}
 
 .muted { color: var(--ink-soft); }
 .error { color: var(--bad); }
 
-/* ── top bar ───────────────────────────────────────────────────────────── */
+/* Keyboard users get a visible ring everywhere, including on the map controls
+   and the nav, which are all real buttons for this reason. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
-.topbar {
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 900;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  transition: top .15s ease;
+}
+
+.skip:focus { top: 8px; }
+
+/* ── shell ─────────────────────────────────────────────────────────────── */
+
+.app { min-height: 100dvh; }
+
+main {
+  padding: 16px 16px calc(84px + env(safe-area-inset-bottom));
+  max-width: var(--page);
+  margin: 0 auto;
+}
+
+main:focus { outline: none; }
+
+/* Phone: the brand is a slim sticky header, the nav is a bar under the thumb. */
+
+.sidebar {
   position: sticky;
   top: 0;
   z-index: 500;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-  padding: 10px 16px env(safe-area-inset-bottom);
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  max-width: 720px;
+  padding: 10px 16px;
+  max-width: var(--page);
   margin: 0 auto;
 }
 
-.brand h1 { font-size: 18px; letter-spacing: -0.01em; }
+.brand h1 { font-size: 17px; letter-spacing: -0.01em; }
 .brand p { font-size: 12px; color: var(--ink-soft); }
 
 .mark {
@@ -79,32 +149,109 @@ main {
   flex: none;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, var(--accent), transparent 70%),
-              conic-gradient(from 200deg, var(--line), var(--accent));
+              conic-gradient(from 200deg, var(--line-strong), var(--accent));
 }
 
-.tabs {
+.nav {
+  position: fixed;
+  z-index: 600;
+  inset: auto 0 0;
   display: flex;
-  gap: 4px;
-  max-width: 720px;
-  margin: 8px auto 0;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
 }
 
-.tab {
+.nav-item {
   flex: 1;
-  padding: 8px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  /* 44px is the smallest target a thumb hits reliably. */
+  min-height: 52px;
+  padding: 6px 4px;
   font: inherit;
-  font-size: 14px;
+  font-size: 11.5px;
   color: var(--ink-soft);
   background: none;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
-.tab.is-active {
-  color: var(--ink);
+.nav-item svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-item.is-active { color: var(--accent); }
+.nav-hint { display: none; }
+
+.sidebar-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 16px 10px;
+  max-width: var(--page);
+  margin: 0 auto;
+}
+
+.theme {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
   background: var(--bg);
-  border-color: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.theme button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.theme button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.sandbox-badge .short { display: none; }
+
+.sandbox-badge {
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 3px 9px;
+  color: var(--warn);
+  border: 1px solid currentColor;
+  border-radius: 999px;
 }
 
 /* ── views ─────────────────────────────────────────────────────────────── */
@@ -115,6 +262,7 @@ main {
 /* ── report form ───────────────────────────────────────────────────────── */
 
 form { display: grid; gap: 18px; }
+.form-col { display: grid; gap: 18px; align-content: start; }
 
 .field { display: grid; gap: 6px; }
 
@@ -127,7 +275,7 @@ form { display: grid; gap: 18px; }
 
 label { font-size: 14px; font-weight: 600; }
 
-input[type="text"], input[type="number"], textarea {
+input[type="text"], input[type="search"], input[type="number"], textarea {
   width: 100%;
   padding: 11px 12px;
   font: inherit;
@@ -431,7 +579,7 @@ pre {
   border-radius: 4px;
 }
 
-#coverage-filter { margin-bottom: 12px; }
+#coverage-filter { margin-bottom: 12px; max-width: 34ch; }
 
 .coverage-categories {
   width: 100%;
@@ -449,7 +597,7 @@ pre {
 
 .coverage-categories th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); }
 
-.coverage-list { list-style: none; display: grid; gap: 10px; }
+.coverage-list { list-style: none; display: grid; align-items: start; gap: 10px; }
 
 .coverage-list > li {
   padding: 12px 13px;
@@ -486,3 +634,175 @@ pre {
 @media (max-width: 420px) {
   .coverage-cities li { grid-template-columns: 1fr; }
 }
+
+
+/* ── adaptive layout ─────────────────────────────────────────────────────
+   Three shapes, one grid. The breakpoints are where the content stops fitting,
+   not where a particular device sits. */
+
+/* Tablet and up: the nav leaves the thumb zone and becomes a rail. */
+@media (min-width: 700px) {
+  .app {
+    display: grid;
+    grid-template-columns: 76px 1fr;
+    align-items: start;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 8px;
+    padding: 14px 10px;
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+  }
+
+  .brand { padding: 0; justify-content: center; }
+  .brand-text { display: none; }
+
+  .nav {
+    position: static;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0;
+    background: none;
+    border: 0;
+  }
+
+  .nav-item { flex: none; min-height: 56px; }
+
+  .sidebar-foot {
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+  }
+
+  .theme { flex-direction: column; border-radius: var(--radius); }
+  .theme button { width: 28px; height: 28px; border-radius: var(--radius-sm); }
+
+  .sandbox-badge { font-size: 9.5px; padding: 3px 6px; }
+  .sandbox-badge .full { display: none; }
+
+  main { padding: 28px 28px 48px; }
+}
+
+/* Desktop: the rail earns its labels, and the content gets room to breathe. */
+@media (min-width: 1080px) {
+  .app { grid-template-columns: var(--sidebar) 1fr; }
+
+  .sidebar { padding: 20px 16px; gap: 18px; }
+  .brand { justify-content: flex-start; gap: 11px; }
+  .brand-text { display: block; }
+
+  .nav-item {
+    grid-template-columns: 22px 1fr;
+    grid-template-areas: "icon label" "icon hint";
+    justify-items: start;
+    align-content: center;
+    gap: 0 11px;
+    min-height: 0;
+    padding: 9px 11px;
+    font-size: 14px;
+    text-align: left;
+  }
+
+  .nav-item svg { grid-area: icon; align-self: center; }
+  .nav-label { grid-area: label; font-weight: 550; }
+
+  .nav-hint {
+    grid-area: hint;
+    display: block;
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: var(--ink-soft);
+  }
+
+  .nav-item.is-active {
+    color: var(--ink);
+    background: var(--accent-soft);
+  }
+
+  .nav-item.is-active svg { color: var(--accent); }
+  .nav-item:hover:not(.is-active) { background: var(--surface-2); }
+
+  .sidebar-foot { flex-direction: row; justify-content: space-between; }
+  .theme { flex-direction: row; border-radius: 999px; }
+  .theme button { width: 30px; height: 26px; border-radius: 999px; }
+  .sandbox-badge { font-size: 11px; padding: 3px 9px; }
+  .sandbox-badge .full { display: inline; }
+  .sandbox-badge .short { display: none; }
+
+  main { padding: 34px 40px 56px; }
+}
+
+/* ── content adapts too ──────────────────────────────────────────────────
+   Wide screens are not just a wider column: the report form and the case view
+   both have two independent halves, and reading a complaint at 1000px wide is
+   worse than reading it at 700. */
+
+@media (min-width: 900px) {
+  /* Two independent halves: what was seen and where, then what to say about it.
+     Explicit columns rather than nth-child placement, because the two sides have
+     different numbers of rows and grid would otherwise leave holes. */
+  form {
+    grid-template-columns: minmax(320px, 1fr) minmax(300px, 0.85fr);
+    align-items: start;
+    gap: 24px;
+  }
+
+  .photo-drop { min-height: 220px; }
+  .pick-map { height: 290px; }
+
+  .case-photo { max-height: 420px; object-fit: cover; }
+  .cases-map { height: 340px; }
+
+  .case-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+  /* A line of text stops being readable somewhere past 80 characters. */
+  .complaint pre, .envelope pre, .coverage-intro p { max-width: 72ch; }
+}
+
+@media (min-width: 1240px) {
+  .case-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 24px;
+  }
+
+  /* The photograph and the timeline scroll with the page; the complaint is the
+     thing being read, so it stays put beside them. */
+  .case-grid > .case-col:last-child {
+    position: sticky;
+    top: 24px;
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+}
+
+/* ── motion and contrast preferences ─────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root { --line: var(--line-strong); --ink-soft: var(--ink); }
+  .nav-item.is-active { outline: 1px solid var(--accent); }
+}
+
+/* Below the two-column breakpoint the case columns are just stacked blocks. */
+.case-col { display: block; }
+.case-col > * { margin-bottom: 0; }

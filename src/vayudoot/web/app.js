@@ -33,17 +33,70 @@ const isFinished = (c) => c.stage === "complete" || c.stage === "halted" || c.st
 const state = { case: null, poll: null, lang: "en", pickMap: null, pickMarker: null,
                 casesMap: null, coverage: null };
 
+/* ── theme ─────────────────────────────────────────────────────────────
+ *
+ * Three states, not two. "System" is the default and is a real choice rather
+ * than the absence of one, so a reader who wants the page to follow their OS can
+ * say so and have it stick. The stored value is the only thing that persists;
+ * everything visual comes from the data-theme attribute the CSS reads.
+ */
+
+const THEME_KEY = "vayudoot.theme";
+
+function applyTheme(choice) {
+  const root = document.documentElement;
+  if (choice === "system") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", choice);
+
+  document.querySelectorAll("[data-theme-choice]").forEach((b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.themeChoice === choice));
+  });
+  try { localStorage.setItem(THEME_KEY, choice); } catch { /* private mode */ }
+}
+
+document.querySelectorAll("[data-theme-choice]").forEach((button) => {
+  button.addEventListener("click", () => applyTheme(button.dataset.themeChoice));
+});
+
+let storedTheme = "system";
+try { storedTheme = localStorage.getItem(THEME_KEY) || "system"; } catch { /* private mode */ }
+applyTheme(storedTheme);
+
 /* ── views ─────────────────────────────────────────────────────────────── */
 
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("is-active", v.id === `view-${view}`));
-  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("is-active", t.dataset.view === view));
+  document.querySelectorAll(".nav-item").forEach((t) => {
+    const active = t.dataset.view === view;
+    t.classList.toggle("is-active", active);
+    // A case is reached from the case list, so Cases stays current while reading one.
+    if (active || (view === "case" && t.dataset.view === "cases")) t.setAttribute("aria-current", "page");
+    else t.removeAttribute("aria-current");
+  });
   if (view === "cases") loadCases();
   if (view === "coverage") loadCoverage();
   if (view !== "case") stopPolling();
+  window.scrollTo({ top: 0, behavior: "instant" });
+
+  // The sections are addressable, so the browser's back button works and a
+  // section can be linked to. A case keeps its own id in the hash instead.
+  if (view !== "case") {
+    const target = view === "report" ? "" : `#${view}`;
+    if (location.hash !== target) history.replaceState(null, "", target || location.pathname);
+  }
 }
 
-document.querySelectorAll(".tab").forEach((tab) => {
+function routeFromHash() {
+  const hash = location.hash.slice(1);
+  if (!hash) return show("report");
+  if (hash.startsWith("VD-")) return openCase(hash);
+  if (["report", "cases", "coverage"].includes(hash)) return show(hash);
+  show("report");
+}
+
+window.addEventListener("hashchange", routeFromHash);
+
+document.querySelectorAll(".nav-item").forEach((tab) => {
   tab.addEventListener("click", () => show(tab.dataset.view));
 });
 $("case-back").addEventListener("click", () => show("cases"));
@@ -541,5 +594,5 @@ function escapeHtml(value) {
 
 initPickMap();
 
-/* Deep link: /#VD-XXXXXXXX opens that case directly. */
-if (location.hash.length > 1) openCase(location.hash.slice(1));
+/* Deep link: /#cases, /#coverage, or /#VD-XXXXXXXX for one case. */
+routeFromHash();

@@ -11,26 +11,62 @@
 </head>
 <body>
 
-<header class="topbar">
+<a class="skip" href="#main">Skip to the content</a>
+
+<div class="app">
+
+<aside class="sidebar">
   <div class="brand">
     <span class="mark" aria-hidden="true"></span>
-    <div>
+    <div class="brand-text">
       <h1>Vayudoot</h1>
       <p>Photograph to filed complaint</p>
     </div>
   </div>
-  <nav class="tabs" role="tablist">
-    <button class="tab is-active" data-view="report" role="tab">Report</button>
-    <button class="tab" data-view="cases" role="tab">Cases</button>
-    <button class="tab" data-view="coverage" role="tab">Coverage</button>
-  </nav>
-</header>
 
-<main>
+  <nav class="nav" aria-label="Sections">
+    <button class="nav-item is-active" data-view="report" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>
+      <span class="nav-label">Report</span>
+      <span class="nav-hint">Photograph a pollution event</span>
+    </button>
+    <button class="nav-item" data-view="cases">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      <span class="nav-label">Cases</span>
+      <span class="nav-hint">Everything submitted so far</span>
+    </button>
+    <button class="nav-item" data-view="coverage">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      <span class="nav-label">Coverage</span>
+      <span class="nav-hint">Which authorities are known</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-foot">
+    <div class="theme" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-choice="light" title="Light" aria-label="Light theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.5 1.5m11.2 11.2 1.5 1.5M19.1 4.9l-1.5 1.5M6.4 17.6l-1.5 1.5"/></svg>
+      </button>
+      <button type="button" data-theme-choice="system" title="Match the system" aria-label="Match the system theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="12" rx="1.6"/><path d="M8 20h8"/></svg>
+      </button>
+      <button type="button" data-theme-choice="dark" title="Dark" aria-label="Dark theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13.5A8 8 0 0 1 10.5 4a8 8 0 1 0 9.5 9.5z"/></svg>
+      </button>
+    </div>
+    <p class="sandbox-badge" title="Filing writes to a local outbox. No authority is contacted.">
+      <span class="full">Sandbox mode</span><span class="short">Sandbox</span>
+    </p>
+  </div>
+</aside>
+
+<main id="main" tabindex="-1">
+
 
   <!-- ────────────────────────────── report ────────────────────────────── -->
   <section id="view-report" class="view is-active">
     <form id="report-form" novalidate>
+     <div class="form-col">
       <label class="photo-field">
         <input type="file" id="photo" name="image" accept="image/*" capture="environment" hidden>
         <div class="photo-drop" id="photo-drop">
@@ -59,7 +95,9 @@
         <input type="hidden" id="latitude">
         <input type="hidden" id="longitude">
       </div>
+     </div>
 
+     <div class="form-col">
       <div class="field">
         <label for="note">What did you see?</label>
         <textarea id="note" rows="3"
@@ -75,6 +113,7 @@
       <p class="disclaimer">Nothing is sent to any authority. The complaint is drafted and held
         for your confirmation, and filing writes to a local sandbox outbox.</p>
       <p class="error" id="form-error" hidden></p>
+     </div>
     </form>
   </section>
 
@@ -83,18 +122,21 @@
     <div class="case-head">
       <button type="button" class="link back" id="case-back">← All cases</button>
       <h2 id="case-id">—</h2>
-      <div class="case-meta">
+      <div class="case-meta" aria-live="polite">
         <span class="pill" id="case-status">—</span>
         <span class="muted" id="case-address"></span>
       </div>
     </div>
 
-    <img id="case-photo" class="case-photo" alt="Submitted photograph" hidden>
-
     <p class="coverage-warning" id="coverage-warning" hidden></p>
 
-    <ol class="timeline" id="timeline"></ol>
+    <div class="case-grid">
+      <div class="case-col">
+        <img id="case-photo" class="case-photo" alt="Submitted photograph" hidden>
+        <ol class="timeline" id="timeline"></ol>
+      </div>
 
+      <div class="case-col">
     <div class="complaint" id="complaint" hidden>
       <div class="complaint-head">
         <h3 id="complaint-subject"></h3>
@@ -118,6 +160,8 @@
       <summary>Case history</summary>
       <ul id="history"></ul>
     </details>
+      </div>
+    </div>
   </section>
 
   <!-- ────────────────────────────── cases ─────────────────────────────── -->
@@ -151,6 +195,8 @@
   </section>
 
 </main>
+
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/app.js"></script>

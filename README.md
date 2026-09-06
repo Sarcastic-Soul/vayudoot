@@ -53,8 +53,21 @@ the case end to end.
 
 ## The interface
 
-One page, served by the same FastAPI process that runs the agent, because this is
-used on a phone while standing in front of the problem.
+One page of plain HTML, CSS and JavaScript — no framework and no build step —
+served by the same FastAPI process that runs the agent, because this is used on a
+phone while standing in front of the problem. The only external dependency is
+Leaflet for the maps.
+
+The shell is one grid, and the only thing that changes with width is where the
+navigation sits: a bar under the thumb on a phone, an icon rail on a tablet, a
+labelled sidebar on a desktop. Wide screens get two columns rather than a wider
+column, since a complaint is easier to read at 70 characters than at 130.
+
+Themes are three-state — light, dark, or follow the system — and the choice is
+remembered. There is a skip link, the sections are addressable (`#cases`,
+`#coverage`, `#VD-XXXXXXXX`) so the back button works, the case status is a live
+region so a stage change is announced while the page polls, and
+`prefers-reduced-motion` and `prefers-contrast` are both honoured.
 
 - Take the photograph, then place the pin. The map is the location input: it is
   there from the moment the page loads, the browser's location moves it if you

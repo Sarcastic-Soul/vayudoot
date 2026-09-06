@@ -436,3 +436,41 @@ the safety claim gets checked instead of trusted.
 citing Motor Vehicles Act Section 190(2), which that board has no power to
 enforce. That is a legal call about which authority is right, not a bug in the
 lookup, and it is waiting on a decision.
+
+## Day 1 — one grid, three shapes
+
+Reworked the interface shell. The navigation was three tabs under the header,
+which wasted the width on anything bigger than a phone and gave the content a
+720px cap regardless of screen.
+
+It is now a single grid whose only variable is where the navigation sits: a bar
+under the thumb below 700px, an icon rail to 1080px, a labelled sidebar above
+that. One layout to reason about instead of three, and the content area grows to
+1080px with real two-column arrangements rather than a wider single column — the
+report form splits into "what and where" against "what to say", and a case puts
+the photograph and timeline beside the complaint, which sticks while the evidence
+scrolls. A line of body text is capped at 72 characters wherever it is prose,
+because a complaint is harder to read at 130 characters than at 70.
+
+Two-column placement was done with `nth-of-type` at first and it was wrong: the
+columns have different numbers of rows, so grid left holes and pushed the contact
+field halfway down the page. Explicit column wrappers instead. Caught it by
+rendering the page at 390, 834 and 1440 and looking at it, which is the only way
+this kind of bug shows up — nothing about it fails a test.
+
+**Themes are three-state.** Light, dark, or follow the system, remembered in
+`localStorage`, applied as `data-theme` on the root. "System" is the default and
+a real choice rather than the absence of one. Every colour was already a token;
+they are now declared once for light, re-declared under
+`prefers-color-scheme: dark` guarded against an explicit light choice, and again
+under `[data-theme="dark"]` so an explicit choice wins in both directions.
+
+**Accessibility, beyond the theme.** A skip link. The navigation is a `nav` with
+`aria-current` rather than a tablist, because these are sections of a page and
+not tabs of a widget. The case status is an `aria-live` region, so a stage
+advancing during polling is announced instead of silently changing. Sections are
+addressable — `#cases`, `#coverage`, `#VD-XXXXXXXX` — which makes the back button
+work and a view linkable. Touch targets are 52px in the phone bar.
+`prefers-reduced-motion` now cancels every animation rather than just the one
+pulsing dot, and `prefers-contrast: more` promotes the border and secondary text
+colours.
