@@ -554,3 +554,75 @@ as well as misdirecting the complaint.
 Verified live: a vehicle emission report in Raipur now resolves to the board
 under Section 20 with a 30-day window escalating to the CPCB. Pinned with a test
 that asserts the category never cites the Motor Vehicles Act again.
+
+## Day 1 — the frontend rewrite, and a grid rule that had been lying about widths
+
+Reversed the earlier decision to leave the interface as plain files. The reason
+that entry gave for declining still held right up to the point where the three
+files stopped fitting in one head: `app.js` had reached 715 lines and every
+render path in it built DOM by concatenating strings into `innerHTML`, guarded
+by a hand-rolled `escapeHtml` that had to be remembered at each of its fourteen
+call sites. That is the kind of thing that is correct until someone adds a
+fifteenth.
+
+Went with the option that entry named as the same shape at a smaller size:
+Preact plus htm, as native ES modules with no build step. The runtime is
+vendored under `web/vendor/` rather than pulled from a CDN, so the request path
+of a page a citizen files a complaint through gains no new third party, and the
+single-FastAPI-process deployment is untouched — no Node, no bundler, no
+`package.json`. Leaflet stays a CDN `<script>` and is still used through the
+global `L`, because it owns its own DOM and must never be re-rendered into.
+
+The layout is now `lib/` for the non-visual parts (fetch wrapper, hash router,
+theme, rail, map registry, the polling store), `components/` for sixteen small
+components, and `styles/` split seven ways and linked with seven `<link>` tags —
+not `@import`, which would serialise the requests. `escapeHtml` is gone: user and
+API text is passed as Preact children, so escaping is structural rather than
+remembered. The two places that still hand markup to something else are the
+Leaflet popups, and those build real DOM nodes rather than strings.
+
+Two behavioural changes fell out of the rewrite rather than being asked for. The
+hash is now the single source of truth for the route, set with `pushState`;
+before this, opening a case did not touch the hash at all, so a case could not
+be linked to and the back button had nothing to walk. And the escalate action
+now has a button — the old code had an `act(id, "escalate")` path that no
+control could reach. It appears only once the statutory window has actually
+lapsed, computed from `filed_at` and `response_window_days`, because the server
+refuses it before then and a button that always 409s is worse than no button.
+
+The sidebar collapse was `display: none` below 1080px, so at any narrower window
+the feature simply was not there. It now exists from 700px up, wherever there is
+a sidebar to collapse, and means one notch narrower each time: the labelled
+sidebar becomes a rail, the rail becomes icons alone. Below 700px the nav is a
+bar under the thumb and there is nothing to collapse, so no control.
+
+The interesting part was why the control looked broken even at 1080px, where it
+was supposed to work. It was being clipped by the sidebar's own edge, and the
+cause was not the button at all. `.brand` carried `max-width: var(--page);
+margin: 0 auto` from the phone header, and an auto inline margin on a grid item
+turns stretching off and sizes the item to fit-content instead — which, with a
+`nowrap` tagline inside, was wider than the sidebar. The same rule was on
+`main`, which is why the case list at 1440px was rendering as a single narrow
+column: it had been sizing itself to its content's max-content width all along,
+and its own `repeat(auto-fill, minmax(280px, 1fr))` never had room to produce a
+second column. Both fixed by dropping the centring margins where the element is
+a grid item and giving `main` an explicit `width: 100%`; the sidebar's implicit
+column is now `minmax(0, 1fr)` so an auto track cannot grow past it either.
+
+Found all of that by screenshotting headless Chrome at 390, 760, 834, 900 and
+1440 in both themes and looking at the images, and by a throwaway probe page in
+the web directory that reported `getBoundingClientRect` for the sidebar parts and
+clicked the controls a screenshot cannot — the language toggle, the coverage
+filter, the addresses switch, the full-screen map. Worth recording that the
+numbers from `--dump-dom` runs are not trustworthy for layout: virtual time does
+not advance CSS transitions, so a mid-transition width comes back as the old one,
+and the window size is not honoured the way it is for `--screenshot`. The
+screenshots are the evidence; the probe only ever pointed at where to look. Both
+scratch files were deleted before finishing.
+
+No Python behaviour changed. Starlette already serves `.mjs` as
+`text/javascript`, which is what a `type="module"` script requires, so the static
+mount needed nothing — verified with `curl -I` rather than assumed. The interface
+test now asserts the paths that exist, and a second one asserts the modules come
+back with a JavaScript content type, because that failure mode is a blank page
+with nothing in the response to explain it.

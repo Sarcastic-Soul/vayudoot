@@ -1,0 +1,78 @@
+/* Maps.
+   A 300px map is enough to confirm a pin and not enough to find one, so both
+   maps expand. The Leaflet instance is untouched by that: only the size of its
+   container changes. */
+
+.pick-map, .cases-map {
+  height: 220px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  z-index: 0;
+}
+
+.cases-map { height: 260px; margin-bottom: 16px; }
+
+.map-wrap { position: relative; }
+
+.map-full {
+  position: absolute;
+  z-index: 400;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.map-full svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .18s ease;
+}
+
+.map-wrap.is-full {
+  position: fixed;
+  z-index: 900;
+  inset: 0;
+  background: var(--bg);
+  padding: 0;
+}
+
+.map-wrap.is-full .pick-map,
+.map-wrap.is-full .cases-map {
+  height: 100dvh;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.map-wrap.is-full .map-full {
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  width: 40px;
+  height: 40px;
+}
+
+/* Rotating the icon is enough to say "this closes it" without a second glyph. */
+.map-wrap.is-full .map-full svg { transform: rotate(45deg); }
+
+body.has-full-map { overflow: hidden; }
+
+@media (min-width: 900px) {
+  .pick-map { height: 290px; }
+  .cases-map { height: 340px; }
+}

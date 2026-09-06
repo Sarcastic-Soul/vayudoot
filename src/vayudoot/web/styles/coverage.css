@@ -1,0 +1,218 @@
+/* Coverage.
+   The question this page answers is "what happens if I report from here", not
+   "here are some rows". So: the numbers first, the rules as sentences, and the
+   regions as cards you can scan. Addresses are the evidence for the safety
+   claim, so they stay available behind a toggle rather than repeating eighty
+   times in the default view. */
+
+.coverage-warning {
+  padding: 11px 13px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  border-radius: var(--radius);
+}
+
+.coverage-warning[data-coverage="generic"] {
+  background: color-mix(in srgb, var(--bad) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+}
+
+.page-head { margin-bottom: 16px; }
+.page-head h2 { font-size: 19px; margin-bottom: 6px; }
+.page-head p { font-size: 13.5px; color: var(--ink-soft); max-width: 62ch; }
+
+.section-label {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 22px 0 10px;
+}
+
+.stats {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.stats li {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.stats strong {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats span { font-size: 12px; line-height: 1.35; color: var(--ink-soft); }
+
+.warn {
+  padding: 11px 13px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  border-radius: var(--radius);
+}
+
+.warn code {
+  font-size: 12px;
+  padding: 1px 5px;
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+/* Rules read as sentences. */
+
+.rules {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.rules li {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.rules h4 { font-size: 13.5px; text-transform: capitalize; }
+.rules p { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
+.rules strong { color: var(--ink); font-weight: 550; }
+.rule-statute { padding-top: 5px; border-top: 1px solid var(--line); }
+.rule-window { font-size: 11.5px; }
+
+/* List controls. */
+
+.list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.list-head .section-label { margin-bottom: 0; }
+
+.list-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.list-tools input[type="search"] { width: min(30ch, 60vw); padding: 8px 11px; font-size: 14px; }
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 450;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.switch input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+
+/* Regions. */
+
+.coverage-list {
+  list-style: none;
+  display: grid;
+  align-items: start;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.coverage-list > li {
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.region-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.region-head h4 { font-size: 14.5px; }
+
+.chip {
+  flex: none;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+}
+
+.chip.is-thin { color: var(--ink-soft); background: var(--bg); }
+
+.region-board { font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
+
+.region-cities { list-style: none; display: grid; gap: 6px; margin: 10px 0 0; padding: 0; }
+
+.region-cities li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 8px;
+  font-size: 12.5px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+}
+
+.region-cities strong { font-weight: 550; }
+
+.region-foot {
+  margin-top: 10px;
+  padding-top: 9px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  border-top: 1px dashed var(--line);
+}
+
+/* Addresses: present in the markup for anyone who wants them, out of the way
+   until asked for. */
+.addr {
+  display: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.show-addresses .addr { display: inline; }
+.show-addresses .region-cities li .addr { flex-basis: 100%; }
+
+@media (min-width: 900px) {
+  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+}
+
+@media (min-width: 1240px) {
+  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+}

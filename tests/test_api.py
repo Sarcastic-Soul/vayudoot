@@ -144,7 +144,17 @@ async def test_the_interface_is_served_by_the_same_process(client):
     assert page.status_code == 200
     assert "Vayudoot" in page.text
     assert (await client.get("/app.js")).status_code == 200
-    assert (await client.get("/styles.css")).status_code == 200
+    assert (await client.get("/styles/tokens.css")).status_code == 200
+    assert (await client.get("/components/App.js")).status_code == 200
+
+
+async def test_modules_are_served_as_javascript(client):
+    """A module served as text/plain is refused by the browser, so the interface
+    would be blank with nothing in the response to say why."""
+    for path in ("/app.js", "/lib/router.js", "/vendor/preact.mjs"):
+        served = await client.get(path)
+        assert served.status_code == 200, path
+        assert "javascript" in served.headers["content-type"], path
 
 
 async def test_a_failed_run_is_visible_over_http(client, monkeypatch):

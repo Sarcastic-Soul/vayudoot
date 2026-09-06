@@ -140,8 +140,10 @@ caught, and the case is left as `failed` with the exception recorded on it and
 `stage` parked on whatever was running when it died — a run that dies must leave
 a readable case rather than a 500 and no trace.
 
-The interface is three static files served by the same process. One deployment,
-one URL, no CORS. It is mounted last so it cannot shadow an API route. Two
+The interface is static files served by the same process — a Preact app in
+native ES modules, with the runtime vendored under `web/vendor/` so there is no
+build step and no CDN in the request path. One deployment, one URL, no CORS. It
+is mounted last so it cannot shadow an API route. Two
 endpoints exist purely for it: `/cases/{id}/photo`, which serves the submitted
 photograph and refuses any path that does not resolve inside the uploads
 directory, and `/cases/{id}/envelope`, which returns the filed envelope exactly

@@ -1,0 +1,337 @@
+/* The navigation, in its three shapes.
+ *
+ * Phone: a bar under the thumb. Tablet: an icon rail. Desktop: a labelled
+ * sidebar. The markup is identical in all three; only this file differs. */
+
+/* Phone: the brand is a slim sticky header, the nav is a bar under the thumb. */
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+/* min-width: 0 because the tagline below is `nowrap`, which would otherwise
+   become this row's minimum width and push the collapse control out past the
+   sidebar's edge instead of ellipsising. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 16px;
+  max-width: var(--page);
+  margin: 0 auto;
+}
+
+.brand h1 { font-size: 17px; letter-spacing: -0.01em; }
+.brand-text { min-width: 0; flex: 1; overflow: hidden; }
+
+/* On the phone header the tagline shares one line with the brand and gives way
+   before it does. In the sidebar there is vertical room, so it wraps instead of
+   being truncated — a clipped tagline reads as a bug, not as a nicety. */
+.brand p {
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 1080px) {
+  .brand p { white-space: normal; overflow: visible; line-height: 1.3; }
+}
+
+.mark {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--accent), transparent 70%),
+              conic-gradient(from 200deg, var(--line-strong), var(--accent));
+}
+
+.nav {
+  position: fixed;
+  z-index: 600;
+  inset: auto 0 0;
+  display: flex;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.nav-item {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  /* 44px is the smallest target a thumb hits reliably. */
+  min-height: 52px;
+  padding: 6px 4px;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.nav-item svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-item.is-active { color: var(--accent); }
+.nav-hint { display: none; }
+
+.sidebar-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 16px 10px;
+  max-width: var(--page);
+  margin: 0 auto;
+}
+
+.theme {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.theme button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.theme button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.sandbox-badge {
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 3px 9px;
+  color: var(--warn);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+}
+
+.sandbox-badge .short { display: none; }
+
+/* The collapse control. Hidden on a phone, where the nav is a bar under the
+   thumb and there is nothing to collapse; a real control at every width that
+   has a sidebar at all. It always sits inside the brand, in flow, because an
+   absolutely positioned one ends up underneath the nav. */
+
+.collapse {
+  display: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  padding: 0;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.collapse svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .22s ease;
+}
+
+.collapse:hover { color: var(--ink); background: var(--surface-2); }
+
+/* ── tablet and up: the nav leaves the thumb zone and becomes a rail ──────
+   Collapsing is available from here on, because from here on there is a
+   sidebar to collapse. One notch narrower each time: the labelled sidebar
+   becomes a rail, and the rail becomes icons alone. */
+
+@media (min-width: 700px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: grid;
+    /* minmax(0, 1fr), not the implicit auto track: an auto track is allowed to
+       grow to its max-content and push the collapse control out past the
+       sidebar's own edge, which is exactly where it used to be clipped. */
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    gap: 8px;
+    padding: 14px 10px;
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+    transition: padding .22s ease;
+  }
+
+  /* Stacked, so the control has a place of its own rather than being squeezed
+     against the mark or floated over the nav. The phone header's centring
+     margins have to go: an auto margin makes a grid item size to its content
+     instead of to its track, which is what pushed the control off the edge. */
+  .brand, .sidebar-foot {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .brand {
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .brand-text { display: none; }
+
+  .collapse { display: grid; border-color: var(--line); }
+  body.is-collapsed .collapse svg { transform: rotate(180deg); }
+
+  .nav {
+    position: static;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0;
+    background: none;
+    border: 0;
+  }
+
+  .nav-item { flex: none; min-height: 56px; }
+
+  .sidebar-foot { flex-direction: column; gap: 8px; padding: 0; }
+
+  .theme { flex-direction: column; border-radius: var(--radius); }
+  .theme button { width: 28px; height: 28px; border-radius: var(--radius-sm); }
+
+  .sandbox-badge { font-size: 9.5px; padding: 3px 6px; }
+  .sandbox-badge .full { display: none; }
+  .sandbox-badge .short { display: inline; }
+}
+
+/* Collapsed on a tablet: the rail keeps its icons and drops its labels. */
+@media (min-width: 700px) and (max-width: 1079.98px) {
+  body.is-collapsed .sidebar { padding: 14px 6px; }
+  body.is-collapsed .nav-label { display: none; }
+  body.is-collapsed .nav-item { min-height: 46px; padding: 8px 2px; }
+  body.is-collapsed .sandbox-badge { font-size: 9px; padding: 3px 4px; }
+}
+
+/* ── desktop: the rail earns its labels ──────────────────────────────── */
+
+@media (min-width: 1080px) {
+  .sidebar { padding: 20px 16px; gap: 18px; }
+
+  .brand { flex-direction: row; justify-content: flex-start; gap: 11px; }
+  .brand-text { display: block; }
+  .collapse { border-color: transparent; }
+
+  .nav-item {
+    grid-template-columns: 22px 1fr;
+    grid-template-areas: "icon label" "icon hint";
+    justify-items: start;
+    align-content: center;
+    gap: 0 11px;
+    min-height: 0;
+    padding: 9px 11px;
+    font-size: 14px;
+    text-align: left;
+  }
+
+  .nav-item svg { grid-area: icon; align-self: center; }
+  .nav-label { grid-area: label; font-weight: 550; }
+
+  .nav-hint {
+    grid-area: hint;
+    display: block;
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: var(--ink-soft);
+  }
+
+  .nav-item.is-active { color: var(--ink); background: var(--accent-soft); }
+  .nav-item.is-active svg { color: var(--accent); }
+  .nav-item:hover:not(.is-active) { background: var(--surface-2); }
+
+  .sidebar-foot { flex-direction: row; justify-content: space-between; }
+  .theme { flex-direction: row; border-radius: 999px; }
+  .theme button { width: 30px; height: 26px; border-radius: 999px; }
+  .sandbox-badge { font-size: 11px; padding: 3px 9px; }
+  .sandbox-badge .full { display: inline; }
+  .sandbox-badge .short { display: none; }
+
+  /* Collapsed on a desktop is exactly the tablet rail. */
+  body.is-collapsed .sidebar { padding: 14px 10px; }
+  body.is-collapsed .brand { flex-direction: column; justify-content: center; gap: 8px; }
+  body.is-collapsed .brand-text { display: none; }
+  body.is-collapsed .collapse { border-color: var(--line); }
+
+  body.is-collapsed .nav-item {
+    grid-template-columns: none;
+    grid-template-areas: none;
+    justify-items: center;
+    gap: 3px;
+    min-height: 56px;
+    padding: 6px 4px;
+    font-size: 11.5px;
+    text-align: center;
+  }
+
+  body.is-collapsed .nav-item svg { grid-area: auto; }
+  body.is-collapsed .nav-label { grid-area: auto; font-weight: 450; }
+  body.is-collapsed .nav-hint { display: none; }
+
+  body.is-collapsed .sidebar-foot { flex-direction: column; }
+  body.is-collapsed .theme { flex-direction: column; border-radius: var(--radius); }
+  body.is-collapsed .theme button { width: 28px; height: 28px; border-radius: var(--radius-sm); }
+  body.is-collapsed .sandbox-badge { font-size: 9.5px; padding: 3px 6px; }
+  body.is-collapsed .sandbox-badge .full { display: none; }
+  body.is-collapsed .sandbox-badge .short { display: inline; }
+}
+
+@media (prefers-contrast: more) {
+  .nav-item.is-active { outline: 1px solid var(--accent); }
+}

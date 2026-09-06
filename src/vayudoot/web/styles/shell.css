@@ -1,0 +1,51 @@
+/* The shell: navigation and content, one grid.
+ *
+ * Mobile first, because this is used standing in front of the problem, on a
+ * phone, in daylight. Where the navigation sits is the only thing that changes
+ * with width — a bottom bar under the thumb on a phone, an icon rail on a
+ * tablet, a labelled sidebar on a desktop — so there is one layout to reason
+ * about rather than three. */
+
+.app { min-height: 100dvh; }
+
+/* width: 100% matters once this is a grid item: an auto inline margin turns
+   off stretching, and the column would otherwise be sized to the content's
+   max-content width rather than to the space available. */
+main {
+  width: 100%;
+  padding: 16px 16px calc(84px + env(safe-area-inset-bottom));
+  max-width: var(--page);
+  margin: 0 auto;
+}
+
+main:focus { outline: none; }
+
+.view { display: none; }
+.view.is-active { display: block; }
+
+/* ── adaptive layout ─────────────────────────────────────────────────────
+   Two shapes, one grid. The breakpoints are where the content stops fitting,
+   not where a particular device sits. The column width is a variable so that
+   collapsing is a change of one value, and so the grid animates rather than
+   jumping. */
+
+@media (min-width: 700px) {
+  .app {
+    --nav-width: var(--rail);
+    display: grid;
+    grid-template-columns: var(--nav-width) 1fr;
+    align-items: start;
+    transition: grid-template-columns .22s ease;
+  }
+
+  body.is-collapsed .app { --nav-width: var(--rail-tight); }
+
+  main { padding: 28px 28px 48px; }
+}
+
+@media (min-width: 1080px) {
+  .app { --nav-width: var(--sidebar); }
+  body.is-collapsed .app { --nav-width: var(--rail); }
+
+  main { padding: 34px 40px 56px; }
+}
