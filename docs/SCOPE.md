@@ -23,7 +23,7 @@ That sentence is the whole target. Anything that does not serve it is out.
 - [x] Jurisdiction resolution against a data-driven authority table
 - [x] Complaint drafting in English plus the region's main language
 - [x] Sandboxed filing with a statutory-window escalation timer
-- [ ] One real end-to-end run against a real photograph, start to finish —
+- [x] One real end-to-end run against a real photograph, start to finish —
       needs credentials; every stage is exercised offline by the test suite
 
 ### Interface
@@ -100,14 +100,14 @@ non-goals above that are not repeated here stay non-goals.
 
 ## Finishing what v0.1 claimed
 
-- [ ] **Case lifecycle.** `ACKNOWLEDGED` and `RESOLVED` existed in the status
+- [x] **Case lifecycle.** `ACKNOWLEDGED` and `RESOLVED` existed in the status
       enum with nothing able to set them, so "track and escalate" was half true:
       a case could be filed and escalated but never recorded as answered or
       settled, and `escalation_due()` kept reporting an answered case as overdue.
       Adds acknowledge, resolve and withdraw, and makes the escalation clock
       respect them. This is not a new feature; it is an unfinished one.
 
-- [ ] **Rate limiting and upload caps.** `POST /reports` is open and each report
+- [x] **Rate limiting and upload caps.** `POST /reports` is open and each report
       spends roughly ten metered model calls from a free tier. On a public URL
       one crawler empties the day's budget. The upload path also reads an
       unbounded body into memory before decoding it. Both are prerequisites for
@@ -115,19 +115,19 @@ non-goals above that are not repeated here stay non-goals.
 
 ## New capability
 
-- [ ] **Prompt evaluation harness.** The corroboration stage has been wrong twice
+- [x] **Prompt evaluation harness.** The corroboration stage has been wrong twice
       — once discarding its own structured output, once inventing corroboration
       from a wind bearing — and both times only a live run caught it. Prompts are
       now being edited regularly with no way to tell whether a change helped.
       A fixture set with expected classifications, scored for accuracy and
       confidence calibration, is what makes every other change safe.
 
-- [ ] **Clustering repeat reports.** Fifteen reports at one location over a month
+- [x] **Clustering repeat reports.** Fifteen reports at one location over a month
       is a categorically stronger complaint than one, and a pattern is the
       argument a regulator actually acts on. Uses only data already stored and
       needs no new external API.
 
-- [ ] **RTI follow-up drafting.** When the statutory window lapses, an Indian
+- [x] **RTI follow-up drafting.** When the statutory window lapses, an Indian
       citizen's real lever is not a second email — it is a Right to Information
       application asking what action was taken. This is the most India-specific
       thing the project can do, and it turns escalation from repetition into

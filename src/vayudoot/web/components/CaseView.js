@@ -26,6 +26,11 @@ import { Timeline } from "./Timeline.js";
 
 const FILED = ["filed", "escalated"];
 
+
+/* A report may carry up to four photographs, read together as one event. Older
+ * cases have only `image_path`, so count the list and fall back to one. */
+const photoCount = (record) => record.report.image_paths?.length || 1;
+
 export function CaseView({ caseId }) {
   const [record, setRecord] = useCase(caseId);
   const [envelope, setEnvelope] = useState("");
@@ -66,9 +71,24 @@ export function CaseView({ caseId }) {
         <div class="case-col">
           ${record.report.image_path && html`
             <${Fragment}>
-              <h3 class="section-label">The photograph reported</h3>
+              <h3 class="section-label">${
+                photoCount(record) > 1
+                  ? `The ${photoCount(record)} photographs reported`
+                  : "The photograph reported"}</h3>
               <img class="case-photo" src=${`/cases/${caseId}/photo`}
-                   alt="The photograph submitted with this report" />
+                   alt=${photoCount(record) > 1
+                     ? "The first photograph submitted with this report"
+                     : "The photograph submitted with this report"} />
+              ${photoCount(record) > 1 && html`
+                <ul class="photo-strip">
+                  ${record.report.image_paths.slice(1).map((_, i) => html`
+                    <li key=${i}>
+                      <img src=${`/cases/${caseId}/photo/${i + 1}`}
+                           alt=${`Photograph ${i + 2} of ${photoCount(record)}`} />
+                    </li>`)}
+                </ul>
+                <p class="photo-note">All ${photoCount(record)} were read together as one
+                  event.</p>`}
             <//>`}
 
           <${Timeline} record=${record} />

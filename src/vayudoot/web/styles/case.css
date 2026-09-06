@@ -1190,3 +1190,32 @@ button.quiet.history-more:hover { color: var(--ink); background: none; }
     padding-right: var(--s1);
   }
 }
+
+/* A report may carry up to four photographs. The first leads, at full width,
+   because it is usually the one the citizen framed deliberately; the rest are a
+   strip beneath it. They are evidence of one event, not a gallery to browse, so
+   there is no lightbox and no carousel — every image is on screen at once. */
+
+.photo-strip {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.photo-strip img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.photo-note {
+  margin-top: 6px;
+  font-size: var(--t-eyebrow);
+  color: var(--ink-soft);
+}
