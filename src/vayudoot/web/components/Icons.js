@@ -106,3 +106,27 @@ export const ImagePlusIcon = icon(html`
   <path d="m3.5 15 4.2-4.2a1.5 1.5 0 0 1 2.1 0l4.2 4.2" />
   <circle cx="15" cy="9" r="1.4" />
   <path d="M18 16.5h5M20.5 14v5" />`);
+
+/* ── patterns and paperwork ─────────────────────────────────────────── */
+
+/* A repeat pattern: the map circle it is drawn as, with the reports inside
+   it. Not a bar chart and not a stack of documents — the thing that makes a
+   cluster a cluster is that several reports fall inside one radius. */
+export const PatternIcon = icon(html`
+  <circle cx="12" cy="12" r="8.4" />
+  <circle cx="9.4" cy="10.2" r="1.2" />
+  <circle cx="14.6" cy="9.6" r="1.2" />
+  <circle cx="11.8" cy="14.8" r="1.2" />`);
+
+/* An RTI application: a form with a question on it. The complaint asks an
+   authority to act; this asks it what is written in a file, and the question
+   mark is the whole difference between the two documents. */
+export const AskIcon = icon(html`
+  <path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5H6.5A.5.5 0 0 1 6 20z" />
+  <path d="M14 3.5V8h4" />
+  <path d="M10.3 12.3a1.75 1.75 0 1 1 2.35 1.65c-.5.19-.8.67-.8 1.2v.35" />
+  <path d="M11.85 17.6v.2" />`);
+
+export const CopyIcon = icon(html`
+  <rect x="9" y="9" width="11" height="11.5" rx="1.6" />
+  <path d="M15.5 5.5A1.5 1.5 0 0 0 14 4H5.5A1.5 1.5 0 0 0 4 5.5V14a1.5 1.5 0 0 0 1.5 1.5" />`);

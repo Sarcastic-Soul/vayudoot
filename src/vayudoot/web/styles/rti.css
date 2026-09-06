@@ -1,0 +1,331 @@
+/* The Right to Information panel.
+ *
+ * A card, not a second decision block. The escalation block above it is the one
+ * loud thing on a case page and there can only be one of those — and unlike
+ * filing, pressing anything here sends nothing to anybody. What it does is
+ * write a document the citizen then has to finish and file themselves.
+ *
+ * So the hierarchy inside the card is: what still has to be filled in, then the
+ * document. Not the other way round. A draft with eight bracketed gaps in it
+ * that looks finished is the failure mode worth designing against, which is why
+ * the gaps are marked in the text as well as listed above it.
+ *
+ * `button.primary`, `button.secondary`, `button.quiet`, `.update-panel`,
+ * `.panel-buttons`, `.help`, `.error` and `.skeleton` all come from the shared
+ * sheets. This file adds the document treatment and nothing else. */
+
+.rti {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  margin-bottom: var(--s5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+
+/* Once there is something to do here, the card takes an edge in `info` — the
+   same hue a repeat pattern takes, and for the same reason: this is a lever
+   that exists, not an action the system is urging. */
+.rti.is-open { border-left: 3px solid var(--info); }
+
+.rti-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+}
+
+.rti-head svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--info);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rti-head .eyebrow { color: var(--info); }
+
+.rti-head h3 {
+  margin-top: 2px;
+  font-size: var(--t-lead);
+  line-height: var(--lh-snug);
+}
+
+.rti-lead {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+}
+
+/* Before the window lapses. A date, not a disabled button: the server would
+   refuse the request, so there is nothing to grey out — only something to
+   know. */
+.rti-when {
+  padding: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.rti .help {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+}
+
+.rti .help svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rti .error {
+  padding: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--danger-tint);
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius-sm);
+}
+
+.rti .error strong { color: var(--danger); }
+
+/* ── the wait ────────────────────────────────────────────────────────────
+   Tens of seconds of a model writing a legal document. A spinner that says
+   nothing for forty seconds is indistinguishable from a hang, so the seconds
+   are counted out loud and the shape of what is coming is drawn underneath. */
+
+.rti-working {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s4);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.rti-working-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+}
+
+.rti-working-head .tnum { margin-left: auto; color: var(--info); }
+
+.rti-dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--info);
+  animation: rti-pulse 1.4s ease-in-out infinite;
+}
+
+/* With animation off the dot stays solid, which still reads as "running" next
+   to a seconds count that is visibly climbing. */
+@keyframes rti-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .25; }
+}
+
+.rti-working-note {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.rti-doc-skeleton { display: grid; gap: var(--s2); margin-top: var(--s2); }
+.rti-doc-skeleton span { height: 12px; border-radius: 4px; }
+.rti-doc-skeleton span:nth-child(1) { width: 46%; }
+.rti-doc-skeleton span:nth-child(2) { width: 92%; }
+.rti-doc-skeleton span:nth-child(3) { width: 84%; }
+.rti-doc-skeleton span:nth-child(4) { width: 90%; }
+.rti-doc-skeleton span:nth-child(5) { width: 60%; }
+.rti-doc-skeleton span:nth-child(6) { width: 74%; }
+
+/* ── the standing statement ──────────────────────────────────────────── */
+
+.rti-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--attention-tint);
+  border: 1px solid var(--attention-line);
+  border-radius: var(--radius);
+}
+
+.rti-notice svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--attention);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── what is still missing ───────────────────────────────────────────────
+   Above the document, not below it. An RTI application is made by a named
+   citizen with their own address and their own fee; the draft cannot know any
+   of those, and a reader who finds that out after filing has been failed. */
+
+.rti-todo {
+  padding: var(--s4);
+  background: var(--attention-tint);
+  border: 1px solid var(--attention-line);
+  border-radius: var(--radius);
+}
+
+.rti-todo-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s1) var(--s3);
+}
+
+.rti-todo-head strong {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--attention);
+}
+
+.rti-count { font-size: var(--t-meta); color: var(--ink-soft); }
+
+.rti-todo-list {
+  list-style: none;
+  display: grid;
+  gap: var(--s2);
+  margin: var(--s3) 0 0;
+  padding: 0;
+}
+
+/* An empty checkbox, drawn rather than rendered: these are things to do off
+   the screen, on paper, so a control that could be ticked here would be a
+   lie about where the work happens. */
+.rti-todo-list li {
+  position: relative;
+  padding-left: var(--s5);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.rti-todo-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--attention);
+  border-radius: 3px;
+}
+
+.rti-todo-note {
+  margin-top: var(--s2);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+}
+
+/* ── the document ────────────────────────────────────────────────────── */
+
+.rti-doc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+}
+
+.rti-doc-head .section-label { margin: 0; }
+
+button.secondary.rti-copy { flex: 0 0 auto; min-height: 44px; }
+button.secondary.rti-copy svg { width: 16px; height: 16px; }
+
+.rti-doc {
+  padding: var(--s4);
+  font-size: var(--t-meta);
+  line-height: var(--lh-doc);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* A gap a human has to close. Marked in the text as well as listed above it,
+   because the list says how many there are and only this says where. Given a
+   border as well as a fill: a highlight that is colour alone disappears in
+   greyscale, which is exactly the reader who most needs to see it. */
+.rti-doc .fillin {
+  padding: 1px 3px;
+  color: var(--ink);
+  background: var(--attention-tint);
+  border-bottom: 2px solid var(--attention);
+  border-radius: 3px;
+  font-weight: var(--w-medium);
+}
+
+.rti-foot,
+.rti-drafted {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.rti-drafted {
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+
+/* Redrafting spends another primary-tier model call, so it is the quietest
+   thing on the card and it opens into what it costs before it does it. The
+   underline is what keeps it identifiable as a control at that weight. */
+.rti-redraft > button.quiet {
+  padding-inline: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rti-redraft > button.quiet:hover { background: none; color: var(--ink); }
+
+.rti-redraft .update-panel { margin-top: var(--s1); }
+
+@media (min-width: 900px) {
+  .rti { padding: var(--s5); }
+}
+
+@media (prefers-contrast: more) {
+  .rti-doc .fillin { outline: 1px solid var(--attention); }
+}

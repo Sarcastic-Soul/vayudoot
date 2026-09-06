@@ -1,0 +1,442 @@
+{#
+  The evidence pack. One self-contained document: inline styles, embedded
+  photographs, an SVG diagram drawn from the case's own coordinates. Nothing
+  here may reference an external URL — a pack is usually read offline, and a
+  broken image is worse than no image. See pack.py for why this is HTML.
+#}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evidence pack — {{ case.case_id }}</title>
+<style>
+  /* System fonts only. A web font would be an external request, and the local
+     language block needs Indic shaping the browser already does with whatever
+     the machine has installed. The stack names the Noto families first because
+     they are the ones most likely to be present and to cover every script this
+     project drafts in. */
+  :root {
+    --ink: #1e241f;
+    --muted: #5c665e;
+    --rule: #d5dcd6;
+    --paper: #ffffff;
+    --wash: #f4f6f4;
+    --flag: #8a4b3c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px 20px 64px;
+    background: var(--wash);
+    color: var(--ink);
+    font-family: "Noto Serif", Georgia, "Times New Roman", serif;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .sheet {
+    max-width: 820px;
+    margin: 0 auto;
+    background: var(--paper);
+    padding: 40px 44px 52px;
+    border: 1px solid var(--rule);
+  }
+  h1 { font-size: 25px; margin: 0 0 4px; line-height: 1.2; }
+  h2 {
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    margin: 34px 0 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--rule);
+    font-family: system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  h3 { font-size: 14px; margin: 18px 0 6px; }
+  p { margin: 0 0 10px; }
+  .subtitle { color: var(--muted); margin: 0 0 18px; font-size: 13px; }
+  .status {
+    display: inline-block;
+    font-family: system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid var(--ink);
+    padding: 2px 8px;
+    margin-right: 6px;
+  }
+  dl.facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 18px;
+    margin: 0;
+    font-size: 14px;
+  }
+  dl.facts dt { color: var(--muted); }
+  dl.facts dd { margin: 0; }
+  ul { margin: 0 0 10px; padding-left: 20px; }
+  .prose { white-space: pre-wrap; }
+  .local {
+    white-space: pre-wrap;
+    font-family: "Noto Sans Devanagari", "Noto Sans Kannada", "Noto Sans Tamil",
+      "Noto Sans Telugu", "Noto Sans Bengali", "Noto Sans Gujarati",
+      "Noto Sans Gurmukhi", "Noto Sans Malayalam", "Noto Sans Oriya",
+      "Nirmala UI", "Lohit Devanagari", "Noto Sans", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+  }
+  figure { margin: 0 0 16px; }
+  figure img { width: 100%; height: auto; border: 1px solid var(--rule); display: block; }
+  figcaption { font-size: 12px; color: var(--muted); margin-top: 5px; }
+  .photos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .note {
+    border-left: 3px solid var(--flag);
+    padding: 8px 0 8px 12px;
+    margin: 12px 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .timeline { list-style: none; padding: 0; margin: 0; font-size: 13.5px; }
+  .timeline li { padding: 5px 0; border-bottom: 1px dotted var(--rule); }
+  .timeline time { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 10px; }
+  footer { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--rule);
+           font-size: 12.5px; color: var(--muted); }
+  .diagram { border: 1px solid var(--rule); background: var(--wash); }
+
+  @page { size: A4; margin: 15mm; }
+  @media print {
+    body { background: #fff; padding: 0; font-size: 11.5pt; }
+    .sheet { border: 0; padding: 0; max-width: none; }
+    /* Keep a photograph, a fact table and the diagram whole, but let a long
+       section such as the complaint body flow across a page break. Holding a
+       whole section together sounds tidier and prints half-empty pages. */
+    figure, dl.facts, .diagram, .note { break-inside: avoid; }
+    h2, h3 { break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <h1>Pollution complaint — evidence pack</h1>
+    <p class="subtitle">
+      Case {{ case.case_id }} &middot;
+      compiled {{ generated_at.strftime("%d %B %Y, %H:%M UTC") }}
+    </p>
+    <p>
+      <span class="status">{{ case.status.value.replace("_", " ") }}</span>
+      <span class="status">stage: {{ case.stage.value }}</span>
+      {% if escalation_due %}<span class="status">escalation due</span>{% endif %}
+    </p>
+  </header>
+
+  <section>
+    <h2>At a glance</h2>
+    <dl class="facts">
+      <dt>Observed</dt><dd>{{ report.observed_at.strftime("%d %B %Y, %H:%M UTC") }}</dd>
+      <dt>Location</dt>
+      <dd>{{ case.address or "Address not resolved" }}
+          ({{ "%.5f"|format(report.latitude) }}, {{ "%.5f"|format(report.longitude) }})</dd>
+      {% if case.evidence %}
+      <dt>Classified as</dt>
+      <dd>{{ case.evidence.pollution_type.value.replace("_", " ") }},
+          {{ case.evidence.severity }} severity,
+          confidence {{ "%.2f"|format(case.evidence.confidence) }}</dd>
+      {% endif %}
+      <dt>Evidence basis</dt>
+      <dd>
+        {% if photographs|length == 0 %}
+          No photograph; the citizen's written account
+        {% elif photographs|length == 1 %}
+          One photograph and the citizen's note
+        {% else %}
+          {{ photographs|length }} photographs of one event, and the citizen's note
+        {% endif %}
+      </dd>
+      {% if case.jurisdiction %}
+      <dt>Filed with</dt>
+      <dd>{{ case.jurisdiction.authority_name }}
+          ({{ case.jurisdiction.authority_tier }})</dd>
+      <dt>Under</dt>
+      <dd>{{ case.jurisdiction.statute }}{% if case.jurisdiction.section %},
+          {{ case.jurisdiction.section }}{% endif %}</dd>
+      {% endif %}
+      {% if case.filed_at %}
+      <dt>Filed on</dt><dd>{{ case.filed_at.strftime("%d %B %Y") }}</dd>
+      {% endif %}
+      {% if case.acknowledged_at %}
+      <dt>Acknowledged</dt><dd>{{ case.acknowledged_at.strftime("%d %B %Y") }}</dd>
+      {% endif %}
+      {% if case.escalated_at %}
+      <dt>Escalated</dt><dd>{{ case.escalated_at.strftime("%d %B %Y") }}</dd>
+      {% endif %}
+      {% if case.resolved_at %}
+      <dt>Resolved</dt><dd>{{ case.resolved_at.strftime("%d %B %Y") }}</dd>
+      {% endif %}
+      {% if case.withdrawn_at %}
+      <dt>Withdrawn</dt><dd>{{ case.withdrawn_at.strftime("%d %B %Y") }}</dd>
+      {% endif %}
+      {% if cluster %}
+      <dt>Pattern</dt>
+      <dd>{{ cluster.cluster_id }} &mdash; {{ cluster.report_count }} reports</dd>
+      {% endif %}
+    </dl>
+  </section>
+
+  <section>
+    <h2>Photographs</h2>
+    {% if photographs %}
+      <div class="photos">
+        {% for photo in photographs %}
+        <figure>
+          <img src="{{ photo.src }}" alt="{{ photo.caption }}">
+          <figcaption>{{ photo.caption }}</figcaption>
+        </figure>
+        {% endfor %}
+      </div>
+      {% if photographs|length > 1 %}
+      <p class="subtitle">
+        These are angles on one event, submitted together with one report.
+      </p>
+      {% endif %}
+    {% else %}
+      <p class="note">
+        No photograph was submitted with this report{% if report.image_paths %},
+        or the files are no longer on disk{% endif %}. The classification below rests on the
+        citizen's written account, and the complaint is written as testimony rather than as
+        photographic evidence.
+      </p>
+    {% endif %}
+    {% if report.note %}
+      <h3>The citizen's note</h3>
+      <p class="prose">{{ report.note }}</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>Location</h2>
+    <div class="diagram">{{ map_svg|safe }}</div>
+    <p class="subtitle">
+      A diagram, not a map. It is drawn from the coordinates on the case, with no basemap
+      or map tiles, so this document opens without making any network request.
+      {%- if case.corroboration and case.corroboration.upwind_source_latitude is not none %}
+      The open circle is where the wind at the time of the report says a source would have
+      to lie. It is a bearing, not an observation: nothing here can see what is there.
+      {%- endif %}
+    </p>
+  </section>
+
+  {% if case.evidence %}
+  <section>
+    <h2>What the report shows</h2>
+    <dl class="facts">
+      <dt>Classification</dt>
+      <dd>{{ case.evidence.pollution_type.value.replace("_", " ") }}</dd>
+      <dt>Severity</dt><dd>{{ case.evidence.severity }}</dd>
+      <dt>Confidence</dt><dd>{{ "%.2f"|format(case.evidence.confidence) }}</dd>
+    </dl>
+    {% if case.evidence.visible_indicators %}
+    <h3>Indicators</h3>
+    <ul>{% for item in case.evidence.visible_indicators %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if case.evidence.landmarks %}
+    <h3>Landmarks recorded</h3>
+    <ul>{% for item in case.evidence.landmarks %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if case.evidence.reasoning %}
+    <h3>Reasoning</h3>
+    <p class="prose">{{ case.evidence.reasoning }}</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if case.corroboration %}
+  <section>
+    <h2>Independent evidence</h2>
+    <p>
+      <strong>
+        {% if case.corroboration.corroborated %}
+          Corroborated by an independent sensor.
+        {% else %}
+          Not corroborated by an independent sensor.
+        {% endif %}
+      </strong>
+      {% if not case.corroboration.corroborated %}
+      An absence of detections is usually an absence of coverage rather than an absence of
+      the event: hyper-local pollution routinely escapes satellites and distant stations.
+      {% endif %}
+    </p>
+    <dl class="facts">
+      {% if case.corroboration.satellite_summary %}
+      <dt>Satellite</dt><dd>{{ case.corroboration.satellite_summary }}</dd>
+      {% endif %}
+      <dt>Thermal detections</dt><dd>{{ case.corroboration.satellite_fire_detections }}</dd>
+      {% if case.corroboration.air_quality_summary %}
+      <dt>Ground stations</dt><dd>{{ case.corroboration.air_quality_summary }}</dd>
+      {% endif %}
+      {% if case.corroboration.nearest_station_km is not none %}
+      <dt>Nearest station</dt>
+      <dd>{{ "%.1f"|format(case.corroboration.nearest_station_km) }} km</dd>
+      {% endif %}
+      {% if case.corroboration.dominant_pollutant %}
+      <dt>Dominant pollutant</dt><dd>{{ case.corroboration.dominant_pollutant }}</dd>
+      {% endif %}
+      {% if case.corroboration.wind_speed_ms is not none %}
+      <dt>Wind</dt>
+      <dd>{{ case.corroboration.wind_speed_ms }} m/s
+          {% if case.corroboration.wind_from_degrees is not none %}
+          from {{ case.corroboration.wind_from_degrees }}&deg;{% endif %}</dd>
+      {% endif %}
+      {% if case.corroboration.upwind_source_latitude is not none %}
+      <dt>Back-traced point</dt>
+      <dd>{{ "%.5f"|format(case.corroboration.upwind_source_latitude) }},
+          {{ "%.5f"|format(case.corroboration.upwind_source_longitude) }}</dd>
+      {% endif %}
+    </dl>
+    {% if case.corroboration.corroboration_notes %}
+    <h3>Notes</h3>
+    <p class="prose">{{ case.corroboration.corroboration_notes }}</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if cluster %}
+  <section>
+    <h2>Pattern of repeat reports</h2>
+    <p>{{ pattern_sentence }}</p>
+    <dl class="facts">
+      <dt>Reference</dt><dd>{{ cluster.cluster_id }}</dd>
+      <dt>Reports</dt><dd>{{ cluster.report_count }}</dd>
+      <dt>First reported</dt><dd>{{ cluster.first_reported_at.strftime("%d %B %Y") }}</dd>
+      <dt>Most recent</dt><dd>{{ cluster.last_reported_at.strftime("%d %B %Y") }}</dd>
+      <dt>Identified reporters</dt><dd>{{ cluster.distinct_reporters }}</dd>
+      <dt>Anonymous submissions</dt><dd>{{ cluster.anonymous_reports }}</dd>
+    </dl>
+    <p class="subtitle">
+      Anonymous submissions may be one person or many; nothing stored can tell, so they are
+      counted apart rather than assumed independent.
+    </p>
+  </section>
+  {% endif %}
+
+  {% if case.jurisdiction %}
+  <section>
+    <h2>Jurisdiction</h2>
+    <dl class="facts">
+      <dt>Authority</dt><dd>{{ case.jurisdiction.authority_name }}</dd>
+      <dt>Tier</dt><dd>{{ case.jurisdiction.authority_tier }}</dd>
+      {% if case.jurisdiction.office %}
+      <dt>Office</dt><dd>{{ case.jurisdiction.office }}</dd>
+      {% endif %}
+      <dt>Statute</dt><dd>{{ case.jurisdiction.statute }}</dd>
+      {% if case.jurisdiction.section %}
+      <dt>Section</dt><dd>{{ case.jurisdiction.section }}</dd>
+      {% endif %}
+      <dt>Response window</dt><dd>{{ case.jurisdiction.response_window_days }} days</dd>
+      {% if case.jurisdiction.escalation_authority %}
+      <dt>Escalates to</dt><dd>{{ case.jurisdiction.escalation_authority }}</dd>
+      {% endif %}
+      <dt>Match quality</dt><dd>{{ case.jurisdiction.coverage }}</dd>
+    </dl>
+    {% if case.jurisdiction.coverage != "exact" %}
+    <p class="note">
+      This authority was not an exact entry in the jurisdiction table.
+      {{ case.jurisdiction.coverage_note or
+         "Confirm the correct office before relying on this addressee." }}
+    </p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if case.complaint %}
+  <section>
+    <h2>The complaint</h2>
+    <h3>{{ case.complaint.subject }}</h3>
+    <p class="prose">{{ case.complaint.body_en }}</p>
+    {% if case.complaint.requested_action %}
+    <h3>Action requested</h3>
+    <p class="prose">{{ case.complaint.requested_action }}</p>
+    {% endif %}
+    {% if case.complaint.cited_statutes %}
+    <h3>Statutes cited</h3>
+    <ul>{% for item in case.complaint.cited_statutes %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+
+  {% if case.complaint.body_local %}
+  <section>
+    <h2>{{ case.complaint.local_language or "Local language" }}</h2>
+    <p class="local">{{ case.complaint.body_local }}</p>
+  </section>
+  {% endif %}
+  {% endif %}
+
+  {% if case.rti %}
+  <section>
+    <h2>Right to Information application</h2>
+    <p class="subtitle">
+      Drafted for the citizen to complete and file in their own name. Nothing has been sent.
+    </p>
+    <p class="prose">{{ case.rti.body_en }}</p>
+    {% if case.rti.placeholders %}
+    <h3>To be filled in before filing</h3>
+    <ul>{% for item in case.rti.placeholders %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if case.rti.body_local %}
+    <h3>{{ case.rti.local_language or "Local language" }}</h3>
+    <p class="local">{{ case.rti.body_local }}</p>
+    {% endif %}
+  </section>
+  {% elif rti_available %}
+  <section>
+    <h2>Right to Information</h2>
+    <p class="note">
+      The statutory window has lapsed without an answer, so a Right to Information
+      application asking what action was taken can now be drafted for this case. None has
+      been yet.
+    </p>
+  </section>
+  {% endif %}
+
+  {% if case.history %}
+  <section>
+    <h2>Timeline</h2>
+    <ul class="timeline">
+      {% for entry in case.history %}
+      {% set stamp, _, text = entry.partition(" ") %}
+      <li><time>{{ stamp[:16].replace("T", " ") }}</time>{{ text }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <footer>
+    <p>
+      <strong>How this document was produced.</strong> Every classification, corroboration
+      summary and drafted paragraph above was written by a language model from the citizen's
+      submission and from public data sources. It is a prepared complaint, not a finding of
+      fact, and it names no responsible party.
+    </p>
+    <p>
+      <strong>Nothing here was delivered to a regulator by this system.</strong>
+      {% if live_filing %}
+      Live filing is switched on in this deployment's configuration, but no delivery
+      transport exists in this software, so filing raises rather than sends.
+      {% else %}
+      Filing writes the complaint to a local sandbox outbox. The authority addresses this
+      instance holds are reserved, non-routable placeholders.
+      {% endif %}
+      Sending this to the authority named above is a decision for the citizen.
+    </p>
+    <p>
+      <strong>Reporter contact is withheld.</strong> The contact the citizen gave is held on
+      the case and deliberately kept out of this document, which is written to be shared.
+      Add it to the copy you send if you want a reply.
+    </p>
+    <p>Case {{ case.case_id }}{% if cluster %} &middot; pattern {{ cluster.cluster_id }}
+      {%- endif %} &middot; compiled by Vayudoot on
+      {{ generated_at.strftime("%d %B %Y at %H:%M UTC") }}.</p>
+  </footer>
+
+</div>
+</body>
+</html>

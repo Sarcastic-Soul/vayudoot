@@ -52,7 +52,8 @@ INCIDENT
   Type: {evidence.pollution_type.value}
   Severity: {evidence.severity}
   Classification confidence: {evidence.confidence:.2f}
-  Visible indicators: {', '.join(evidence.visible_indicators) or 'none recorded'}
+  Evidence basis: {_basis(report)}
+  Reported indicators: {', '.join(evidence.visible_indicators) or 'none recorded'}
   Citizen's note: {report.note or '(none)'}
 
 INDEPENDENT EVIDENCE
@@ -69,6 +70,23 @@ Write the complaint body citing only the statute and section given above."""
 
     result = await agent.invoke_async(prompt, structured_output_model=Complaint)
     return result.structured_output
+
+
+def _basis(report: Report) -> str:
+    """What the classification was actually made from.
+
+    Stated because a note-only report now reaches this stage. Before the evidence
+    prompt handled the no-photograph path, such a case always halted at the
+    confidence floor, so a complaint could safely assume a photograph existed.
+    It no longer can, and a letter that refers to a photograph nobody has is a
+    letter an authority can dismiss on the first reply.
+    """
+    count = len(report.image_paths)
+    if count == 0:
+        return "no photograph; the citizen's written account of what they observed"
+    if count == 1:
+        return "one photograph submitted by the citizen, plus their note"
+    return f"{count} photographs of the same event submitted by the citizen, plus their note"
 
 
 def _pattern_block(cluster: Cluster | None, case_id: str) -> str:

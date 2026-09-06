@@ -88,7 +88,18 @@ class Settings(BaseSettings):
     vayudoot_reports_per_day: int = 60
     #: Largest photograph accepted, in bytes. Phone JPEGs are 2-6 MB; anything
     #: past this is refused before it is read into a container with little RAM.
+    #: Applied per photograph; a report's whole body is allowed this much times
+    #: the image cap below.
     vayudoot_max_upload_bytes: int = 12 * 1024 * 1024
+    #: Photographs one report may carry. Every one of them is an image block in
+    #: the same evidence call, and at the 1568-pixel edge `images.py` normalises
+    #: to, each costs on the order of 1,500 tokens against a metered free tier —
+    #: so the cap is a budget line, not a form-validation nicety. Four is what a
+    #: citizen standing in front of a fire actually takes: the event, a wider
+    #: frame for context, a closer one for what is burning, and a sign or
+    #: landmark. Past that the angles repeat and the classification does not
+    #: improve, so the marginal image is quota spent for nothing.
+    vayudoot_max_images_per_report: int = 4
 
     # Repeat-report clustering. Grouping is pure logic over stored cases, so
     # these three numbers are the whole definition of "the same problem" — and

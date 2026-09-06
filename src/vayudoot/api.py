@@ -16,11 +16,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import clustering, filing, lifecycle, store
+from . import clustering, filing, lifecycle, pack, register, store
 from .agents import draft_rti_application
 from .config import settings
 from .images import UnsupportedImage, normalise, suffix_for
@@ -31,6 +31,17 @@ from .tools.authorities import authority_table
 from .tools.geocode import reverse_geocode, search_places
 
 log = logging.getLogger(__name__)
+
+# The citizen's own email or phone. It is needed server-side — the RTI names an
+# applicant, clustering counts distinct reporters — but it has no business
+# leaving the process. There is no login here by design, so `GET /cases` is
+# world-readable: without this, one unauthenticated request returns every
+# contact ever submitted. Applied to every route that returns a Case, and
+# `test_no_case_route_leaks_the_reporter_contact` fails when a new one forgets.
+CASE_EXCLUDE: dict = {"report": {"reporter_contact"}}
+CASE_LIST_EXCLUDE: dict = {"__all__": CASE_EXCLUDE}
+
+
 
 #: How long a note on a lifecycle transition may be. These are one-line records
 #: of what happened — "site inspected, burning stopped" — not correspondence.
@@ -91,34 +102,56 @@ def _spawn(coro) -> None:
 
 @app.middleware("http")
 async def refuse_an_oversized_body(request: Request, call_next):
-    """Reject a body too large to be a photograph before it is parsed.
+    """Reject a body too large to be a set of photographs before it is parsed.
 
     Once the endpoint is entered the multipart parser has already consumed the
     whole request, so this is the only place a huge upload can be turned away
     without handling it. `Content-Length` is a claim, not proof, which is why the
     read in `_read_capped` counts the bytes as well.
+
+    The body budget is the per-photograph limit times the number of photographs a
+    report may carry. Each is still read and refused one at a time, so the memory
+    high-water mark is one raw image, not the whole body.
     """
     declared = request.headers.get("content-length")
-    limit = settings.vayudoot_max_upload_bytes
+    limit = _body_budget()
     oversized = declared and declared.isdigit() and int(declared) > limit + _MULTIPART_OVERHEAD
     if request.method == "POST" and oversized:
         return JSONResponse(status_code=413, content={"detail": _too_large(int(declared))})
     return await call_next(request)
 
 
+def _body_budget() -> int:
+    return settings.vayudoot_max_upload_bytes * max(1, settings.vayudoot_max_images_per_report)
+
+
 def _too_large(size: int | None = None) -> str:
     limit_mb = settings.vayudoot_max_upload_bytes / (1024 * 1024)
+    most = settings.vayudoot_max_images_per_report
     seen = f" That one is {size / (1024 * 1024):.1f} MB." if size else ""
     return (
-        f"That photograph is too large. The limit is {limit_mb:.0f} MB.{seen} "
-        "Most phones can send a smaller copy; a resized photograph is enough here, "
-        "since the image is scaled down before it is read anyway."
+        f"That photograph is too large. The limit is {limit_mb:.0f} MB each, for up to "
+        f"{most} photographs.{seen} Most phones can send a smaller copy; a resized "
+        "photograph is enough here, since the image is scaled down before it is read anyway."
     )
 
 
-async def _read_capped(image: UploadFile) -> bytes:
-    """Read an upload, refusing it the moment it goes past the limit."""
-    limit = settings.vayudoot_max_upload_bytes
+def _too_many(count: int) -> str:
+    most = settings.vayudoot_max_images_per_report
+    return (
+        f"That is {count} photographs; at most {most} are accepted. Every photograph is "
+        "read by the model in the same call, so each one spends the day's metered "
+        f"allowance. Send the {most} that show the event most clearly."
+    )
+
+
+async def _read_capped(image: UploadFile, budget: int) -> bytes:
+    """Read an upload, refusing it the moment it goes past the limit.
+
+    `budget` is what is left of the request's total allowance, so a caller cannot
+    get around the per-photograph cap by sending several photographs just under it.
+    """
+    limit = min(settings.vayudoot_max_upload_bytes, budget)
     if image.size is not None and image.size > limit:
         raise HTTPException(413, _too_large(image.size))
 
@@ -130,6 +163,41 @@ async def _read_capped(image: UploadFile) -> bytes:
             raise HTTPException(413, _too_large(total))
         chunks.append(chunk)
     return b"".join(chunks)
+
+
+async def _store_photographs(images: list[UploadFile]) -> list[str]:
+    """Normalise every submitted photograph and write it to the uploads directory.
+
+    Normalising at the door rather than at the model means an unreadable file is
+    a 415 the citizen can act on, instead of a case that fails four seconds later
+    for no visible reason.
+    """
+    submitted = [image for image in images if image is not None and image.filename]
+    if not submitted:
+        return []
+    if len(submitted) > settings.vayudoot_max_images_per_report:
+        raise HTTPException(413, _too_many(len(submitted)))
+
+    uploads = settings.vayudoot_upload_dir
+    uploads.mkdir(parents=True, exist_ok=True)
+
+    remaining = _body_budget()
+    paths: list[str] = []
+    for position, image in enumerate(submitted, start=1):
+        raw = await _read_capped(image, remaining)
+        remaining -= len(raw)
+        try:
+            image_format, data = normalise(raw)
+        except UnsupportedImage as exc:
+            where = f" (photograph {position} of {len(submitted)})" if len(submitted) > 1 else ""
+            raise HTTPException(
+                415, f"That file could not be read as a photograph{where}: {exc}"
+            ) from exc
+
+        path = uploads / f"{uuid.uuid4().hex}{suffix_for(image_format)}"
+        path.write_bytes(data)
+        paths.append(str(path))
+    return paths
 
 
 def _client_key(request: Request) -> str:
@@ -164,16 +232,21 @@ def health() -> dict:
     }
 
 
-@app.post("/reports", response_model=Case, status_code=202)
+@app.post("/reports", response_model=Case, status_code=202, response_model_exclude=CASE_EXCLUDE)
 async def submit_report(
     request: Request,
     latitude: float = Form(...),
     longitude: float = Form(...),
     note: str = Form(""),
     contact: str = Form(""),
-    image: UploadFile | None = File(None),
+    image: list[UploadFile] | None = File(None),
 ) -> Case:
-    """Accept a report and start the pipeline. Returns before the run finishes."""
+    """Accept a report and start the pipeline. Returns before the run finishes.
+
+    `image` is repeatable: one angle is often not enough to classify a plume, and
+    the confidence floor then halts a real event. Sending the field once is
+    exactly what it always was.
+    """
     # Metered before anything else: this is the endpoint that spends the day's
     # model quota, and the cheapest refusal is the one made before any work.
     decision = limiter.check(_client_key(request))
@@ -182,28 +255,13 @@ async def submit_report(
             429, decision.message, headers={"Retry-After": str(decision.retry_after_seconds)}
         )
 
-    image_path = None
-    if image is not None and image.filename:
-        # Normalise at the door rather than at the model. Whatever the phone sent
-        # is decoded here, so an unreadable file is a 415 the citizen can act on
-        # instead of a case that fails four seconds later for no visible reason.
-        try:
-            image_format, data = normalise(await _read_capped(image))
-        except UnsupportedImage as exc:
-            raise HTTPException(415, f"That file could not be read as a photograph: {exc}") from exc
-
-        uploads = settings.vayudoot_upload_dir
-        uploads.mkdir(parents=True, exist_ok=True)
-        image_path = uploads / f"{uuid.uuid4().hex}{suffix_for(image_format)}"
-        image_path.write_bytes(data)
-
     report = Report(
         report_id=uuid.uuid4().hex,
         latitude=latitude,
         longitude=longitude,
         note=note,
         reporter_contact=contact,
-        image_path=str(image_path) if image_path else None,
+        image_paths=await _store_photographs(image or []),
     )
 
     case = new_case(report)
@@ -251,12 +309,12 @@ def list_clusters() -> list[Cluster]:
     return clustering.clusters()
 
 
-@app.get("/cases", response_model=list[Case])
+@app.get("/cases", response_model=list[Case], response_model_exclude=CASE_LIST_EXCLUDE)
 def list_cases() -> list[Case]:
     return store.all_cases()
 
 
-@app.get("/cases/{case_id}", response_model=Case)
+@app.get("/cases/{case_id}", response_model=Case, response_model_exclude=CASE_EXCLUDE)
 def get_case(case_id: str) -> Case:
     return _require(case_id)
 
@@ -274,18 +332,109 @@ def get_case_cluster(case_id: str) -> Cluster | None:
 
 @app.get("/cases/{case_id}/photo")
 def get_case_photo(case_id: str) -> FileResponse:
-    """Serve the submitted photograph, and only from the uploads directory."""
-    case = _require(case_id)
-    if not case.report.image_path:
-        raise HTTPException(404, "This report has no photograph")
+    """Serve the first submitted photograph.
 
-    path = Path(case.report.image_path).resolve()
+    Unchanged on purpose: this URL predates multiple photographs and anything
+    holding it — a bookmark, the interface, a printed pack — must keep resolving
+    to the same picture. The rest are addressed by index below.
+    """
+    return _serve_photo(_require(case_id), 0)
+
+
+@app.get("/cases/{case_id}/photo/{index}")
+def get_case_photo_at(case_id: str, index: int) -> FileResponse:
+    """Serve the nth submitted photograph, counting from zero."""
+    return _serve_photo(_require(case_id), index)
+
+
+def _serve_photo(case: Case, index: int) -> FileResponse:
+    """Serve one of a case's photographs, and only from the uploads directory."""
+    paths = case.report.image_paths
+    if not paths:
+        raise HTTPException(404, "This report has no photograph")
+    if not 0 <= index < len(paths):
+        raise HTTPException(
+            404, f"This report has {len(paths)} photograph(s); there is no photograph {index}"
+        )
+
+    path = Path(paths[index]).resolve()
     uploads = settings.vayudoot_upload_dir.resolve()
     if uploads not in path.parents or not path.exists():
         raise HTTPException(404, "Photograph is no longer available")
 
     media_type = _IMAGE_MEDIA_TYPES.get(path.suffix.lower(), "application/octet-stream")
     return FileResponse(path, media_type=media_type)
+
+
+@app.get("/cases/{case_id}/pack", response_class=HTMLResponse)
+def get_case_pack(case_id: str) -> HTMLResponse:
+    """The whole case as one document to print, attach, or hand over.
+
+    Self-contained HTML: photographs embedded as data URIs, an SVG locator drawn
+    from the case's own coordinates, styles inline. It opens offline with no
+    external requests and prints to PDF from any browser, which is what makes the
+    local-language half of the complaint render correctly. See `pack.py` for why
+    that beats a PDF library here.
+
+    The citizen's contact is deliberately not in it; this file is meant to be
+    passed on.
+    """
+    case = _require(case_id)
+    document = pack.render(case)
+    return HTMLResponse(
+        document,
+        headers={
+            # Named so a folder of packs sorts and reads sensibly, but shown in
+            # the browser rather than downloaded: most people want to read it
+            # and then print it, and a forced download hides both.
+            "Content-Disposition": f'inline; filename="{case.case_id}-evidence-pack.html"'
+        },
+    )
+
+
+@app.get("/register", response_model=list[register.PublicCase])
+def get_register() -> list[register.PublicCase]:
+    """Every filed complaint, as a shareable read-only record.
+
+    Only cases a human confirmed and filed appear here, and every field is an
+    explicit allowlist in `register.py`. The citizen's contact never appears, and
+    neither does their free-text note.
+    """
+    return register.register()
+
+
+@app.get("/register/{case_id}", response_model=register.PublicCase)
+def get_register_case(case_id: str) -> register.PublicCase:
+    """One filed complaint as a public record.
+
+    A case that exists but is not public answers 404, exactly as a missing one
+    does. The register must not confirm that a withdrawn or rejected complaint
+    was ever made.
+    """
+    public = register.public_case(case_id)
+    if public is None:
+        raise HTTPException(404, f"No public case: {case_id}")
+    return public
+
+
+@app.get("/register/{case_id}/photo")
+def get_register_photo(case_id: str) -> FileResponse:
+    """The first photograph of a filed complaint."""
+    return _serve_photo(_require_public(case_id), 0)
+
+
+@app.get("/register/{case_id}/photo/{index}")
+def get_register_photo_at(case_id: str, index: int) -> FileResponse:
+    """The nth photograph of a filed complaint, counting from zero."""
+    return _serve_photo(_require_public(case_id), index)
+
+
+def _require_public(case_id: str) -> Case:
+    """Load a case only if the register publishes it."""
+    case = store.load(case_id)
+    if case is None or not register.is_public(case):
+        raise HTTPException(404, f"No public case: {case_id}")
+    return case
 
 
 @app.get("/cases/{case_id}/envelope", response_class=PlainTextResponse)
@@ -303,7 +452,7 @@ def get_case_envelope(case_id: str) -> str:
     return path.read_text()
 
 
-@app.post("/cases/{case_id}/confirm", response_model=Case)
+@app.post("/cases/{case_id}/confirm", response_model=Case, response_model_exclude=CASE_EXCLUDE)
 def confirm_and_file(case_id: str) -> Case:
     """The human-in-the-loop gate. Nothing is filed until a person confirms."""
     case = _require(case_id)
@@ -314,7 +463,7 @@ def confirm_and_file(case_id: str) -> Case:
     return case
 
 
-@app.post("/cases/{case_id}/escalate", response_model=Case)
+@app.post("/cases/{case_id}/escalate", response_model=Case, response_model_exclude=CASE_EXCLUDE)
 def escalate_case(case_id: str) -> Case:
     case = _require(case_id)
     if not filing.escalation_due(case):
@@ -331,7 +480,7 @@ def _not_due(case: Case) -> str:
     return "The statutory response window has not yet lapsed"
 
 
-@app.post("/cases/{case_id}/rti", response_model=Case)
+@app.post("/cases/{case_id}/rti", response_model=Case, response_model_exclude=CASE_EXCLUDE)
 async def draft_rti(case_id: str, redraft: bool = False) -> Case:
     """Draft a Right to Information application for a complaint that was ignored.
 
@@ -390,7 +539,7 @@ def _rti_not_available(case: Case) -> str:
     )
 
 
-@app.post("/cases/{case_id}/acknowledge", response_model=Case)
+@app.post("/cases/{case_id}/acknowledge", response_model=Case, response_model_exclude=CASE_EXCLUDE)
 def acknowledge_case(case_id: str, body: AcknowledgeRequest | None = None) -> Case:
     """Record that the authority responded.
 
@@ -406,7 +555,7 @@ def acknowledge_case(case_id: str, body: AcknowledgeRequest | None = None) -> Ca
     return case
 
 
-@app.post("/cases/{case_id}/resolve", response_model=Case)
+@app.post("/cases/{case_id}/resolve", response_model=Case, response_model_exclude=CASE_EXCLUDE)
 def resolve_case(case_id: str, body: NoteRequest | None = None) -> Case:
     """Close the case: the pollution stopped, or the authority acted."""
     body = body or NoteRequest()
@@ -417,7 +566,7 @@ def resolve_case(case_id: str, body: NoteRequest | None = None) -> Case:
     return case
 
 
-@app.post("/cases/{case_id}/withdraw", response_model=Case)
+@app.post("/cases/{case_id}/withdraw", response_model=Case, response_model_exclude=CASE_EXCLUDE)
 def withdraw_case(case_id: str, body: NoteRequest | None = None) -> Case:
     """The citizen takes the complaint back. Nothing further is filed or chased."""
     body = body or NoteRequest()

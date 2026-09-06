@@ -1,0 +1,416 @@
+/* Repeat patterns.
+ *
+ * A pattern is drawn in `info`, never in the accent. The accent in this system
+ * means "act" or "ended well"; a pattern is neither. It is a fact about a case
+ * that changes how the case should be read, which is the same weight the
+ * coverage warning carries — so it takes the same band shape.
+ *
+ * The count of reports is the only number given display size. Nothing here is
+ * allowed to look like a headcount of people: the reporter split sits in its
+ * own block, at meta size, next to the sentence that says what it does and does
+ * not prove. Reading "15" and thinking "fifteen neighbours" is the specific
+ * mistake this page exists to prevent.
+ *
+ * The card recipe, `.pill`, `.timeline-head`, `.note` and `.empty` come from
+ * case.css and shell.css. Nothing here invents a second border or a third
+ * radius. */
+
+/* ── the section on the cases view ───────────────────────────────────── */
+
+.patterns { margin-bottom: var(--s6); }
+
+.patterns-lead {
+  max-width: var(--measure);
+  margin-bottom: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+/* When there are cases but no pattern among them. A line, not an empty state:
+   nothing is missing, and there is nothing for the reader to do about it. */
+.note.patterns-none { margin: 0 0 var(--s6); }
+.note.patterns-none strong { color: var(--ink); font-weight: var(--w-semi); }
+
+.cluster-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+
+.cluster-list button {
+  width: 100%;
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--info);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.cluster-list button:hover { border-color: var(--info); box-shadow: var(--shadow-2); }
+.cluster-list button:active { transform: translateY(1px); }
+
+.cluster-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+}
+
+.cluster-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  text-transform: capitalize;
+}
+
+.cluster-kind svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--info);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cluster-id {
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* Three figures, and only the first is a count of anything human. They are set
+   as a row of measurements rather than as tiles so that none of them acquires
+   the authority of a headline statistic. */
+.cluster-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3) var(--s5);
+}
+
+.cluster-figures .figure {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.cluster-figures strong {
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  line-height: 1;
+  letter-spacing: var(--track-display);
+}
+
+.cluster-figures .figure > span {
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.cluster-list .where {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.cluster-list .where svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cluster-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s1) var(--s3);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.cluster-who { color: var(--ink); font-weight: var(--w-medium); }
+.cluster-foot .when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ── the badge on a case ─────────────────────────────────────────────── */
+
+.cluster-badge {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: var(--s1) var(--s3);
+  padding: var(--s3) var(--s4);
+  margin-bottom: var(--s5);
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-left: 3px solid var(--info);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+.cluster-badge:hover { border-color: var(--info); }
+
+.cluster-badge > svg {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  color: var(--info);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cluster-badge-body { display: grid; gap: 2px; min-width: 0; }
+
+.cluster-badge-head {
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-snug);
+}
+
+.cluster-badge-note {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.cluster-badge-go {
+  grid-column: 2;
+  justify-self: start;
+  margin-top: var(--s1);
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  color: var(--info);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cluster-badge:hover .cluster-badge-go { text-decoration-thickness: 2px; }
+
+/* ── the pattern's own page ──────────────────────────────────────────── */
+
+.cluster-lead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  max-width: var(--measure);
+  font-size: var(--t-body);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.cluster-lead strong { color: var(--ink); font-weight: var(--w-semi); }
+
+.cluster-lead svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-top: 3px;
+  color: var(--info);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cluster-grid { display: block; }
+
+/* Who reported. The one block on this page that is about people, and the only
+   one that has to argue with the reader's first instinct — so it leads with the
+   sentence and puts the two numbers underneath it, rather than the other way
+   round. Amber, because it is a caution about how the count may be read. */
+.who-card {
+  padding: var(--s4);
+  margin-bottom: var(--s5);
+  background: var(--attention-tint);
+  border: 1px solid var(--attention-line);
+  border-radius: var(--radius);
+}
+
+.who-line {
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+}
+
+.who-caveat {
+  margin-top: var(--s2);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  max-width: var(--measure);
+}
+
+.who-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3) var(--s6);
+  margin: var(--s4) 0 0;
+  padding-top: var(--s3);
+  border-top: 1px solid var(--attention-line);
+}
+
+.who-split dt {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.who-split dd {
+  margin: 2px 0 0;
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  line-height: 1;
+  color: var(--ink);
+}
+
+.cluster-facts {
+  display: grid;
+  gap: 0;
+  margin: 0 0 var(--s5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+
+.cluster-facts > div {
+  display: grid;
+  grid-template-columns: minmax(110px, auto) 1fr;
+  align-items: baseline;
+  gap: var(--s3) var(--s4);
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--line);
+}
+
+.cluster-facts > div:first-child { border-top: 0; }
+
+.cluster-facts dt {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.cluster-facts dd {
+  margin: 0;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ── the members ─────────────────────────────────────────────────────── */
+
+.member-list { list-style: none; margin: 0 0 var(--s5); padding: 0; display: grid; gap: var(--s2); }
+
+.member-list button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.member-list button:hover { border-color: var(--line-strong); box-shadow: var(--shadow-2); }
+
+/* The position in the sequence, which is the number a complaint quotes. */
+.member-n {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  color: var(--info);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-radius: 50%;
+}
+
+.member-body { display: grid; gap: var(--s1); min-width: 0; }
+
+.member-list .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s1) var(--s3);
+}
+
+.member-list .row strong {
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.member-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+@media (min-width: 900px) {
+  .cluster-list { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+}
+
+/* The facts and the members side by side once there is room for both, with the
+   members on the right: the list is the longer column and the one being
+   scanned, so it gets the position the reader lands on. */
+@media (min-width: 1080px) {
+  .cluster-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--s6);
+  }
+}

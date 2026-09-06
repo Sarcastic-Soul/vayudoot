@@ -11,14 +11,16 @@ import { useEffect, useState } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
 import { api } from "../lib/api.js";
 import { navigate } from "../lib/router.js";
-import { useCase } from "../lib/store.js";
+import { useCase, useCaseCluster } from "../lib/store.js";
 import { whereOf } from "../lib/format.js";
 import { BackIcon, PinIcon } from "./Icons.js";
 import { CaseActions } from "./CaseActions.js";
 import { CaseHistory } from "./CaseHistory.js";
 import { CaseStatusSkeleton } from "./Skeletons.js";
+import { ClusterBadge } from "./ClusterBadge.js";
 import { Complaint } from "./Complaint.js";
 import { CoverageWarning } from "./CoverageWarning.js";
+import { RTIPanel } from "./RTIPanel.js";
 import { StatusBanner } from "./CaseStatus.js";
 import { Timeline } from "./Timeline.js";
 
@@ -28,6 +30,9 @@ export function CaseView({ caseId }) {
   const [record, setRecord] = useCase(caseId);
   const [envelope, setEnvelope] = useState("");
   const status = record ? record.status : null;
+  /* Asked again whenever the case moves: a run that has only just classified
+     the photograph has only just become groupable at all. */
+  const cluster = useCaseCluster(caseId, record ? `${record.stage}:${status}` : "");
 
   useEffect(() => {
     if (!status || !FILED.includes(status)) { setEnvelope(""); return undefined; }
@@ -52,6 +57,8 @@ export function CaseView({ caseId }) {
 
     ${record && html`<${CoverageWarning} jurisdiction=${record.jurisdiction} />`}
 
+    ${record && html`<${ClusterBadge} cluster=${cluster} caseId=${caseId} />`}
+
     ${!record && html`<${CaseStatusSkeleton} />`}
 
     ${record && html`
@@ -70,6 +77,8 @@ export function CaseView({ caseId }) {
         <div class="case-col">
           ${record.complaint && html`<${Complaint} complaint=${record.complaint} />`}
           <${CaseActions} record=${record} onUpdate=${setRecord} />
+
+          <${RTIPanel} record=${record} onUpdate=${setRecord} />
 
           ${envelope && html`
             <details class="envelope" open>

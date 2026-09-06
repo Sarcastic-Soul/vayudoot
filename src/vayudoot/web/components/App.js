@@ -1,9 +1,9 @@
 /* The shell.
  *
- * All four sections live in the document at once and the stylesheet decides
+ * All five sections live in the document at once and the stylesheet decides
  * which is on screen — the report form in particular, because its map and its
  * geolocation prompt belong to page load rather than to a route change. The
- * three other views mount only while they are the route, which is what stops
+ * four other views mount only while they are the route, which is what stops
  * the case poll when the reader leaves. */
 
 import { useEffect } from "../vendor/hooks.mjs";
@@ -16,6 +16,7 @@ import { Sidebar } from "./Sidebar.js";
 import { ReportForm } from "./ReportForm.js";
 import { CaseView } from "./CaseView.js";
 import { CasesView } from "./CasesView.js";
+import { ClusterView } from "./ClusterView.js";
 import { CoverageView } from "./CoverageView.js";
 
 export function App() {
@@ -28,7 +29,7 @@ export function App() {
     // A map that was hidden has no size; it needs telling once it is shown.
     const timer = setTimeout(resizeMaps, 80);
     return () => clearTimeout(timer);
-  }, [route.view, route.caseId]);
+  }, [route.view, route.caseId, route.clusterId]);
 
   useEffect(() => {
     let timer = null;
@@ -59,6 +60,10 @@ export function App() {
           </section>
           <section class=${viewClass("cases")}>
             ${route.view === "cases" && html`<${CasesView} />`}
+          </section>
+          <section class=${viewClass("cluster")}>
+            ${route.view === "cluster"
+              && html`<${ClusterView} key=${route.clusterId} clusterId=${route.clusterId} />`}
           </section>
           <section class=${viewClass("coverage")}>
             ${route.view === "coverage" && html`<${CoverageView} />`}

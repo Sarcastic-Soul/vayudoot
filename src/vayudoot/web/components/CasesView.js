@@ -9,9 +9,10 @@
 import { useEffect, useRef } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
-import { useCases } from "../lib/store.js";
+import { useCases, useClusters } from "../lib/store.js";
 import { words, whereOf, shortWhen } from "../lib/format.js";
 import { TILES, useLeafletMap } from "../lib/maps.js";
+import { ClusterCard } from "./ClusterCard.js";
 import { MapPane } from "./MapPane.js";
 import { CameraIcon, InboxIcon, PinIcon } from "./Icons.js";
 import { CaseListSkeleton } from "./Skeletons.js";
@@ -29,6 +30,14 @@ function popupFor(c) {
 
 export function CasesView() {
   const cases = useCases();
+  /* Patterns live here rather than behind a nav item of their own. A cluster is
+     not a fourth kind of thing the citizen owns — it is what several of these
+     cases turn out to be, computed from this same list — and a top-level
+     destination that is empty until three reports coincide would read as a
+     broken page far more often than as a feature. A filter would be worse
+     still: it would return cases, and the centre, radius, span and reporter
+     split that make a pattern an argument are not things a case card can say. */
+  const { data: clusters } = useClusters();
   const layer = useRef(null);
 
   const [container, map] = useLeafletMap((node) => {
@@ -66,11 +75,36 @@ export function CasesView() {
 
     <${MapPane} paneClass="cases-map" containerRef=${container} />
 
+    ${clusters && clusters.length > 0 && html`
+      <section class="patterns">
+        <div class="timeline-head">
+          <h3 class="section-label">Repeat patterns</h3>
+          <p class="timeline-progress tnum">
+            ${clusters.length === 1 ? "1 pattern" : `${clusters.length} patterns`}
+          </p>
+        </div>
+        <p class="patterns-lead">
+          Reports of the same kind, at the same place, close enough together in time to be one
+          problem rather than several. One photograph is an incident; a pattern is the argument
+          a regulator acts on. Strongest first.
+        </p>
+        <ul class="cluster-list">
+          ${clusters.map((cluster) => html`
+            <${ClusterCard} key=${cluster.cluster_id} cluster=${cluster} />`)}
+        </ul>
+      </section>`}
+
+    ${clusters && clusters.length === 0 && count > 0 && html`
+      <p class="note patterns-none">
+        <strong>No repeat patterns yet.</strong> When several reports of the same kind arrive
+        from the same place within the same window, they are grouped here as one — which is a
+        categorically stronger thing to put in front of an authority than any one of them.
+      </p>`}
+
     ${cases && count > 0 && html`
       <div class="timeline-head">
-        <h3 class="section-label">
-          ${count === 1 ? "1 case" : `${count} cases`}
-        </h3>
+        <h3 class="section-label">All cases</h3>
+        <p class="timeline-progress tnum">${count === 1 ? "1 case" : `${count} cases`}</p>
       </div>`}
 
     <ul class="case-list">

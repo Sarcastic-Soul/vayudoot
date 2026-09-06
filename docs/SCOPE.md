@@ -133,16 +133,32 @@ non-goals above that are not repeated here stay non-goals.
       thing the project can do, and it turns escalation from repetition into
       something with legal weight.
 
-- [ ] **Evidence pack.** One document carrying the photograph, the corroboration
+- [x] **Evidence pack.** One document carrying the photograph, the corroboration
       data, the map, the complaint and the timeline — something that can be
-      attached, printed, or handed to a journalist or an NGO.
+      attached, printed, or handed to a journalist or an NGO. Served at
+      `GET /cases/{id}/pack` as one self-contained HTML file: the complaint is
+      drafted in the region's language as well as English, and a browser already
+      shapes Devanagari, Kannada and Tamil correctly where most pure-Python PDF
+      writers silently drop the glyphs. It prints to PDF from anywhere, needs no
+      new dependency, and opens offline — photographs are embedded as data URIs
+      and the map is an SVG drawn from the case's own coordinates rather than a
+      tile fetched from a service. See `pack.py`.
 
-- [ ] **Public case register.** Cases are already deep-linkable; making one
+- [x] **Public case register.** Cases are already deep-linkable; making one
       shareable read-only turns individual complaints into a visible record,
-      which is where most of the accountability value lives.
+      which is where most of the accountability value lives. `GET /register`
+      publishes only cases a human confirmed and filed — a withdrawn case leaves
+      it, and a rejected, failed or unconfirmed one never enters. The projection
+      is an explicit allowlist in `register.py`, so a field added to `Case` later
+      is private until somebody publishes it deliberately. The reporter's
+      contact and their free-text note are never in it.
 
-- [ ] **Multiple photographs per report.** One angle is often not enough to
+- [x] **Multiple photographs per report.** One angle is often not enough to
       classify confidently, and the confidence floor then halts a real event.
+      `Report.image_paths` is a list, capped at four because every photograph is
+      an image block in the same evidence call and therefore quota. Cases stored
+      under the old single `image_path` key still load, and `/cases/{id}/photo`
+      still means the first photograph.
 
 ## Still out of scope, and why
 

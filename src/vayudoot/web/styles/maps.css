@@ -3,7 +3,7 @@
    maps expand. The Leaflet instance is untouched by that: only the size of its
    container changes. */
 
-.pick-map, .cases-map {
+.pick-map, .cases-map, .cluster-map {
   height: 240px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -11,7 +11,7 @@
   z-index: 0;
 }
 
-.cases-map { height: 260px; margin-bottom: var(--s5); }
+.cases-map, .cluster-map { height: 260px; margin-bottom: var(--s5); }
 
 .map-wrap { position: relative; }
 
@@ -57,7 +57,8 @@
 }
 
 .map-wrap.is-full .pick-map,
-.map-wrap.is-full .cases-map {
+.map-wrap.is-full .cases-map,
+.map-wrap.is-full .cluster-map {
   height: 100dvh;
   margin: 0;
   border: 0;
@@ -78,5 +79,5 @@ body.has-full-map { overflow: hidden; }
 
 @media (min-width: 900px) {
   .pick-map { height: 300px; }
-  .cases-map { height: 360px; }
+  .cases-map, .cluster-map { height: 360px; }
 }

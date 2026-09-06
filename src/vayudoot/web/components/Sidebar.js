@@ -35,9 +35,10 @@ export function Sidebar({ view, collapsed, onCollapse, theme, onTheme }) {
 
       <nav class="nav" aria-label="Sections">
         ${SECTIONS.map(({ view: name, target, label: text, hint, Icon }) => {
-          // A case is reached from the case list, so Cases stays current while
-          // one is being read.
-          const active = name === view || (name === "cases" && view === "case");
+          // A case and a repeat pattern are both reached from the case list,
+          // so Cases stays current while either is being read.
+          const active = name === view
+            || (name === "cases" && (view === "case" || view === "cluster"));
           return html`
             <button key=${name} class=${`nav-item${active ? " is-active" : ""}`}
                     aria-current=${active ? "page" : null}

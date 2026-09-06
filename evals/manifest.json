@@ -62,6 +62,30 @@
       "target": "prompt:DRAFTING",
       "must_match": ["Do not accuse a named party"],
       "why": "Naming a responsible party from a photograph is a permanent non-goal in docs/SCOPE.md, and this is the only place it is enforced at runtime."
+    },
+    {
+      "id": "evidence-classifies-a-note-without-a-photograph",
+      "target": "prompt:EVIDENCE",
+      "must_match": ["no photograph is a supported submission"],
+      "why": "The prompt was written entirely around a photograph, so every note-only report came back unclear at 0.10 to 0.40 and halted at the confidence floor. Three of the four classification cases failed on it. A report with no photograph is a path api.py accepts and the tests assert; this section is what makes it classifiable."
+    },
+    {
+      "id": "evidence-caps-a-note-only-confidence",
+      "target": "prompt:EVIDENCE",
+      "must_match": ["never go above 0\\.8 on a note alone"],
+      "why": "The other half of that fix, and the half that is easy to lose. Telling the model to classify from a note is one line away from telling it to be confident about text. Testimony nobody can check has to stay below a photograph or the confidence floor stops separating anything."
+    },
+    {
+      "id": "evidence-reads-several-photographs-as-one-event",
+      "target": "prompt:EVIDENCE",
+      "must_match": ["more evidence of one event, not evidence of several"],
+      "why": "A report may now carry several angles. Read as separate sightings they would inflate the severity and the confidence of one fire, and repetition would be mistaken for a second source."
+    },
+    {
+      "id": "drafting-claims-no-photograph-it-does-not-have",
+      "target": "prompt:DRAFTING",
+      "must_match": ["must not refer to a photograph"],
+      "why": "Note-only cases reach the drafting stage for the first time now that the evidence prompt classifies them. A complaint citing an attached photograph nobody has is one an authority can dismiss on the first reply."
     }
   ],
 

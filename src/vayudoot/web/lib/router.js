@@ -12,10 +12,13 @@ const listeners = new Set();
 
 export function currentRoute() {
   const hash = decodeURIComponent(location.hash.slice(1));
-  if (!hash) return { view: "report", caseId: null };
-  if (hash.startsWith("VD-")) return { view: "case", caseId: hash };
-  if (NAMED.includes(hash)) return { view: hash, caseId: null };
-  return { view: "report", caseId: null };
+  if (!hash) return { view: "report", caseId: null, clusterId: null };
+  // Before the case prefix, though the two do not actually collide: a cluster
+  // id is "VDC-", a case id is "VD-", and neither is a prefix of the other.
+  if (hash.startsWith("VDC-")) return { view: "cluster", caseId: null, clusterId: hash };
+  if (hash.startsWith("VD-")) return { view: "case", caseId: hash, clusterId: null };
+  if (NAMED.includes(hash)) return { view: hash, caseId: null, clusterId: null };
+  return { view: "report", caseId: null, clusterId: null };
 }
 
 /* `target` is what goes after the "#": "" for the report form, a view name, or

@@ -129,3 +129,91 @@ export function megabytes(bytes) {
 }
 
 export const whereOf = (c) => c.address || `${c.report.latitude}, ${c.report.longitude}`;
+
+/* ── the Right to Information lever ──────────────────────────────────────
+ * The client's copy of `filing.rti_available` and `filing.RTI_FROM`. The one
+ * place it differs from the escalation clock above is the thing worth knowing:
+ * this clock runs from `filed_at` and an acknowledgement does not restart it.
+ * An RTI asks what is on the file about the complaint filed on that date, and
+ * a receipt is not an answer to that question. */
+export const RTI_FROM = ["filed", "acknowledged", "escalated"];
+
+/* When an RTI application becomes justifiable, in epoch milliseconds, or null
+ * when this case has no filed complaint to ask about at all. */
+export function rtiAvailableAt(c) {
+  if (!RTI_FROM.includes(c.status)) return null;
+  if (!c.jurisdiction || !c.complaint || !c.filed_at) return null;
+  const filed = Date.parse(c.filed_at);
+  if (Number.isNaN(filed)) return null;
+  return filed + c.jurisdiction.response_window_days * 86400000;
+}
+
+export function rtiAvailable(c) {
+  const at = rtiAvailableAt(c);
+  return at !== null && Date.now() >= at;
+}
+
+/* ── repeat patterns ─────────────────────────────────────────────────────
+ * A cluster is derived server-side; these only phrase it. */
+
+/* The group's real extent, rounded up to the nearest 50 m — the same rounding
+ * `clustering._distance_label` uses, and for the same reason: 50 m is finer
+ * than a phone's GPS fix, so a tighter figure would be false precision. */
+export function extentLabel(radiusKm) {
+  const metres = Math.max(50, Math.ceil((radiusKm * 1000) / 50) * 50);
+  return metres < 1000 ? `${metres} m` : `${(metres / 1000).toFixed(1)} km`;
+}
+
+export const plural = (n, word) => `${n} ${n === 1 ? word : `${word}s`}`;
+
+/* How long the pattern has been running. A span of zero days is real — three
+ * reports in one afternoon — and "0 days" reads as missing data. */
+export const spanLabel = (days) => (days < 1 ? "under a day" : plural(days, "day"));
+
+/* Who reported, said so that it cannot be read as a headcount of witnesses.
+ *
+ * Independence is only partly knowable and the interface must not paper over
+ * which part. A contact string can be compared to another contact string; an
+ * anonymous submission can be compared to nothing. So the report count is
+ * never presented as a number of people, and every phrasing here names the
+ * limit rather than leaving the reader to assume there isn't one. */
+export function whoReported({ report_count: reports, distinct_reporters: named,
+  anonymous_reports: anon }) {
+  if (named === 0) {
+    return {
+      line: `${plural(reports, "report")}, all submitted anonymously`,
+      caveat: `No contact was left on any of them, so these ${reports} reports may come from `
+        + `${reports} people or from one. Nothing recorded here can tell them apart.`,
+    };
+  }
+  if (named === 1 && anon === 0) {
+    return {
+      line: `${plural(reports, "report")} from a single contact`,
+      caveat: "Every report here carries the same contact. That is one person reporting the "
+        + "same problem repeatedly — persistence, not corroboration. Do not present it as "
+        + `${reports} witnesses.`,
+    };
+  }
+  const parts = [`${plural(named, "identified contact")}`];
+  if (anon) parts.push(`${plural(anon, "anonymous report")}`);
+  return {
+    line: `${plural(reports, "report")} from ${parts.join(" and ")}`,
+    caveat: "Contacts are self-supplied and unverified, so distinct is not the same as "
+      + (anon
+        ? "independent — and the anonymous reports may be one person or several."
+        : "independent."),
+  };
+}
+
+/* Where a given case sits in its pattern: 1-based, 0 when it is not a member. */
+export function positionIn(cluster, caseId) {
+  const at = cluster.members.findIndex((m) => m.case_id === caseId);
+  return at < 0 ? 0 : at + 1;
+}
+
+export function ordinal(n) {
+  const suffix = n % 100 >= 10 && n % 100 <= 20
+    ? "th"
+    : ({ 1: "st", 2: "nd", 3: "rd" })[n % 10] || "th";
+  return `${n}${suffix}`;
+}

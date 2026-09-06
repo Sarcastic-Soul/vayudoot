@@ -92,3 +92,41 @@ export function useCoverage() {
   }, []);
   return state;
 }
+
+/* Repeat patterns across the whole store.
+ *
+ * Derived server-side on every call rather than stored, so this is a plain
+ * fetch with no cache: a pattern that gained a member while the page was open
+ * would otherwise keep showing yesterday's count. Cheap — the endpoint is
+ * arithmetic over JSON files. */
+export function useClusters() {
+  const [state, setState] = useState({ data: null, error: null });
+  useEffect(() => {
+    let live = true;
+    api("/clusters")
+      .then((data) => { if (live) setState({ data, error: null }); })
+      .catch((e) => { if (live) setState({ data: [], error: e.message }); });
+    return () => { live = false; };
+  }, []);
+  return state;
+}
+
+/* The pattern one case belongs to, or null.
+ *
+ * Asked of the server rather than read from `case.cluster_id`. That field is a
+ * record of what the drafting stage saw; a case filed as a one-off can become
+ * the first member of a pattern weeks later, and every case created before
+ * clustering existed has it empty. `key` re-asks when the case moves — a run
+ * that has only just classified the photograph has only just become groupable. */
+export function useCaseCluster(caseId, key) {
+  const [cluster, setCluster] = useState(null);
+  useEffect(() => {
+    if (!caseId || !key) return undefined;
+    let live = true;
+    api(`/cases/${caseId}/cluster`)
+      .then((found) => { if (live) setCluster(found || null); })
+      .catch(() => { if (live) setCluster(null); });
+    return () => { live = false; };
+  }, [caseId, key]);
+  return cluster;
+}

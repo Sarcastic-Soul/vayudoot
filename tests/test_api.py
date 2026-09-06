@@ -101,7 +101,7 @@ async def test_photograph_is_served_back_and_only_from_the_uploads_directory(cli
 
     # A case pointing anywhere else is refused rather than read off the filesystem.
     case = store.load(case_id)
-    case.report.image_path = "/etc/passwd"
+    case.report.image_paths = ["/etc/passwd"]
     store.save(case)
     assert (await client.get(f"/cases/{case_id}/photo")).status_code == 404
 

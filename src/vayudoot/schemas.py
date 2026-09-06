@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field, model_validator
 
 
 class PollutionType(str, Enum):
@@ -88,15 +88,53 @@ STAGE_ORDER: tuple[Stage, ...] = (
 
 
 class Report(BaseModel):
-    """What the citizen submits."""
+    """What the citizen submits.
+
+    Photographs are a list. One angle is often not enough to classify a plume
+    confidently — smoke from across a road and smoke from beside the pile are
+    different pictures of one event — and the confidence floor then halts a real
+    report. Several angles are more evidence of the same thing, never several
+    events; `agents/prompts.EVIDENCE` says so to the model.
+
+    A report submitted before the list existed carries a single `image_path`, and
+    three such cases are on disk. Rather than rewriting them, `_accept_one_image`
+    folds that key into `image_paths` on the way in, and `image_path` survives on
+    the way out as the first photograph, so a stored case and an existing client
+    both keep working.
+    """
 
     report_id: str
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
-    image_path: str | None = None
+    image_paths: list[str] = Field(default_factory=list)
     note: str = ""
     reporter_contact: str = ""
     observed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_one_image(cls, data: Any) -> Any:
+        """Read the pre-list `image_path` key, from disk or from a caller."""
+        if not isinstance(data, dict):
+            return data
+        if "image_path" not in data:
+            return data
+
+        data = dict(data)
+        single = data.pop("image_path")
+        if single and not data.get("image_paths"):
+            data["image_paths"] = [single]
+        return data
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def image_path(self) -> str | None:
+        """The first photograph, for anything still expecting exactly one.
+
+        Serialised, so a stored case round-trips through the old key and the
+        `/cases/{id}/photo` URL keeps meaning what it always meant.
+        """
+        return self.image_paths[0] if self.image_paths else None
 
 
 class EvidencePacket(BaseModel):

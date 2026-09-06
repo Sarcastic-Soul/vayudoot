@@ -512,7 +512,7 @@ async def test_a_body_too_large_to_parse_is_refused_by_its_declared_length(clien
 
     # If the handler is reached at all, the multipart parser has already spooled
     # the whole body — so this asserts the refusal happens before that.
-    def _never(_image):
+    def _never(_image, _budget):
         raise AssertionError("the body should have been refused before it was parsed")
 
     monkeypatch.setattr(api, "_read_capped", _never)
