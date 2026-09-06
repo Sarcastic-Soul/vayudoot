@@ -15,6 +15,7 @@ import { useCase } from "../lib/store.js";
 import { whereOf } from "../lib/format.js";
 import { BackIcon, PinIcon } from "./Icons.js";
 import { CaseActions } from "./CaseActions.js";
+import { CaseHistory } from "./CaseHistory.js";
 import { CaseStatusSkeleton } from "./Skeletons.js";
 import { Complaint } from "./Complaint.js";
 import { CoverageWarning } from "./CoverageWarning.js";
@@ -76,10 +77,7 @@ export function CaseView({ caseId }) {
               <pre>${envelope}</pre>
             </details>`}
 
-          <details class="history">
-            <summary>Case history — ${record.history.length} entries</summary>
-            <ol>${record.history.map((line, i) => html`<li key=${i}>${line}</li>`)}</ol>
-          </details>
+          <${CaseHistory} record=${record} />
         </div>
       </div>`}`;
 }

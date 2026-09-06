@@ -75,8 +75,8 @@ button.link.back:hover { background: var(--ok-tint); text-decoration: none; }
 
 .status-banner {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 2px var(--s3);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--s3);
   align-items: start;
   padding: var(--s3) var(--s4);
   margin-bottom: var(--s5);
@@ -87,9 +87,9 @@ button.link.back:hover { background: var(--ok-tint); text-decoration: none; }
 }
 
 .status-banner svg {
-  grid-row: span 2;
   width: 20px;
   height: 20px;
+  flex: none;
   margin-top: 2px;
   fill: none;
   stroke: currentColor;
@@ -97,6 +97,8 @@ button.link.back:hover { background: var(--ok-tint); text-decoration: none; }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+.status-body { display: grid; gap: 2px; min-width: 0; }
 
 .status-headline {
   font-size: var(--t-body);
@@ -142,6 +144,44 @@ button.link.back:hover { background: var(--ok-tint); text-decoration: none; }
 
 .status-banner .status-headline { color: var(--ink); }
 
+/* A note somebody actually wrote — what the authority said, why the citizen
+   pulled the complaint — set as a quotation rather than folded into the
+   interface's own voice, so it is clear whose words they are. The rule takes
+   the band's hue; the words stay at full ink contrast. */
+.status-quote {
+  margin: var(--s3) 0 var(--s1);
+  padding: 0 0 0 var(--s3);
+  border-left: 2px solid currentColor;
+}
+
+.status-quote p:last-child {
+  margin-top: 2px;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* A finished case should read as finished. The accent edge goes — nothing is
+   running behind it any more — and the ending is named rather than inferred
+   from the absence of controls below. */
+.status-banner[data-closed] { border-left-width: 1px; }
+
+.status-flag {
+  align-self: start;
+  margin-top: 3px;
+  padding: 2px var(--s2);
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+}
+
 /* The inline form, for the case list and anywhere the sentence is too much.
    A dot carries the hue so the label itself stays at full ink contrast. */
 .pill {
@@ -186,6 +226,28 @@ button.link.back:hover { background: var(--ok-tint); text-decoration: none; }
 
 .pill[data-status="rejected"] { background: var(--surface-2); border-color: var(--line-strong); }
 .pill[data-status="rejected"]::before { background: var(--ink-soft); }
+
+/* Acknowledged is amber rather than green: a receipt is not a remedy, and the
+   escalation clock is running again. It is the status this project exists to
+   stop being mistaken for an ending. */
+.pill[data-status="acknowledged"] {
+  background: var(--attention-tint);
+  border-color: var(--attention-line);
+}
+
+.pill[data-status="acknowledged"]::before { background: var(--attention); }
+
+.pill[data-status="resolved"] { background: var(--ok-tint); border-color: var(--ok-line); }
+.pill[data-status="resolved"]::before { background: var(--ok); }
+
+/* Withdrawn takes a hollow dot. It is as grey as `rejected` — both are quiet
+   endings — and the ring is what tells the two apart without colour. */
+.pill[data-status="withdrawn"] { background: var(--surface-2); border-color: var(--line-strong); }
+
+.pill[data-status="withdrawn"]::before {
+  background: none;
+  border: 2px solid var(--ink-soft);
+}
 
 /* ── the photograph ───────────────────────────────────────────────────── */
 
@@ -582,13 +644,219 @@ pre {
   stroke-linejoin: round;
 }
 
-.actions .error {
+.actions .error,
+.update-panel .error {
   padding: var(--s3);
   font-size: var(--t-meta);
   line-height: var(--lh-snug);
+  color: var(--ink);
   background: var(--danger-tint);
   border: 1px solid var(--danger-line);
   border-radius: var(--radius-sm);
+}
+
+.actions .error strong,
+.update-panel .error strong { color: var(--danger); }
+
+/* ── the record ──────────────────────────────────────────────────────────
+   Acknowledging, resolving and withdrawing send nothing; they tell the
+   tracker what happened where it cannot see. So this is a plain card, not a
+   second accent block: the decision above is the loud thing on this page and
+   there can only be one of those. */
+
+.updates {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  margin-bottom: var(--s5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+
+.updates .section-label { margin: 0; }
+
+.updates-lead {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+/* Stacked under the thumb on a phone, side by side the moment both labels fit
+   on one line, and filling the row when there is only one of them — which is
+   what an acknowledged case shows, since it can no longer be acknowledged
+   again. Flex rather than two grid columns, so the single case does not leave
+   half a row of dead space beside it. */
+.update-row { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+button.secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  flex: 1 1 190px;
+  min-height: 48px;
+  padding: var(--s3) var(--s3);
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+button.secondary svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--ink-soft);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+button.secondary:hover,
+button.secondary[aria-expanded="true"] { border-color: var(--ok); background: var(--ok-tint); }
+button.secondary[aria-expanded="true"] svg { color: var(--ok); }
+
+/* What a control opens into. Recessed, so it reads as belonging to the button
+   above it rather than as a second card competing with the complaint. */
+.update-panel {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.update-panel .decision {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.update-panel .field { gap: var(--s2); }
+.update-panel label { font-size: var(--t-meta); }
+.update-panel textarea { background: var(--surface); }
+
+.note-count {
+  font-size: var(--t-eyebrow);
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+.panel-buttons { display: grid; gap: var(--s2); }
+
+@media (min-width: 460px) {
+  .panel-buttons { grid-template-columns: 1fr auto; align-items: center; }
+}
+
+.panel-buttons .primary, .panel-buttons .danger { min-height: 48px; }
+
+button.quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding: var(--s3) var(--s4);
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: color .15s ease, background-color .15s ease;
+}
+
+button.quiet:hover { color: var(--ink); background: var(--surface-sunk); }
+
+button.quiet svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── withdrawal ──────────────────────────────────────────────────────────
+   Destructive in effect and terminal in fact, so it is not one of the row of
+   secondary buttons above. It sits below a rule, in the quietest weight on
+   the card, and opens into what it actually means with a reason that has to
+   be typed. Two deliberate steps, and no dialog: a modal on a 390px screen
+   held in one hand is a fight. */
+
+.withdraw {
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+
+.withdraw.is-open { border-top-color: var(--danger-line); }
+
+button.quiet.withdraw-open { width: 100%; }
+button.quiet.withdraw-open:hover { color: var(--danger); background: var(--danger-tint); }
+
+.withdraw .update-panel {
+  background: var(--danger-tint);
+  border-color: var(--danger-line);
+}
+
+.withdraw .update-panel .eyebrow { color: var(--danger); }
+.withdraw .update-panel .error { background: var(--surface); }
+
+button.danger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 52px;
+  padding: var(--s3) var(--s4);
+  font: inherit;
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  color: var(--surface);
+  background: var(--danger);
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: opacity .15s ease;
+}
+
+button.danger svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+button.danger:hover { opacity: .9; }
+
+/* Not yet available rather than faded out. A washed-out red with white text
+   on it is unreadable, and the reason this button is inert — no reason typed —
+   is worth being legible about. */
+button.danger[disabled] {
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 /* ── appendices ──────────────────────────────────────────────────────────
@@ -655,13 +923,43 @@ pre {
   color: var(--ink-soft);
 }
 
-.history li {
+/* Past a dozen entries the earliest are folded away behind a count, rather
+   than the list being put in a scrolling box: this already sits inside a
+   disclosure, and on a wide screen inside a sticky column that scrolls too,
+   so a third nested scroller would be a trap on a touch screen. */
+button.quiet.history-more {
+  min-height: 40px;
+  margin-bottom: var(--s1);
+  padding-inline: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+button.quiet.history-more:hover { color: var(--ink); background: none; }
+
+/* The date is printed once per day rather than once per line: four things
+   happening on one afternoon is one date and four times. */
+.history-day {
+  margin: var(--s3) 0 var(--s2);
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.history li:first-child .history-day { margin-top: 0; }
+
+.history-entry {
   position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s2);
   padding-left: var(--s4);
   overflow-wrap: anywhere;
 }
 
-.history li::before {
+.history-entry::before {
   content: "";
   position: absolute;
   left: 3px;
@@ -670,6 +968,17 @@ pre {
   height: 5px;
   border-radius: 50%;
   background: var(--line-strong);
+}
+
+.history-time { white-space: nowrap; }
+
+/* The last entry is where the case actually is, which is what somebody
+   opening the history most often wants. */
+.history li[data-latest] .history-entry::before { background: var(--ok); }
+
+.history li[data-latest] .history-entry span {
+  color: var(--ink);
+  font-weight: var(--w-medium);
 }
 
 /* Below the two-column breakpoint the case columns are just stacked blocks. */
@@ -786,6 +1095,16 @@ pre {
   color: var(--ink);
   background: var(--danger-tint);
   border-color: var(--danger-line);
+}
+
+/* A limit reached is not a fault. The day's model budget running out is the
+   instance saying no, and it is said in attention rather than in red. */
+.note.is-limit {
+  color: var(--ink);
+  background: var(--attention-tint);
+  border-color: var(--attention-line);
+  max-width: var(--measure);
+  margin-bottom: var(--s5);
 }
 
 /* ── empty and loading ───────────────────────────────────────────────────

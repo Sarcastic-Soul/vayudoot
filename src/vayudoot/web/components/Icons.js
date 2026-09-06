@@ -71,6 +71,23 @@ export const HeldIcon = icon(html`
 export const FailedIcon = icon(html`
   <circle cx="12" cy="12" r="8.2" /><path d="M12 7.5v5.5M12 16.3v.2" />`);
 
+/* Acknowledged: a reply arriving. Deliberately an inbound arrow rather than a
+   tick — a receipt is not a remedy, and a tick would say the case was done. */
+export const ReplyIcon = icon(html`
+  <path d="M9.5 6.5 4.5 11.5l5 5" />
+  <path d="M4.5 11.5h9a6 6 0 0 1 6 6v1" />`);
+
+/* Resolved: the one tick in the status set, in a closed ring, because this is
+   the only ending the whole system is actually aiming at. */
+export const ResolvedIcon = icon(html`
+  <circle cx="12" cy="12" r="8.2" /><path d="M8.3 12.3 11 15l4.8-5.2" />`);
+
+/* Withdrawn: taken back. An arrow returning the way it came, not a cross —
+   nothing went wrong here, the citizen changed their mind. */
+export const WithdrawIcon = icon(html`
+  <path d="M20 12.5a8 8 0 1 1-2.6-5.9" />
+  <path d="M20.4 3.8v4.6h-4.6" />`);
+
 export const SendIcon = icon(html`
   <path d="M20.5 3.5 10 14M20.5 3.5l-6.6 17-3.9-6.5L3.5 10z" />`);
 

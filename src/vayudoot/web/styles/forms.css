@@ -23,7 +23,7 @@ label, .field-label {
   line-height: var(--lh-snug);
 }
 
-input[type="text"], input[type="search"], input[type="number"], textarea {
+input[type="text"], input[type="search"], input[type="number"], input[type="date"], textarea {
   width: 100%;
   min-height: 48px;
   padding: var(--s3) var(--s4);
@@ -38,9 +38,22 @@ input[type="text"], input[type="search"], input[type="number"], textarea {
 
 input::placeholder, textarea::placeholder { color: var(--ink-soft); opacity: 1; }
 
-input[type="text"]:hover, input[type="search"]:hover, textarea:hover {
+input[type="text"]:hover, input[type="search"]:hover, input[type="date"]:hover,
+textarea:hover {
   border-color: var(--ink-soft);
 }
+
+/* A native date field, given the same shell as every other input so it does
+   not read as a different species of control. The picker glyph follows the
+   root `color-scheme`, so it is dark in the dark theme without an override. */
+input[type="date"] { appearance: none; }
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: .65;
+}
+
+input[type="date"]:hover::-webkit-calendar-picker-indicator { opacity: 1; }
 
 /* The checkbox is a native control; only its accent is ours. Given a real
    border so it is identifiable at the same 3:1 as every other field. */
@@ -237,15 +250,30 @@ button.primary[disabled] {
 }
 
 /* An error under the submit button is the one place in the form a person has
-   to be stopped, so it is a band rather than a line of red text. */
+   to be stopped, so it is a band rather than a line of red text.
+   Two tones. A photograph over the size limit and an exhausted daily budget
+   are the instance saying no, not something going wrong, so they are drawn in
+   attention; only a genuine failure gets danger. The second line is always
+   the part the server has no way of knowing — that nothing was sent, and the
+   form still holds what was put in it. */
 .form-error {
+  display: grid;
+  gap: var(--s1);
   padding: var(--s3) var(--s4);
   font-size: var(--t-meta);
   line-height: var(--lh-snug);
+  color: var(--ink);
   background: var(--danger-tint);
   border: 1px solid var(--danger-line);
   border-radius: var(--radius);
 }
+
+.form-error[data-tone="attention"] {
+  background: var(--attention-tint);
+  border-color: var(--attention-line);
+}
+
+.form-error .hint { color: var(--ink-soft); }
 
 /* Two link shapes. In running prose a link is a link: underlined, inline, no
    box — a 44px pill inside a sentence would break the line box it sits in.

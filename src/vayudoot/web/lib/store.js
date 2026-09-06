@@ -52,6 +52,30 @@ export function useCases() {
   return cases;
 }
 
+/* What this instance will currently accept: the upload ceiling and what is
+ * left of the day's model budget.
+ *
+ * Fetched rather than assumed so the form can refuse a 40 MB photograph before
+ * it is uploaded over a phone connection, and can say that the day's reports
+ * are gone before a citizen fills the form in. `reports_remaining_today` moves
+ * with every submission, so this is re-read after one rather than cached: the
+ * returned function is what asks again. Health is advisory — a failure here
+ * leaves the form working exactly as it did before. */
+export function useHealth() {
+  const [health, setHealth] = useState(null);
+  const [asked, setAsked] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    api("/health")
+      .then((data) => { if (live) setHealth(data); })
+      .catch(() => { /* the form does not depend on it */ });
+    return () => { live = false; };
+  }, [asked]);
+
+  return [health, () => setAsked((n) => n + 1)];
+}
+
 /* The authority table does not change while the page is open, so it is fetched
  * once and kept for the rest of the session. */
 let coverageCache = null;
