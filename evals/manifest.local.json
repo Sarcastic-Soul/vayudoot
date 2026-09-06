@@ -1,0 +1,46 @@
+{
+  "name": "vayudoot-photographs",
+  "description": "Real photographs, referenced by absolute path and NOT stored in this repository. Cases whose image is missing are skipped, so running this manifest on a machine that does not have them reports skips rather than failures. Point the paths at your own photographs and the cases become live; the committed manifest.json is what runs everywhere.",
+
+  "guards": [
+    {
+      "id": "evidence-confidence-is-calibrated",
+      "target": "prompt:EVIDENCE",
+      "must_match": ["calibrated estimate"],
+      "why": "These two cases are the only ones in the project that can distinguish a calibrated confidence from a constant, because they are the only real photographs. The instruction they are testing has to still be there."
+    }
+  ],
+
+  "cases": [
+    {
+      "id": "photo-industrial-stacks",
+      "kind": "classification",
+      "synthetic": false,
+      "image": "/home/anish-kumar/Downloads/industrial.jpg",
+      "note": "Chimneys behind the estate, going all morning",
+      "latitude": 23.0225,
+      "longitude": 72.5714,
+      "why": "An unambiguous photograph of industrial stacks in operation: the easy end of the classification task, and the case that says whether the model can be confident when confidence is warranted. The confidence ceiling is not 1.0 by accident — the plumes are white, which is as consistent with steam as with combustion product, and a photograph cannot tell you which.",
+      "expect": {
+        "pollution_type": "industrial_emission",
+        "confidence_min": 0.6,
+        "confidence_max": 0.95
+      }
+    },
+    {
+      "id": "photo-traffic-haze",
+      "kind": "classification",
+      "synthetic": false,
+      "image": "/home/anish-kumar/Downloads/haze.avif",
+      "note": "The road every morning this week",
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "why": "The hard case, and the most informative one in the whole set. Heavy regional smog over a road full of traffic. Both vehicle_emission and unclear are defensible readings, so the classification check accepts either — what is being measured here is the confidence. Ambient haze does not establish its own source, and a model that answers vehicle_emission at 0.95 has confused a plausible cause with a demonstrated one. That is exactly the reasoning error the corroboration stage made with the wind bearing.",
+      "expect": {
+        "pollution_type": "vehicle_emission",
+        "also_acceptable": ["unclear"],
+        "confidence_max": 0.8
+      }
+    }
+  ]
+}

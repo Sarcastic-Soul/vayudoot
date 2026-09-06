@@ -1,0 +1,43 @@
+{
+  "id": "distant-fire",
+  "why": "FIRMS returns a real thermal anomaly, seventy kilometres away. The tool filters it out by distance, so the model is handed a detection count of zero and a summary that says so. A fire in another district is not evidence about this street, and calling it corroboration would put a false statement in a legal document.",
+  "captured": "A FIRMS bounding-box response that includes a row outside the requested radius, which is what the API does at the corners of the box.",
+  "firms": {
+    "text": "country_id,latitude,longitude,bright_ti4,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_ti5,frp,daynight\nIND,29.2,77.5,344.7,0.46,0.41,2026-09-06,0755,N,VIIRS,h,2.0NRT,298.1,19.6,D\n"
+  },
+  "openaq_locations": {
+    "json": {
+      "results": [
+        {
+          "id": 8320,
+          "name": "Sector 62, Noida - UPPCB",
+          "coordinates": { "latitude": 28.45, "longitude": 77.32 },
+          "provider": { "name": "Central Pollution Control Board" },
+          "sensors": [
+            { "id": 23880, "parameter": { "name": "pm25", "units": "µg/m³" } },
+            { "id": 23881, "parameter": { "name": "pm10", "units": "µg/m³" } }
+          ]
+        }
+      ]
+    }
+  },
+  "openaq_latest": {
+    "json": {
+      "results": [
+        { "sensorsId": 23880, "value": 44.0, "datetime": { "utc": "2026-09-06T05:00:00Z" } },
+        { "sensorsId": 23881, "value": 88.0, "datetime": { "utc": "2026-09-06T05:00:00Z" } }
+      ]
+    }
+  },
+  "open_meteo": {
+    "json": {
+      "current": {
+        "time": "2026-09-06T05:15",
+        "wind_speed_10m": 3.4,
+        "wind_direction_10m": 120,
+        "temperature_2m": 33.0,
+        "relative_humidity_2m": 39
+      }
+    }
+  }
+}

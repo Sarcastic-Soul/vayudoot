@@ -1,0 +1,47 @@
+{
+  "id": "station-normal-close",
+  "why": "The sharpest negative in the set. A station is less than a kilometre away and it is reading clean air, so the usual excuse for a null result — the nearest sensor is too far to see a hyper-local event — is not available. Nothing here supports the report and the answer is false.",
+  "captured": "OpenAQ v3 payload shape with values at ordinary urban background.",
+  "firms": {
+    "text": "country_id,latitude,longitude,bright_ti4,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_ti5,frp,daynight\n"
+  },
+  "openaq_locations": {
+    "json": {
+      "results": [
+        {
+          "id": 8210,
+          "name": "Pragati Maidan, Delhi - DPCC",
+          "coordinates": { "latitude": 28.62, "longitude": 77.214 },
+          "provider": { "name": "Central Pollution Control Board" },
+          "sensors": [
+            { "id": 22410, "parameter": { "name": "pm25", "units": "µg/m³" } },
+            { "id": 22411, "parameter": { "name": "pm10", "units": "µg/m³" } },
+            { "id": 22412, "parameter": { "name": "no2", "units": "µg/m³" } },
+            { "id": 22413, "parameter": { "name": "so2", "units": "µg/m³" } }
+          ]
+        }
+      ]
+    }
+  },
+  "openaq_latest": {
+    "json": {
+      "results": [
+        { "sensorsId": 22410, "value": 19.0, "datetime": { "utc": "2026-09-06T05:00:00Z" } },
+        { "sensorsId": 22411, "value": 41.0, "datetime": { "utc": "2026-09-06T05:00:00Z" } },
+        { "sensorsId": 22412, "value": 12.4, "datetime": { "utc": "2026-09-06T05:00:00Z" } },
+        { "sensorsId": 22413, "value": 4.1, "datetime": { "utc": "2026-09-06T05:00:00Z" } }
+      ]
+    }
+  },
+  "open_meteo": {
+    "json": {
+      "current": {
+        "time": "2026-09-06T05:15",
+        "wind_speed_10m": 2.0,
+        "wind_direction_10m": 180,
+        "temperature_2m": 30.2,
+        "relative_humidity_2m": 44
+      }
+    }
+  }
+}

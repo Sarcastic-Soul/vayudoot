@@ -1,0 +1,52 @@
+{
+  "id": "station-elevated",
+  "why": "A monitoring station two kilometres from the report, reading PM2.5 an order of magnitude above the national standard. No satellite detection, because a burning refuse pile is far below what VIIRS resolves. The ground station is the positive source and the answer is true.",
+  "captured": "OpenAQ v3 payload shape with values set to an unambiguous exceedance.",
+  "firms": {
+    "text": "country_id,latitude,longitude,bright_ti4,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_ti5,frp,daynight\n"
+  },
+  "openaq_locations": {
+    "json": {
+      "results": [
+        {
+          "id": 8046,
+          "name": "ITO, Delhi - CPCB",
+          "coordinates": { "latitude": 28.63, "longitude": 77.22 },
+          "provider": { "name": "Central Pollution Control Board" },
+          "sensors": [
+            { "id": 21750, "parameter": { "name": "pm25", "units": "µg/m³" } },
+            { "id": 21751, "parameter": { "name": "pm10", "units": "µg/m³" } },
+            { "id": 21752, "parameter": { "name": "co", "units": "mg/m³" } }
+          ]
+        },
+        {
+          "id": 8047,
+          "name": "Mandir Marg, Delhi - DPCC",
+          "coordinates": { "latitude": 28.6365, "longitude": 77.2011 },
+          "provider": { "name": "Central Pollution Control Board" },
+          "sensors": []
+        }
+      ]
+    }
+  },
+  "openaq_latest": {
+    "json": {
+      "results": [
+        { "sensorsId": 21750, "value": 486.0, "datetime": { "utc": "2026-09-06T05:00:00Z" } },
+        { "sensorsId": 21751, "value": 612.0, "datetime": { "utc": "2026-09-06T05:00:00Z" } },
+        { "sensorsId": 21752, "value": 3.9, "datetime": { "utc": "2026-09-06T05:00:00Z" } }
+      ]
+    }
+  },
+  "open_meteo": {
+    "json": {
+      "current": {
+        "time": "2026-09-06T05:15",
+        "wind_speed_10m": 0.9,
+        "wind_direction_10m": 110,
+        "temperature_2m": 24.6,
+        "relative_humidity_2m": 78
+      }
+    }
+  }
+}

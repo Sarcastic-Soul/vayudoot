@@ -1,0 +1,5 @@
+# Run records are outputs, not fixtures. They are timestamped, they pile up, and
+# comparing two of them is a local operation — nothing downstream reads one from
+# the repository. Keep the directory so `scripts/eval.py` has somewhere to write.
+*
+!.gitignore

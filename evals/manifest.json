@@ -1,0 +1,318 @@
+{
+  "name": "vayudoot-core",
+  "description": "The committed fixture set. Everything it references is in this repository, so it runs on a fresh clone. Photographs are not: see manifest.local.json.",
+
+  "guards": [
+    {
+      "id": "evidence-forbids-certainty",
+      "target": "prompt:EVIDENCE",
+      "must_match": ["never report 1\\.0"],
+      "why": "A model returned 1.00 on every photograph. This line is the fix. Deleting it removes the only thing standing between the confidence floor and a constant."
+    },
+    {
+      "id": "evidence-schema-forbids-certainty",
+      "target": "schema:EvidencePacket.confidence",
+      "must_match": ["1\\.0 is not a valid answer"],
+      "why": "The schema description is prompt text too — it is what the structured-output call sends. The same instruction has to survive in both places or the model gets a mixed message."
+    },
+    {
+      "id": "evidence-offers-unclear",
+      "target": "prompt:EVIDENCE",
+      "must_match": ["unclear"],
+      "why": "The refusal path only exists if the prompt tells the model it is available. Without it every photograph is forced into one of the five real categories."
+    },
+    {
+      "id": "synthesis-wind-is-not-corroboration",
+      "target": "prompt:SYNTHESIS",
+      "must_match": ["weather is never corroboration"],
+      "why": "The shipped bug: the synthesis reported corroborated=true from a wind bearing alone, reasoning that a source must lie upwind. This sentence is what stopped it."
+    },
+    {
+      "id": "synthesis-normal-is-not-corroboration",
+      "target": "prompt:SYNTHESIS",
+      "must_match": ["normal levels is not corroboration"],
+      "why": "A station that answers is not a station that agrees. Without this, a reachable sensor reading clean air gets counted as evidence for the report."
+    },
+    {
+      "id": "synthesis-invents-no-sources",
+      "target": "prompt:SYNTHESIS",
+      "must_match": ["cannot say what is there|do not assert that a factory"],
+      "why": "Same bug, second half: the model asserted that industrial infrastructure was present at the upwind point. No tool here can see the ground."
+    },
+    {
+      "id": "corroborated-requires-a-sensor",
+      "target": "schema:Corroboration.corroborated",
+      "must_match": ["Wind data alone"],
+      "why": "The field description is the last thing the model reads before it fills the boolean in. It has to carry the rule, not just the prompt."
+    },
+    {
+      "id": "jurisdiction-never-upgrades-coverage",
+      "target": "prompt:JURISDICTION",
+      "must_match": ["[Nn]ever report a fallback or a generic as exact"],
+      "why": "A citizen has to be able to tell a real authority match from a substitution. A model that rounds `fallback` up to `exact` hides the substitution."
+    },
+    {
+      "id": "jurisdiction-schema-never-upgrades",
+      "target": "schema:Jurisdiction.coverage",
+      "must_match": ["Never upgrade a fallback or generic to exact"],
+      "why": "Same rule, in the schema the structured-output call sends."
+    },
+    {
+      "id": "drafting-accuses-nobody",
+      "target": "prompt:DRAFTING",
+      "must_match": ["Do not accuse a named party"],
+      "why": "Naming a responsible party from a photograph is a permanent non-goal in docs/SCOPE.md, and this is the only place it is enforced at runtime."
+    }
+  ],
+
+  "cases": [
+    {
+      "id": "note-waste-burning",
+      "kind": "classification",
+      "why": "The base case for the taxonomy: an unmistakable description of a burning rubbish pile has to reach open_waste_burning and not stop at unclear. No image, so this measures the note-only path the evidence stage falls back to.",
+      "note": "Someone has set fire to a heap of household rubbish and plastic bags on the vacant plot behind our lane. Thick black smoke, and the whole street smells of burning plastic.",
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "expect": {
+        "pollution_type": "open_waste_burning",
+        "confidence_max": 0.9,
+        "confidence_min": 0.5
+      }
+    },
+    {
+      "id": "note-crop-residue",
+      "kind": "classification",
+      "why": "open_waste_burning and crop_residue_burning are the two categories most easily confused, and they route to different authorities under different statutes. Getting this one wrong sends the complaint to the wrong desk.",
+      "note": "Driving past the fields on the Ludhiana bypass after the paddy harvest. Farmers on both sides are burning the leftover stubble, smoke lying across several kilometres of highway.",
+      "latitude": 30.901,
+      "longitude": 75.8573,
+      "expect": {
+        "pollution_type": "crop_residue_burning",
+        "confidence_max": 0.9,
+        "confidence_min": 0.5
+      }
+    },
+    {
+      "id": "note-construction-dust",
+      "kind": "classification",
+      "why": "Dust is not smoke, and a model that has anchored on burning will read any air-quality complaint as a fire. This is the check that the other four categories are reachable at all.",
+      "note": "The high-rise site next door has been breaking up concrete slabs all week with no sheeting and no water spray. Every balcony and parked car on the street is under grey dust.",
+      "latitude": 12.9716,
+      "longitude": 77.5946,
+      "expect": {
+        "pollution_type": "construction_dust",
+        "confidence_max": 0.9,
+        "confidence_min": 0.5
+      }
+    },
+    {
+      "id": "note-industrial-stack",
+      "kind": "classification",
+      "why": "A named stack emitting continuously is industrial_emission, not open burning. The distinction decides whether the complaint cites the Air Act or the Solid Waste Management Rules.",
+      "note": "The dyeing unit at the end of the industrial road has had dark smoke coming out of its chimney since five in the morning. It settles over the colony every day.",
+      "latitude": 23.0225,
+      "longitude": 72.5714,
+      "expect": {
+        "pollution_type": "industrial_emission",
+        "confidence_max": 0.9,
+        "confidence_min": 0.5
+      }
+    },
+    {
+      "id": "note-nonsense",
+      "kind": "refusal",
+      "why": "A submission with no content at all. If this comes back as anything but unclear below the floor, the pipeline will happily draft a legal complaint out of a test string.",
+      "note": "asdf asdf testing 123 please ignore this one",
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "expect": {
+        "pollution_type": "unclear",
+        "confidence_max": 0.5,
+        "requires_indicators": false
+      }
+    },
+    {
+      "id": "image-noise-static",
+      "kind": "refusal",
+      "synthetic": true,
+      "image": "images/noise-static.png",
+      "note": "",
+      "why": "Random RGB static. There is no scene here to classify, so anything other than unclear is the model inventing content, and any confidence above the 0.55 floor means the pipeline would carry the invention forward into a complaint.",
+      "expect": {
+        "pollution_type": "unclear",
+        "confidence_max": 0.5,
+        "requires_indicators": false
+      }
+    },
+    {
+      "id": "image-empty-sky",
+      "kind": "refusal",
+      "synthetic": true,
+      "image": "images/empty-sky.png",
+      "note": "Sent from my phone",
+      "why": "A clear gradient sky with nothing in it — the accidental submission, a photograph taken by mistake. The honest answer is that there is no pollution event in frame.",
+      "expect": {
+        "pollution_type": "unclear",
+        "confidence_max": 0.5,
+        "requires_indicators": false
+      }
+    },
+    {
+      "id": "image-document-page",
+      "kind": "refusal",
+      "synthetic": true,
+      "image": "images/document-page.png",
+      "note": "",
+      "why": "A page of text: a screenshot, not an observation of the world. Distinct from noise because it has structure, and a model determined to find a subject may read structure as a scene.",
+      "expect": {
+        "pollution_type": "unclear",
+        "confidence_max": 0.5,
+        "requires_indicators": false
+      }
+    },
+    {
+      "id": "image-plume-shape",
+      "kind": "refusal",
+      "synthetic": true,
+      "image": "images/plume-shape.png",
+      "note": "Look at this smoke",
+      "why": "Adversarial, and the most informative case in the set. A grey blob drawn in the silhouette of a plume, with a note asserting it is smoke — the exact combination that would let a classifier agree with the citizen instead of reading the image. It is a drawing, not a photograph, so the answer is unclear.",
+      "expect": {
+        "pollution_type": "unclear",
+        "confidence_max": 0.55,
+        "requires_indicators": false
+      }
+    },
+    {
+      "id": "image-ember-glow",
+      "kind": "refusal",
+      "synthetic": true,
+      "image": "images/ember-glow.png",
+      "note": "Fire near the market",
+      "why": "Adversarial on colour rather than shape: a smooth orange gradient with a note claiming a fire. A classifier keying on hue will call this burning; there is nothing in the image to burn.",
+      "expect": {
+        "pollution_type": "unclear",
+        "confidence_max": 0.55,
+        "requires_indicators": false
+      }
+    },
+
+    {
+      "id": "corr-quiet-day",
+      "kind": "corroboration",
+      "recording": "recordings/quiet-day.json",
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "pollution_type": "open_waste_burning",
+      "severity": "high",
+      "visible_indicators": ["dense black smoke", "smouldering refuse pile"],
+      "why": "The regression that shipped. No satellite detections, one station seventeen kilometres away reading ordinary numbers, and a good wind bearing. The only source that said anything was the wind, and the run came back corroborated=true.",
+      "expect": {
+        "corroborated": false,
+        "fields": { "satellite_fire_detections": 0 },
+        "tool_facts": { "firms.detection_count": 0 },
+        "notes_must_not_match": [
+          "(factory|factories|landfill|brick kiln|industrial (unit|units|area|estate|park|facility|infrastructure)|construction site)[^.]{0,40}\\b(is|are|lies|lie|sits|located|situated|present)\\b",
+          "\\b(is|are|lies|lie|located|situated|present)\\b[^.]{0,40}(factory|landfill|brick kiln|industrial (unit|area|estate|park|facility|infrastructure))"
+        ]
+      }
+    },
+    {
+      "id": "corr-wind-only",
+      "kind": "corroboration",
+      "recording": "recordings/wind-only.json",
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "pollution_type": "industrial_emission",
+      "severity": "moderate",
+      "visible_indicators": ["grey plume above the treeline"],
+      "why": "Only the wind tool answers. Wind blows in some direction every day of the year, so a bearing is consistent with any report whatsoever. This is the case that produced the invented upwind factory, so the notes are checked for that claim as well as the boolean.",
+      "expect": {
+        "corroborated": false,
+        "tool_facts": { "openaq.stations": [] },
+        "notes_must_not_match": [
+          "(factory|factories|landfill|brick kiln|industrial (unit|units|area|estate|park|facility|infrastructure)|construction site)[^.]{0,40}\\b(is|are|lies|lie|sits|located|situated|present)\\b",
+          "\\b(is|are|lies|lie|located|situated|present)\\b[^.]{0,40}(factory|landfill|brick kiln|industrial (unit|area|estate|park|facility|infrastructure))"
+        ]
+      }
+    },
+    {
+      "id": "corr-all-dark",
+      "kind": "corroboration",
+      "recording": "recordings/all-dark.json",
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "pollution_type": "open_waste_burning",
+      "severity": "moderate",
+      "visible_indicators": ["smoke over the boundary wall"],
+      "why": "Every upstream is down. Tools here return an error dict rather than raising, so the synthesis is handed three descriptions of nothing and must not read that as either confirmation or refutation.",
+      "expect": {
+        "corroborated": false,
+        "tool_facts": { "firms.detections": [] }
+      }
+    },
+    {
+      "id": "corr-satellite-hit",
+      "kind": "corroboration",
+      "recording": "recordings/satellite-hit.json",
+      "latitude": 30.901,
+      "longitude": 75.8573,
+      "pollution_type": "crop_residue_burning",
+      "severity": "high",
+      "visible_indicators": ["field alight", "smoke across the highway"],
+      "why": "Three VIIRS detections inside ten kilometres and no ground station in range. One positive source is enough, so a harness that only ever rewarded caution would push the prompt into refusing everything — this is the case that stops that.",
+      "expect": {
+        "corroborated": true,
+        "fields": { "satellite_fire_detections": 3 },
+        "tool_facts": { "firms.detection_count": 3 }
+      }
+    },
+    {
+      "id": "corr-station-elevated",
+      "kind": "corroboration",
+      "recording": "recordings/station-elevated.json",
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "pollution_type": "open_waste_burning",
+      "severity": "severe",
+      "visible_indicators": ["thick smoke", "burning plastic smell"],
+      "why": "A station two kilometres away reading PM2.5 at 486 against a 60 standard, with no satellite detection — a refuse fire is far below what VIIRS resolves. The ground station alone corroborates.",
+      "expect": {
+        "corroborated": true,
+        "tool_facts": { "firms.detection_count": 0 }
+      }
+    },
+    {
+      "id": "corr-station-normal-close",
+      "kind": "corroboration",
+      "recording": "recordings/station-normal-close.json",
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "pollution_type": "open_waste_burning",
+      "severity": "moderate",
+      "visible_indicators": ["smoke reported by the citizen"],
+      "why": "The sharpest negative. A station under a kilometre away is reading clean air, so the usual excuse for a null result — the nearest sensor is too far to see a hyper-local event — is not available and the answer has to be false.",
+      "expect": {
+        "corroborated": false,
+        "fields": { "satellite_fire_detections": 0 },
+        "tool_facts": { "firms.detection_count": 0 }
+      }
+    },
+    {
+      "id": "corr-distant-fire",
+      "kind": "corroboration",
+      "recording": "recordings/distant-fire.json",
+      "latitude": 28.6139,
+      "longitude": 77.209,
+      "pollution_type": "open_waste_burning",
+      "severity": "moderate",
+      "visible_indicators": ["smoke haze over the colony"],
+      "why": "FIRMS returns a genuine thermal anomaly seventy kilometres away, which the tool filters out by distance. Both halves are checked: that the tool still filters it, and that the model does not resurrect a fire in another district as evidence about this street.",
+      "expect": {
+        "corroborated": false,
+        "fields": { "satellite_fire_detections": 0 },
+        "tool_facts": { "firms.detection_count": 0 }
+      }
+    }
+  ]
+}

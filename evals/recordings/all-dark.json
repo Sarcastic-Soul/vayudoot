@@ -1,0 +1,8 @@
+{
+  "id": "all-dark",
+  "why": "Every source fails. Tools in this project return an error dict rather than raising, so the synthesis is handed three descriptions of nothing. The honest answer is that the report could not be corroborated, and the notes should say the sources were unreachable rather than that the event did not happen.",
+  "captured": "A network partition: all three upstreams unreachable.",
+  "firms": { "unavailable": "FIRMS gateway timed out" },
+  "openaq_locations": { "status": 503, "text": "upstream unavailable" },
+  "open_meteo": { "unavailable": "Open-Meteo connection reset" }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "wind-only",
+  "why": "Only the wind tool answers. This is the recording that reproduces the second shipped bug directly: with nothing but a bearing to work from, the synthesis reasoned that industrial infrastructure lay upwind — a fact no tool in this project can establish.",
+  "captured": "FIRMS unreachable, OpenAQ returning an empty result set, Open-Meteo healthy.",
+  "firms": { "unavailable": "FIRMS gateway timed out" },
+  "openaq_locations": { "json": { "results": [] } },
+  "open_meteo": {
+    "json": {
+      "current": {
+        "time": "2026-09-06T05:15",
+        "wind_speed_10m": 4.8,
+        "wind_direction_10m": 315,
+        "temperature_2m": 29.1,
+        "relative_humidity_2m": 61
+      }
+    }
+  }
+}

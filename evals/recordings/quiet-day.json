@@ -1,0 +1,45 @@
+{
+  "id": "quiet-day",
+  "why": "The exact shape of the run that shipped a wrong answer: no satellite detections, one distant station reporting ordinary numbers, and a perfectly good wind reading. The only thing here that says anything at all is the wind, and wind is not corroboration.",
+  "captured": "Shapes taken from live FIRMS, OpenAQ v3 and Open-Meteo responses; the values are set by hand so the case stays fixed.",
+  "firms": {
+    "text": "country_id,latitude,longitude,bright_ti4,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_ti5,frp,daynight\n"
+  },
+  "openaq_locations": {
+    "json": {
+      "results": [
+        {
+          "id": 8118,
+          "name": "Rohini, Delhi - DPCC",
+          "coordinates": { "latitude": 28.75, "longitude": 77.12 },
+          "provider": { "name": "Central Pollution Control Board" },
+          "sensors": [
+            { "id": 24101, "parameter": { "name": "pm25", "units": "µg/m³" } },
+            { "id": 24102, "parameter": { "name": "pm10", "units": "µg/m³" } },
+            { "id": 24103, "parameter": { "name": "no2", "units": "µg/m³" } }
+          ]
+        }
+      ]
+    }
+  },
+  "openaq_latest": {
+    "json": {
+      "results": [
+        { "sensorsId": 24101, "value": 34.2, "datetime": { "utc": "2026-09-06T05:00:00Z" } },
+        { "sensorsId": 24102, "value": 71.5, "datetime": { "utc": "2026-09-06T05:00:00Z" } },
+        { "sensorsId": 24103, "value": 18.9, "datetime": { "utc": "2026-09-06T05:00:00Z" } }
+      ]
+    }
+  },
+  "open_meteo": {
+    "json": {
+      "current": {
+        "time": "2026-09-06T05:15",
+        "wind_speed_10m": 3.1,
+        "wind_direction_10m": 295,
+        "temperature_2m": 31.4,
+        "relative_humidity_2m": 52
+      }
+    }
+  }
+}
