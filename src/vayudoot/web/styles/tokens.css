@@ -1,68 +1,200 @@
-/* Colour, type, and the two preference media queries.
+/* Colour, type, space, and the two preference media queries.
  *
  * Themes are three-state: the page follows the system unless the reader says
  * otherwise, and that choice is remembered. Every colour is a token, defined
  * once for light and re-declared for dark, so nothing is hardcoded past this
- * file. */
+ * file. Dark is designed rather than derived — this is read on a phone at
+ * night as often as in daylight.
+ *
+ * Three scales, and nothing off them:
+ *
+ *   type   11 · 13 · 16 · 19 · 23 · 28   (a ~1.2 ratio, six steps)
+ *   space  4 · 8 · 12 · 16 · 24 · 32 · 48
+ *   radius 8 · 12 · 16 · pill
+ *
+ * Sixteen is the body size because this is used outdoors, at arm's length,
+ * often in glare. Thirteen is the only step below it, so "small" means one
+ * thing rather than five.
+ */
 
 :root {
-  --bg: #f5f5f2;
-  --surface: #ffffff;
-  --surface-2: #fafaf8;
-  --line: #e0dfda;
-  --line-strong: #cbcac3;
-  --ink: #1a1a18;
-  --ink-soft: #63625d;
-  --accent: #1a6647;
-  --accent-soft: #e8f2ec;
-  --accent-ink: #ffffff;
-  --warn: #8f5406;
-  --bad: #93261e;
-  --radius: 12px;
+  /* ── type ──────────────────────────────────────────────────────────── */
+  --t-eyebrow: 0.6875rem;  /* 11 — uppercase section labels only */
+  --t-meta: 0.8125rem;     /* 13 — captions, meta, dense secondary text */
+  --t-body: 1rem;          /* 16 — everything that is read */
+  --t-lead: 1.1875rem;     /* 19 — card and section titles */
+  --t-title: 1.4375rem;    /* 23 — view titles */
+  --t-display: 1.75rem;    /* 28 — the case id, the page title */
+
+  --lh-tight: 1.2;
+  --lh-snug: 1.4;
+  --lh-body: 1.6;
+  --lh-doc: 1.65;   /* the complaint: a document, not an interface */
+
+  --track-eyebrow: 0.08em;
+  --track-display: -0.015em;
+
+  /* Weights as tokens, because the system stack's 550/650 are real on
+     variable faces and silently round to 600/700 elsewhere. */
+  --w-normal: 400;
+  --w-medium: 550;
+  --w-semi: 650;
+
+  --measure: 66ch;   /* where a line of prose stops being readable */
+
+  /* ── space ─────────────────────────────────────────────────────────── */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  /* ── shape ─────────────────────────────────────────────────────────── */
   --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
   --sidebar: 248px;
   --rail: 76px;
   --rail-tight: 60px;
   --page: 1080px;
-  --shadow: 0 1px 2px rgb(20 20 18 / 5%), 0 8px 24px rgb(20 20 18 / 4%);
+
+  /* ── surfaces and ink ──────────────────────────────────────────────── */
+  --bg: #f4f4f0;
+  --surface: #ffffff;
+  --surface-2: #faf9f6;
+  --surface-sunk: #efefea;   /* recessed: appendices, skeletons, code */
+  --line: #e3e2dc;
+  --line-strong: #c9c8c0;
+  /* The visible boundary of a form control is the only thing that identifies
+     it as one, so it is held at 3:1 against both the field's own fill and the
+     page behind it (WCAG 1.4.11). The decorative hairlines above are not. */
+  --field-line: #8d8b83;
+  --ink: #191917;
+  --ink-soft: #5f5e59;
+
+  /* ── functional colour ─────────────────────────────────────────────────
+     One hue per meaning, each with a text tone, a tint to sit on, and a
+     border. `ok` doubles as the brand accent: this is a civic service, so
+     the action colour and the resolved-well colour are deliberately the
+     same green rather than two competing greens. */
+  --ok: #14664a;
+  --ok-tint: #e7f2ec;
+  --ok-line: #b9d8c8;
+  --ok-on: #ffffff;
+
+  --attention: #8a4e07;
+  --attention-tint: #fdf4e6;
+  --attention-line: #ecd3a8;
+
+  --info: #1a5296;
+  --info-tint: #eaf2fb;
+  --info-line: #bcd3ee;
+
+  --danger: #99251d;
+  --danger-tint: #fdeeeb;
+  --danger-line: #eebeb6;
+
+  /* Aliases kept so that "the accent" still means one thing everywhere. */
+  --accent: var(--ok);
+  --accent-soft: var(--ok-tint);
+  --accent-ink: var(--ok-on);
+  --warn: var(--attention);
+  --bad: var(--danger);
+
+  /* ── elevation ─────────────────────────────────────────────────────────
+     Two steps and no more. Resting surfaces sit on a hairline; only things
+     that genuinely float — popovers, the map control, a sticky action —
+     cast a shadow. */
+  --shadow-1: 0 1px 2px rgb(20 20 18 / 5%);
+  --shadow-2: 0 2px 4px rgb(20 20 18 / 6%), 0 12px 28px rgb(20 20 18 / 8%);
+  --shadow: var(--shadow-1);   /* legacy name */
+
+  --focus: #1a5296;
+
   color-scheme: light;
 }
 
-/* System preference, unless the reader has explicitly chosen light. */
+/* Dark is its own design. The surfaces are lifted rather than the ink
+   dropped: on an OLED phone a pure-black ground with white text smears, so
+   the ground is a very dark neutral and the cards step up from it. Tints are
+   desaturated toward the surface instead of being the light tints darkened,
+   which is what makes a dark status band read as a band and not as a stain. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #131316;
-    --surface: #1c1c20;
+    --bg: #121215;
+    --surface: #1b1b1f;
     --surface-2: #232329;
-    --line: #32323a;
-    --line-strong: #45454f;
-    --ink: #eeeef1;
-    --ink-soft: #a6a6b0;
-    --accent: #4bb083;
-    --accent-soft: #172a22;
-    --accent-ink: #0b1611;
-    --warn: #e0ac52;
-    --bad: #ea8478;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 22%);
+    --surface-sunk: #17171b;
+    --line: #31313a;
+    --line-strong: #474751;
+    --field-line: #727280;
+    --ink: #eeeef2;
+    --ink-soft: #a4a4ae;
+
+    --ok: #4fb488;
+    --ok-tint: #152620;
+    --ok-line: #2c5544;
+    --ok-on: #0b1611;
+
+    --attention: #dfa94f;
+    --attention-tint: #2a2115;
+    --attention-line: #574221;
+
+    --info: #7fb0ee;
+    --info-tint: #151f2e;
+    --info-line: #2c4363;
+
+    --danger: #ef8b7c;
+    --danger-tint: #2b1a17;
+    --danger-line: #5d3630;
+
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-2: 0 2px 4px rgb(0 0 0 / 40%), 0 12px 28px rgb(0 0 0 / 34%);
+
+    --focus: #7fb0ee;
+
     color-scheme: dark;
   }
 }
 
 /* An explicit choice wins in both directions. */
 :root[data-theme="dark"] {
-  --bg: #131316;
-  --surface: #1c1c20;
+  --bg: #121215;
+  --surface: #1b1b1f;
   --surface-2: #232329;
-  --line: #32323a;
-  --line-strong: #45454f;
-  --ink: #eeeef1;
-  --ink-soft: #a6a6b0;
-  --accent: #4bb083;
-  --accent-soft: #172a22;
-  --accent-ink: #0b1611;
-  --warn: #e0ac52;
-  --bad: #ea8478;
-  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 22%);
+  --surface-sunk: #17171b;
+  --line: #31313a;
+  --line-strong: #474751;
+  --field-line: #727280;
+  --ink: #eeeef2;
+  --ink-soft: #a4a4ae;
+
+  --ok: #4fb488;
+  --ok-tint: #152620;
+  --ok-line: #2c5544;
+  --ok-on: #0b1611;
+
+  --attention: #dfa94f;
+  --attention-tint: #2a2115;
+  --attention-line: #574221;
+
+  --info: #7fb0ee;
+  --info-tint: #151f2e;
+  --info-line: #2c4363;
+
+  --danger: #ef8b7c;
+  --danger-tint: #2b1a17;
+  --danger-line: #5d3630;
+
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-2: 0 2px 4px rgb(0 0 0 / 40%), 0 12px 28px rgb(0 0 0 / 34%);
+
+  --focus: #7fb0ee;
+
   color-scheme: dark;
 }
 
@@ -72,38 +204,106 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4 { margin: 0; line-height: 1.25; }
+h1, h2, h3, h4 {
+  margin: 0;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--track-display);
+  font-weight: var(--w-semi);
+}
+
 p { margin: 0; }
 
 .muted { color: var(--ink-soft); }
-.error { color: var(--bad); }
+.error { color: var(--danger); }
+
+/* The one uppercase style in the system. Used for section labels and for the
+   eyebrow above a card's title — never for anything longer than a few words,
+   because uppercase at 11px stops being readable past that. */
+.section-label,
+.eyebrow {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  line-height: var(--lh-snug);
+}
+
+/* Numbers that sit in columns, or that tick upward while a run is going,
+   should not reflow as their digits change. */
+.tnum { font-variant-numeric: tabular-nums; }
 
 /* Keyboard users get a visible ring everywhere, including on the map controls
-   and the nav, which are all real buttons for this reason. */
+   and the nav, which are all real buttons for this reason. The ring is a blue
+   that contrasts against both the page and the green buttons it may land on,
+   with a white/black spacer so it never disappears into a filled control. */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
+.primary:focus-visible,
+.nav-item.is-active:focus-visible {
+  outline-color: var(--focus);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
 .skip {
   position: absolute;
-  left: 8px;
+  left: var(--s2);
   top: -60px;
   z-index: 900;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: var(--accent-ink);
-  background: var(--accent);
+  padding: var(--s3) var(--s4);
+  font-size: var(--t-body);
+  font-weight: var(--w-medium);
+  color: var(--ok-on);
+  background: var(--ok);
   border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
   transition: top .15s ease;
 }
 
-.skip:focus { top: 8px; }
+.skip:focus { top: var(--s2); }
+
+/* Present to a screen reader, absent to everyone else. Used for the one-line
+   announcement that accompanies each skeleton, so a loading region is heard
+   once rather than read out as a dozen empty boxes. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A single shimmer, shared by every placeholder in the interface, so a
+   loading case and a loading list feel like the same system waiting. */
+.skeleton {
+  background: linear-gradient(
+    90deg, var(--surface-sunk) 0%, var(--line) 40%, var(--surface-sunk) 80%);
+  background-size: 300% 100%;
+  border-radius: var(--radius-sm);
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -150% 0; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -112,8 +312,21 @@ p { margin: 0; }
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  .skeleton { background: var(--surface-sunk); }
 }
 
+/* More contrast: hairlines become visible lines, secondary ink becomes
+   primary ink, and every tinted band gets a real border rather than relying
+   on a 5%-difference fill to separate it from the page. */
 @media (prefers-contrast: more) {
-  :root { --line: var(--line-strong); --ink-soft: var(--ink); }
+  :root {
+    --line: var(--line-strong);
+    --line-strong: var(--field-line);
+    --ink-soft: var(--ink);
+    --ok-line: var(--ok);
+    --attention-line: var(--attention);
+    --info-line: var(--info);
+    --danger-line: var(--danger);
+  }
 }

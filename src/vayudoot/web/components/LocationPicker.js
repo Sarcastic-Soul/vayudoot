@@ -85,7 +85,9 @@ export function LocationPicker({ point, onPoint }) {
       </div>
       <${PlaceSearch} onPick=${(lat, lon) => pick.current(lat, lon)} />
       <${MapPane} paneClass="pick-map" containerRef=${container} />
-      <p class=${`picked${address.loading ? " is-loading" : ""}`}>${address.text}</p>
+      <p class=${`picked${address.loading ? " is-loading" : ""}${point ? " is-set" : ""}`}>
+        ${address.text}
+      </p>
       <p class="help">Jurisdiction is decided by this pin, so it needs to be where the
         pollution is — not where you are standing later.</p>
       <input type="hidden" id="latitude" value=${point ? point.latitude.toFixed(6) : ""} />

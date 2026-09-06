@@ -1,189 +1,873 @@
-/* One case, and the list of them. */
+/* One case, and the list of them.
+ *
+ * The hierarchy here is the point. A case has one artefact — the complaint,
+ * which is a legal document addressed to a regulator — and a body of evidence
+ * that exists to support it. So the complaint is the largest, brightest,
+ * widest-measure thing on the page, the timeline sits beside it as the
+ * working, and the envelope and the history are appendices behind a
+ * disclosure. Everything used to have the same weight; that was the bug. */
 
-.case-head { display: grid; gap: 6px; margin-bottom: 14px; }
-.case-head h2 { font-size: 20px; font-variant-numeric: tabular-nums; }
-.case-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
-.back { justify-self: start; }
+/* ── the head ────────────────────────────────────────────────────────── */
 
-.pill {
-  padding: 3px 9px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 999px;
+.case-head { display: grid; gap: var(--s2); margin-bottom: var(--s4); }
+
+button.link.back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-meta);
+  text-decoration: none;
+  /* A 44px target for a control that sits alone at the top of a phone
+     screen, without 44px of visible chrome around a text link. */
+  min-height: 44px;
+  margin: calc(var(--s3) * -1) 0 calc(var(--s3) * -1) calc(var(--s2) * -1);
+  padding: 0 var(--s2);
+  border-radius: var(--radius-sm);
+}
+
+button.link.back svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+button.link.back:hover { background: var(--ok-tint); text-decoration: none; }
+
+.case-head h2 {
+  font-size: var(--t-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;   /* an id is read character by character */
+}
+
+.case-where {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.case-where svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── status ──────────────────────────────────────────────────────────────
+   Five situations that are not variations of one another: waiting for a
+   person, filed, escalated because nobody answered, held below the
+   confidence floor, and failed. A single grey pill said all five equally
+   quietly. Each now has its own hue, its own icon and, in the case view, its
+   own sentence saying what it means and what happens next. */
+
+.status-banner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--s3);
+  align-items: start;
+  padding: var(--s3) var(--s4);
+  margin-bottom: var(--s5);
   border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.status-banner svg {
+  grid-row: span 2;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.status-headline {
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-snug);
+}
+
+.status-note {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
   color: var(--ink-soft);
 }
 
-.pill[data-status="awaiting_confirmation"] { color: var(--warn); border-color: currentColor; }
-.pill[data-status="filed"],
-.pill[data-status="escalated"] { color: var(--accent); border-color: currentColor; }
-.pill[data-status="failed"],
-.pill[data-status="rejected"] { color: var(--bad); border-color: currentColor; }
+.status-banner[data-tone="ok"] {
+  color: var(--ok);
+  background: var(--ok-tint);
+  border-color: var(--ok-line);
+}
+
+.status-banner[data-tone="attention"] {
+  color: var(--attention);
+  background: var(--attention-tint);
+  border-color: var(--attention-line);
+}
+
+.status-banner[data-tone="info"] {
+  color: var(--info);
+  background: var(--info-tint);
+  border-color: var(--info-line);
+}
+
+.status-banner[data-tone="danger"] {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-color: var(--danger-line);
+}
+
+.status-banner[data-tone="neutral"] {
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+
+.status-banner .status-headline { color: var(--ink); }
+
+/* The inline form, for the case list and anywhere the sentence is too much.
+   A dot carries the hue so the label itself stays at full ink contrast. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  line-height: var(--lh-snug);
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+
+.pill[data-status="awaiting_confirmation"] {
+  background: var(--attention-tint);
+  border-color: var(--attention-line);
+}
+
+.pill[data-status="awaiting_confirmation"]::before { background: var(--attention); }
+
+.pill[data-status="filed"] { background: var(--ok-tint); border-color: var(--ok-line); }
+.pill[data-status="filed"]::before { background: var(--ok); }
+
+.pill[data-status="escalated"] { background: var(--info-tint); border-color: var(--info-line); }
+.pill[data-status="escalated"]::before { background: var(--info); }
+
+.pill[data-status="failed"] { background: var(--danger-tint); border-color: var(--danger-line); }
+.pill[data-status="failed"]::before { background: var(--danger); }
+
+.pill[data-status="rejected"] { background: var(--surface-2); border-color: var(--line-strong); }
+.pill[data-status="rejected"]::before { background: var(--ink-soft); }
+
+/* ── the photograph ───────────────────────────────────────────────────── */
 
 .case-photo {
+  display: block;
   width: 100%;
   border-radius: var(--radius);
   border: 1px solid var(--line);
-  margin-bottom: 16px;
+  background: var(--surface-sunk);
+  margin-bottom: var(--s5);
 }
 
-.timeline { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 2px; }
+.case-photo-skeleton { height: 220px; margin-bottom: var(--s5); border-radius: var(--radius); }
+
+/* ── the timeline ────────────────────────────────────────────────────────
+   The centrepiece. A citizen is watching an agent do legal work on their
+   behalf, and the thing they need to see is that it is happening, in order,
+   and what each step decided.
+   So: one continuous surface rather than four boxes, a rail that is drawn in
+   the accent behind the work already done and in hairline ahead of it, and a
+   node per stage that is a filled tick, a live ring, an empty circle or a
+   cross. The state is also written out in words next to the title, because a
+   ring and a circle are not far apart at arm's length in daylight. */
+
+.timeline-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+
+.timeline-head .section-label { margin: 0; }
+
+.timeline-progress {
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0 0 var(--s5);
+  padding: var(--s1) 0;
+  display: grid;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
 
 .step {
   position: relative;
-  padding: 12px 12px 12px 38px;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 0 var(--s3);
+  padding: var(--s4) var(--s4);
 }
 
-.step:first-child { border-radius: var(--radius) var(--radius) 0 0; }
-.step:last-child { border-radius: 0 0 var(--radius) var(--radius); }
-
+/* The rail. Drawn per step so its colour can differ above and below the
+   current node; the first and last steps clip their half so the line starts
+   and stops at a node rather than at the card's edge. */
 .step::before {
   content: "";
   position: absolute;
-  left: 14px;
-  top: 17px;
-  width: 10px;
-  height: 10px;
+  left: calc(var(--s4) + 12px);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+
+.step:first-child::before { top: calc(var(--s4) + 12px); }
+.step:last-child::before { bottom: calc(100% - var(--s4) - 12px); }
+.step[data-state="done"]::before { background: var(--ok); }
+
+/* A step that is being worked on, or that stopped, is half-travelled: the rail
+   arrives in the accent — the run did get this far — and leaves as a hairline. */
+.step[data-state="active"]::before,
+.step[data-state="failed"]::before {
+  background: linear-gradient(var(--ok) 0 50%, var(--line) 50% 100%);
+}
+
+.step-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-top: -1px;
   border-radius: 50%;
-  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
 }
 
-.step[data-state="done"]::before { background: var(--accent); border-color: var(--accent); }
-.step[data-state="active"]::before {
-  border-color: var(--accent);
-  animation: pulse 1.1s ease-in-out infinite;
-}
-.step[data-state="failed"]::before { background: var(--bad); border-color: var(--bad); }
-
-@keyframes pulse {
-  0%, 100% { transform: scale(0.7); opacity: 0.5; }
-  50% { transform: scale(1.15); opacity: 1; }
+.step-node::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .step[data-state="active"]::before { animation: none; background: var(--accent); }
+.step-node svg {
+  position: relative;
+  z-index: 1;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
 }
 
-.step h4 { margin: 0; font-size: 14px; }
-.step .detail { margin-top: 4px; font-size: 13px; color: var(--ink-soft); }
-.step .detail dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0; }
-.step .detail dt { font-weight: 600; color: var(--ink); }
-.step .detail dd { margin: 0; }
+.step[data-state="done"] .step-node,
+.step[data-state="failed"] .step-node { color: var(--ok-on); }
+
+.step[data-state="done"] .step-node svg,
+.step[data-state="failed"] .step-node svg { opacity: 1; }
+
+.step[data-state="done"] .step-node::after {
+  inset: 2px;
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.step[data-state="failed"] .step-node::after {
+  inset: 2px;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.step[data-state="failed"] .step-node { color: var(--surface); }
+
+/* Working. A ring that breathes, plus a solid centre, so that even with
+   animation switched off the node is unmistakably not an empty circle. */
+.step[data-state="active"] .step-node::after {
+  inset: 4px;
+  border-color: var(--ok);
+  border-width: 2.5px;
+}
+
+.step[data-state="active"] .step-node::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ok);
+  opacity: .22;
+  animation: ping 1.6s cubic-bezier(.2, .6, .3, 1) infinite;
+}
+
+@keyframes ping {
+  0% { transform: scale(.55); opacity: .3; }
+  70% { transform: scale(1); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+.step-body { min-width: 0; padding-top: 2px; }
+
+.step-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s1) var(--s2);
+}
+
+.step h4 {
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  color: var(--ink-soft);
+}
+
+.step[data-state="done"] h4,
+.step[data-state="active"] h4,
+.step[data-state="failed"] h4 { color: var(--ink); }
+
+.step-state {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.step[data-state="done"] .step-state { color: var(--ok); }
+.step[data-state="failed"] .step-state { color: var(--danger); }
+
+.step[data-state="active"] .step-state {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  color: var(--ok);
+  background: var(--ok-tint);
+}
+
+.step .detail {
+  margin-top: var(--s2);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.step[data-state="pending"] .detail { color: var(--ink-soft); opacity: .75; }
+
+/* Stacked on a phone. A two-column definition list at 390px leaves the value
+   column about fifteen characters wide, which is how "Satellite" ended up
+   set one word to a line. */
+.step .detail dl { display: grid; gap: var(--s2); margin: var(--s3) 0 0; }
+
+.step .detail dt {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.step .detail dd {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+}
+
+@media (min-width: 560px) {
+  .step .detail dl {
+    grid-template-columns: minmax(96px, auto) 1fr;
+    gap: var(--s2) var(--s4);
+    align-items: baseline;
+  }
+
+  .step .detail dt { text-align: left; }
+  .step .detail dd { margin-top: 0; }
+}
+
+/* ── the complaint: the artefact ─────────────────────────────────────────
+   Given the weight it has earned. A wider measure, document line-height, a
+   real title, and an accent edge along the top so that in a column of grey
+   cards this is visibly the one that matters. */
 
 .complaint {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 14px;
-  margin-bottom: 16px;
+  border-top: 3px solid var(--ok);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: var(--s5) var(--s4);
+  margin-bottom: var(--s5);
 }
 
-.complaint-head { display: grid; gap: 8px; margin-bottom: 10px; }
-.complaint h3 { font-size: 15px; }
+.complaint-head { display: grid; gap: var(--s3); margin-bottom: var(--s4); }
 
-.lang-toggle { display: flex; gap: 4px; }
+.complaint h3 {
+  font-size: var(--t-lead);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--track-display);
+}
+
+.lang-toggle {
+  display: flex;
+  gap: var(--s1);
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  justify-self: start;
+}
 
 .lang-toggle button {
-  padding: 4px 10px;
+  min-height: 34px;
+  padding: 4px var(--s3);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
   color: var(--ink-soft);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-pill);
   cursor: pointer;
+  transition: color .15s ease, background-color .15s ease;
 }
 
-.lang-toggle button.is-active { color: var(--ink); border-color: var(--accent); }
+.lang-toggle button:hover { color: var(--ink); }
+
+.lang-toggle button.is-active {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.complaint pre {
+  font-size: var(--t-body);
+  line-height: var(--lh-doc);
+  max-width: var(--measure);
+}
 
 pre {
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font: inherit;
-  font-size: 14px;
 }
 
-.statutes { margin-top: 10px; font-size: 12px; }
+.statutes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s1) var(--s2);
+  margin-top: var(--s5);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
 
-.actions { display: grid; gap: 8px; margin-bottom: 16px; }
+.statutes-label {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ── the decision ────────────────────────────────────────────────────────
+   The most consequential control in the product: a person authorising a
+   formal complaint to a regulator. It gets a block of its own that states
+   what pressing it does, rather than a button floating under a card. Serious,
+   not alarming — the accent green, not red. */
+
+.actions {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  margin-bottom: var(--s5);
+  background: var(--surface);
+  border: 1px solid var(--ok-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+
+.actions .eyebrow { color: var(--ok); }
+
+.actions p.decision {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.actions button.primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 52px;
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+}
+
+.actions button.primary svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.actions .help {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.actions .help svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.actions .error {
+  padding: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  background: var(--danger-tint);
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius-sm);
+}
+
+/* ── appendices ──────────────────────────────────────────────────────────
+   Present, findable, and visibly secondary: no fill, one hairline, and a
+   summary that looks like a control rather than like a heading. */
 
 .envelope, .history {
-  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 10px 14px;
-  margin-bottom: 12px;
+  padding: 0 var(--s4);
+  margin-bottom: var(--s3);
+  background: var(--surface-2);
 }
 
-.envelope summary, .history summary { font-size: 14px; cursor: pointer; }
+.envelope summary, .history summary {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 48px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  color: var(--ink-soft);
+  cursor: pointer;
+  list-style: none;
+}
+
+.envelope summary::-webkit-details-marker,
+.history summary::-webkit-details-marker { display: none; }
+
+.envelope summary::before, .history summary::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform .18s ease;
+}
+
+.envelope[open] summary::before, .history[open] summary::before { transform: rotate(45deg); }
+.envelope summary:hover, .history summary:hover { color: var(--ink); }
 
 .envelope pre {
-  margin-top: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  margin: 0 0 var(--s4);
+  padding: var(--s3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--surface-sunk);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
 }
 
-.history ul { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--ink-soft); }
-.history li { margin-bottom: 4px; overflow-wrap: anywhere; }
+.history ol {
+  margin: 0 0 var(--s4);
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--s2);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.history li {
+  position: relative;
+  padding-left: var(--s4);
+  overflow-wrap: anywhere;
+}
+
+.history li::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
 
 /* Below the two-column breakpoint the case columns are just stacked blocks. */
 .case-col { display: block; }
 
 /* ── the list of cases ─────────────────────────────────────────────────── */
 
-.case-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.case-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
 
 .case-list button {
   width: 100%;
   display: grid;
-  gap: 4px;
-  padding: 12px 14px;
+  gap: var(--s2);
+  padding: var(--s4);
   text-align: left;
   font: inherit;
   color: inherit;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
   cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
-.case-list .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.case-list .row strong { font-size: 14px; font-variant-numeric: tabular-nums; }
-.case-list .where { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.case-list button:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-2);
+}
+
+.case-list button:active { transform: translateY(1px); }
+
+/* The id must never break: it is the thing a person reads back over a phone.
+   The status pill is what gives way, onto its own line, in a narrow card. */
+.case-list .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+}
+
+.case-list .row strong {
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.case-list .where {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.case-list .where svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.case-list-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s1) var(--s3);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
+}
+
+.case-list .kind {
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  color: var(--ink);
+  text-transform: capitalize;
+}
+
+.case-list .kind.is-waiting { color: var(--ink-soft); font-weight: var(--w-normal); }
+
+.case-list .when {
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A line of explanation that is not an empty state: a failed fetch, or a
+   filter that matched nothing. Recessed rather than alarming. */
+.note {
+  padding: var(--s4);
+  margin-top: var(--s4);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  max-width: var(--measure);
+}
+
+.note.is-bad {
+  color: var(--ink);
+  background: var(--danger-tint);
+  border-color: var(--danger-line);
+}
+
+/* ── empty and loading ───────────────────────────────────────────────────
+   Neither is a blank rectangle. An empty list says what to do next; a loading
+   one shows the shape of what is coming, so the page does not jump when it
+   lands. */
 
 .empty {
-  padding: 24px 0;
-  margin-top: 12px;
+  display: grid;
+  justify-items: center;
+  gap: var(--s3);
+  padding: var(--s7) var(--s4);
+  margin-top: var(--s4);
   text-align: center;
-  font-size: 13px;
-  max-width: 56ch;
+  background: var(--surface);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+}
+
+.empty svg {
+  width: 32px;
+  height: 32px;
+  color: var(--ink-soft);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.empty h3 { font-size: var(--t-lead); }
+
+.empty p {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  max-width: 46ch;
+}
+
+.empty .primary { justify-self: center; padding-inline: var(--s5); }
+
+.case-list-skeleton { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+.case-list-skeleton li { height: 104px; border-radius: var(--radius); }
+
+.step-skeleton { display: grid; gap: var(--s3); padding: var(--s4); }
+.step-skeleton span { height: 14px; border-radius: 4px; }
+.step-skeleton span:nth-child(1) { width: 34%; }
+.step-skeleton span:nth-child(2) { width: 88%; }
+.step-skeleton span:nth-child(3) { width: 62%; }
+
+/* Once the photograph is wider than a phone it stops being a full-bleed image
+   and becomes an exhibit: capped, cropped to a band, and no longer the tallest
+   thing on the page. */
+@media (min-width: 700px) {
+  .case-photo { max-height: 360px; object-fit: cover; }
+  .case-photo-skeleton { height: 300px; }
 }
 
 @media (min-width: 900px) {
-  .case-photo { max-height: 420px; object-fit: cover; }
-  .case-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-  /* A line of text stops being readable somewhere past 80 characters. */
-  .complaint pre, .envelope pre { max-width: 72ch; }
+  .case-list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .complaint { padding: var(--s5) var(--s5); }
+  .actions { padding: var(--s5); }
+  .status-banner { padding: var(--s4) var(--s5); }
 }
 
 @media (min-width: 1240px) {
+  /* The complaint is the wider column. It is the document; the photograph and
+     the stages are the working that produced it. */
   .case-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
     align-items: start;
-    gap: 24px;
+    gap: var(--s6);
   }
 
   /* The photograph and the timeline scroll with the page; the complaint is the
      thing being read, so it stays put beside them. */
   .case-grid > .case-col:last-child {
     position: sticky;
-    top: 24px;
-    max-height: calc(100dvh - 48px);
+    top: var(--s5);
+    max-height: calc(100dvh - var(--s7));
     overflow-y: auto;
-    padding-right: 4px;
+    padding-right: var(--s1);
   }
 }

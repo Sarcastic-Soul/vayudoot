@@ -28,4 +28,22 @@ export function escalationDue(c) {
 
 export const words = (value) => String(value).replace(/_/g, " ");
 
+/* When a case was opened, in the shortest form that is still unambiguous.
+ * Recent cases are the ones a citizen is looking for, so those get a relative
+ * phrase; anything older gets a date, because "43 days ago" is not a date
+ * anybody can act on. Falls back to an empty string rather than to "Invalid
+ * Date" if the server ever sends something unparseable. */
+export function shortWhen(iso) {
+  const at = Date.parse(iso);
+  if (!iso || Number.isNaN(at)) return "";
+  const mins = Math.round((Date.now() - at) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days} ${days === 1 ? "day" : "days"} ago`;
+  return new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+
 export const whereOf = (c) => c.address || `${c.report.latitude}, ${c.report.longitude}`;

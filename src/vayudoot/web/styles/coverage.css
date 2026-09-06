@@ -3,88 +3,114 @@
    "here are some rows". So: the numbers first, the rules as sentences, and the
    regions as cards you can scan. Addresses are the evidence for the safety
    claim, so they stay available behind a toggle rather than repeating eighty
-   times in the default view. */
+   times in the default view.
 
+   `.page-head`, `.section-label` and the card recipe come from shell.css and
+   tokens.css; nothing on this page invents its own. */
+
+/* A tinted band that says a case resolved to something broader than the
+   statute names. Shares its shape with the status banner in the case view,
+   because it is the same kind of statement about the same kind of gap. */
 .coverage-warning {
-  padding: 11px 13px;
-  margin-bottom: 14px;
-  font-size: 13px;
-  line-height: 1.45;
+  display: block;
+  padding: var(--s3) var(--s4);
+  margin-bottom: var(--s5);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
   color: var(--ink);
-  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  background: var(--attention-tint);
+  border: 1px solid var(--attention-line);
+  border-left: 3px solid var(--attention);
   border-radius: var(--radius);
 }
 
+.coverage-warning strong { display: block; font-weight: var(--w-semi); margin-bottom: 2px; }
+
 .coverage-warning[data-coverage="generic"] {
-  background: color-mix(in srgb, var(--bad) 12%, var(--surface));
-  border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+  background: var(--danger-tint);
+  border-color: var(--danger-line);
+  border-left-color: var(--danger);
 }
 
-.page-head { margin-bottom: 16px; }
-.page-head h2 { font-size: 19px; margin-bottom: 6px; }
-.page-head p { font-size: 13.5px; color: var(--ink-soft); max-width: 62ch; }
+/* ── the numbers ─────────────────────────────────────────────────────── */
 
-.section-label {
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  margin: 22px 0 10px;
-}
-
+/* On a phone these are a short table of key figures — a number, then what it
+   counts — rather than three tiles, two of which would sit on one row and
+   leave the third stranded beside a hole. They become tiles once there is
+   room for all of them on one row. */
 .stats {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 8px;
-  margin: 0 0 14px;
+  gap: 0;
+  margin: 0 0 var(--s5);
   padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
 }
 
 .stats li {
   display: grid;
-  gap: 2px;
-  padding: 12px 14px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  grid-template-columns: minmax(56px, auto) 1fr;
+  align-items: baseline;
+  gap: var(--s4);
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--line);
 }
 
+.stats li:first-child { border-top: 0; }
+
 .stats strong {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: var(--t-display);
+  font-weight: var(--w-semi);
   line-height: 1;
+  letter-spacing: var(--track-display);
   font-variant-numeric: tabular-nums;
 }
 
-.stats span { font-size: 12px; line-height: 1.35; color: var(--ink-soft); }
+.stats span {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
 
+.stat-skeleton { height: 60px; }
+.region-skeleton { height: 148px; }
+
+/* The safety claim. This is the one thing on the page that must not be
+   skimmed past, so it gets the band treatment rather than a footnote. */
 .warn {
-  padding: 11px 13px;
-  font-size: 13px;
-  line-height: 1.5;
+  display: block;
+  padding: var(--s4);
+  margin-bottom: var(--s5);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
   color: var(--ink);
-  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  background: var(--attention-tint);
+  border: 1px solid var(--attention-line);
+  border-left: 3px solid var(--attention);
   border-radius: var(--radius);
 }
 
+.warn strong { font-weight: var(--w-semi); }
+
 .warn code {
-  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
   padding: 1px 5px;
-  background: var(--bg);
+  background: var(--surface);
+  border: 1px solid var(--attention-line);
   border-radius: 4px;
 }
 
-/* Rules read as sentences. */
+/* ── rules read as sentences ─────────────────────────────────────────── */
 
 .rules {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--s3);
   margin: 0;
   padding: 0;
 }
@@ -92,106 +118,185 @@
 .rules li {
   display: grid;
   align-content: start;
-  gap: 5px;
-  padding: 12px 14px;
+  gap: var(--s2);
+  padding: var(--s4);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
 }
 
-.rules h4 { font-size: 13.5px; text-transform: capitalize; }
-.rules p { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
-.rules strong { color: var(--ink); font-weight: 550; }
-.rule-statute { padding-top: 5px; border-top: 1px solid var(--line); }
-.rule-window { font-size: 11.5px; }
+.rules h4 {
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  text-transform: capitalize;
+}
 
-/* List controls. */
+.rules p {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.rules strong { color: var(--ink); font-weight: var(--w-medium); }
+
+.rule-statute {
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
+}
+
+.rule-window {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  padding: 3px 10px 3px 8px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.rule-window::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+
+/* ── list controls ───────────────────────────────────────────────────── */
 
 .list-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
+  gap: var(--s3) var(--s5);
 }
 
 .list-head .section-label { margin-bottom: 0; }
 
-.list-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
-.list-tools input[type="search"] { width: min(30ch, 60vw); padding: 8px 11px; font-size: 14px; }
+.list-tools {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s3) var(--s4);
+}
+
+/* flex-basis rather than a percentage width: inside a shrink-to-fit flex item
+   a percentage resolves against a width that depends on this element, and the
+   filter ended up wrapping onto its own line on a wide screen. */
+.list-tools input[type="search"] {
+  flex: 0 1 30ch;
+  min-width: 16ch;
+  min-height: 44px;
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-body);
+}
+
+.list-tools .switch { flex: none; }
 
 .switch {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12.5px;
-  font-weight: 450;
+  gap: var(--s2);
+  min-height: 44px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-normal);
   color: var(--ink-soft);
   cursor: pointer;
 }
 
-.switch input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+.switch input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ok);
+  cursor: pointer;
+}
 
-/* Regions. */
+.switch:hover { color: var(--ink); }
+
+/* ── regions ─────────────────────────────────────────────────────────── */
 
 .coverage-list {
   list-style: none;
   display: grid;
   align-items: start;
-  gap: 10px;
-  margin: 12px 0 0;
+  gap: var(--s3);
+  margin: var(--s4) 0 0;
   padding: 0;
 }
 
 .coverage-list > li {
-  padding: 13px 15px;
+  padding: var(--s4);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
 }
 
 .region-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--s3);
 }
 
-.region-head h4 { font-size: 14.5px; }
+.region-head h4 { font-size: var(--t-body); font-weight: var(--w-semi); }
 
 .chip {
   flex: none;
-  padding: 2px 9px;
-  font-size: 11px;
-  font-weight: 550;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--ok);
+  background: var(--ok-tint);
+  border: 1px solid var(--ok-line);
+  border-radius: var(--radius-pill);
 }
 
-.chip.is-thin { color: var(--ink-soft); background: var(--bg); }
+.chip.is-thin {
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border-color: var(--line);
+}
 
-.region-board { font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
+.region-board {
+  margin-top: var(--s1);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
 
-.region-cities { list-style: none; display: grid; gap: 6px; margin: 10px 0 0; padding: 0; }
+.region-cities { list-style: none; display: grid; gap: var(--s2); margin: var(--s3) 0 0; padding: 0; }
 
 .region-cities li {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 3px 8px;
-  font-size: 12.5px;
-  padding-top: 7px;
+  gap: var(--s1) var(--s2);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  padding-top: var(--s2);
   border-top: 1px solid var(--line);
 }
 
-.region-cities strong { font-weight: 550; }
+.region-cities strong { font-weight: var(--w-semi); }
 
 .region-foot {
-  margin-top: 10px;
-  padding-top: 9px;
-  font-size: 11.5px;
-  line-height: 1.45;
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
   color: var(--ink-soft);
   border-top: 1px dashed var(--line);
 }
@@ -200,8 +305,8 @@
    until asked for. */
 .addr {
   display: none;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--t-eyebrow);
   color: var(--ink-soft);
   overflow-wrap: anywhere;
 }
@@ -209,10 +314,34 @@
 .show-addresses .addr { display: inline; }
 .show-addresses .region-cities li .addr { flex-basis: 100%; }
 
+@media (min-width: 560px) {
+  .stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s3);
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .stats li {
+    grid-template-columns: none;
+    align-content: start;
+    gap: var(--s1);
+    padding: var(--s4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-1);
+  }
+
+  .stat-skeleton { height: 84px; }
+}
+
 @media (min-width: 900px) {
-  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
 }
 
 @media (min-width: 1240px) {
-  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
 }

@@ -13,7 +13,7 @@
    max-content width rather than to the space available. */
 main {
   width: 100%;
-  padding: 16px 16px calc(84px + env(safe-area-inset-bottom));
+  padding: var(--s5) var(--s4) calc(84px + env(safe-area-inset-bottom));
   max-width: var(--page);
   margin: 0 auto;
 }
@@ -22,6 +22,45 @@ main:focus { outline: none; }
 
 .view { display: none; }
 .view.is-active { display: block; }
+
+/* ── the head of a view ──────────────────────────────────────────────────
+   Every view opens the same way: a title, and one sentence saying what the
+   view is for. Shared here rather than per view so the three of them cannot
+   drift apart. */
+
+.page-head {
+  display: grid;
+  gap: var(--s2);
+  margin-bottom: var(--s5);
+}
+
+.page-head h2 {
+  font-size: var(--t-title);
+  letter-spacing: var(--track-display);
+}
+
+.page-head p {
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+}
+
+.section-label { margin: var(--s6) 0 var(--s3); }
+.section-label:first-child { margin-top: 0; }
+
+/* ── surfaces ────────────────────────────────────────────────────────────
+   One card recipe, so that a stat tile, a region, a case and a stage all sit
+   on the same paper. Anything that wants to look different does it by
+   changing padding or by adding a coloured edge, not by inventing a second
+   border and a third radius. */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
 
 /* ── adaptive layout ─────────────────────────────────────────────────────
    Two shapes, one grid. The breakpoints are where the content stops fitting,
@@ -40,12 +79,14 @@ main:focus { outline: none; }
 
   body.is-collapsed .app { --nav-width: var(--rail-tight); }
 
-  main { padding: 28px 28px 48px; }
+  main { padding: var(--s6) var(--s6) var(--s7); }
 }
 
 @media (min-width: 1080px) {
   .app { --nav-width: var(--sidebar); }
   body.is-collapsed .app { --nav-width: var(--rail); }
 
-  main { padding: 34px 40px 56px; }
+  main { padding: var(--s7) 40px var(--s7); }
+
+  .page-head h2 { font-size: var(--t-display); }
 }

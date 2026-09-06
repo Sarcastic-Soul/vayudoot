@@ -7,6 +7,7 @@ import { html } from "../lib/html.js";
 import { api } from "../lib/api.js";
 import { navigate } from "../lib/router.js";
 import { LocationPicker } from "./LocationPicker.js";
+import { ImagePlusIcon } from "./Icons.js";
 
 export function ReportForm() {
   const [point, setPoint] = useState(null);
@@ -51,19 +52,30 @@ export function ReportForm() {
   }
 
   return html`
+    <header class="page-head">
+      <h2>Report a pollution event</h2>
+      <p>A photograph and a pin are all that is needed. From those this instance
+        classifies what it is looking at, checks it against satellite and ground
+        readings, works out who holds jurisdiction, and drafts the complaint for
+        you to approve.</p>
+    </header>
+
     <form novalidate onSubmit=${onSubmit}>
       <div class="form-col">
-        <label class="photo-field">
+        <label class=${`photo-field${preview ? " has-photo" : ""}`}>
+          <span class="field-label">The photograph</span>
           <input type="file" id="photo" name="image" accept="image/*" capture="environment"
                  hidden ref=${photo} onChange=${onPhoto} />
           <div class="photo-drop">
             ${preview
-              ? html`<img src=${preview} alt="" />`
+              ? html`<img src=${preview} alt="The photograph you chose" />`
               : html`<div class="photo-hint">
+                  <${ImagePlusIcon} />
                   <strong>Add the photograph</strong>
                   <span>Tap to use the camera, or choose a file</span>
                 </div>`}
           </div>
+          ${preview && html`<span class="help">Tap the photograph to replace it.</span>`}
         </label>
 
         <${LocationPicker} point=${point} onPoint=${setPoint} />
@@ -86,7 +98,9 @@ export function ReportForm() {
         <button type="submit" class="primary" disabled=${busy}>
           ${busy ? "Starting the case…" : "Run the case"}
         </button>
-        <p class="error" hidden=${!error}>${error}</p>
+        <p class="submit-note">The run takes a few minutes. You will be taken to the case
+          and can watch each stage finish.</p>
+        <p class="error form-error" hidden=${!error}>${error}</p>
       </div>
     </form>`;
 }

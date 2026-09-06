@@ -1,33 +1,55 @@
-/* The report form: a photograph, a pin, and two optional lines. */
+/* The report form: a photograph, a pin, and two optional lines.
+ *
+ * Everything here is sized for a thumb in daylight: 16px labels and inputs
+ * (which also stops iOS zooming on focus), 48px minimum control height, and
+ * a photograph well large enough to be an obvious target rather than a
+ * dashed rectangle someone has to guess at. */
 
-form { display: grid; gap: 18px; }
-.form-col { display: grid; gap: 18px; align-content: start; }
+form { display: grid; gap: var(--s5); }
+.form-col { display: grid; gap: var(--s5); align-content: start; }
 
-.field { display: grid; gap: 6px; }
+.field { display: grid; gap: var(--s2); }
 
 .field-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--s3);
 }
 
-label { font-size: 14px; font-weight: 600; }
+label, .field-label {
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-snug);
+}
 
 input[type="text"], input[type="search"], input[type="number"], textarea {
   width: 100%;
-  padding: 11px 12px;
+  min-height: 48px;
+  padding: var(--s3) var(--s4);
   font: inherit;
+  font-size: var(--t-body);
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: var(--radius);
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-textarea { resize: vertical; }
+input::placeholder, textarea::placeholder { color: var(--ink-soft); opacity: 1; }
+
+input[type="text"]:hover, input[type="search"]:hover, textarea:hover {
+  border-color: var(--ink-soft);
+}
+
+/* The checkbox is a native control; only its accent is ours. Given a real
+   border so it is identifiable at the same 3:1 as every other field. */
+input[type="checkbox"] { accent-color: var(--ok); }
+
+textarea { resize: vertical; line-height: var(--lh-body); }
 
 input:focus-visible, textarea:focus-visible, button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 1px;
 }
 
@@ -40,84 +62,223 @@ input:focus-visible, textarea:focus-visible, button:focus-visible {
   position: absolute;
   z-index: 500;
   inset-inline: 0;
-  margin-top: 4px;
-  padding: 4px;
+  margin-top: var(--s1);
+  padding: var(--s1);
   list-style: none;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
-  max-height: 240px;
+  box-shadow: var(--shadow-2);
+  max-height: 264px;
   overflow-y: auto;
 }
 
 .place-results li button {
   display: block;
   width: 100%;
-  padding: 9px 10px;
+  min-height: 44px;
+  padding: var(--s3);
   text-align: left;
-  font-size: 13px;
+  font: inherit;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
   color: var(--ink);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
-.place-results li button:hover { background: var(--bg); }
-.place-results li.muted { padding: 9px 10px; font-size: 13px; }
+.place-results li button:hover { background: var(--surface-2); }
 
-.picked {
-  font-size: 13px;
-  font-weight: 550;
-  line-height: 1.35;
-  margin: 2px 0 0;
+.place-results li.muted {
+  padding: var(--s3);
+  font-size: var(--t-meta);
 }
 
-.picked.is-loading { color: var(--ink-soft); font-weight: 400; }
+/* What the pin currently resolves to. This is the citizen's read-back of the
+   most consequential field in the form — jurisdiction comes from it — so it
+   is set at body size with a marker, not as a caption. */
+.picked {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin: var(--s1) 0 0;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  line-height: var(--lh-snug);
+}
 
-.help { font-size: 12px; color: var(--ink-soft); }
+/* The marker only goes green once a pin has actually been placed. Before that
+   the line is an instruction, not a read-back, and a green dot beside it would
+   claim a location the form does not have. */
+.picked::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: none;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
 
-.photo-field { display: block; cursor: pointer; }
+.picked.is-set::before { background: var(--ok); }
+.picked.is-loading { color: var(--ink-soft); font-weight: var(--w-normal); }
+.picked.is-loading::before { background: var(--ink-soft); }
+
+.help {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+/* The photograph well. The single most important input in the product, so it
+   is given the space and the target size to say so. */
+
+.photo-field { display: grid; gap: var(--s2); cursor: pointer; }
 
 .photo-drop {
   display: grid;
   place-items: center;
-  min-height: 180px;
-  padding: 20px;
+  min-height: 220px;
+  padding: var(--s5);
   text-align: center;
   background: var(--surface);
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
+  border: 2px dashed var(--field-line);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  transition: border-color .15s ease, background-color .15s ease;
 }
 
-.photo-drop img { width: 100%; border-radius: 8px; display: block; }
-.photo-hint { display: grid; gap: 4px; }
-.photo-hint span { font-size: 13px; color: var(--ink-soft); }
+.photo-field:hover .photo-drop { border-color: var(--ok); background: var(--ok-tint); }
+.photo-field:focus-within .photo-drop { border-color: var(--ok); }
+
+/* Once there is a photograph it is the content, not a placeholder: solid
+   border, no padding, and the image fills the well. */
+.photo-field.has-photo .photo-drop {
+  min-height: 0;
+  padding: 0;
+  border-style: solid;
+  border-color: var(--line);
+  background: var(--surface-sunk);
+}
+
+.photo-drop img { width: 100%; display: block; }
+
+.photo-hint { display: grid; justify-items: center; gap: var(--s2); }
+
+.photo-hint svg {
+  width: 30px;
+  height: 30px;
+  color: var(--ink-soft);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.photo-hint strong { font-size: var(--t-lead); font-weight: var(--w-semi); }
+
+.photo-hint span {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+/* ── controls ────────────────────────────────────────────────────────── */
 
 button.primary {
-  padding: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 52px;
+  padding: var(--s3) var(--s4);
   font: inherit;
-  font-weight: 600;
-  color: var(--accent-ink);
-  background: var(--accent);
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  color: var(--ok-on);
+  background: var(--ok);
   border: none;
   border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
   cursor: pointer;
+  transition: filter .15s ease, box-shadow .15s ease, transform .1s ease;
 }
 
-button.primary[disabled] { opacity: 0.55; cursor: progress; }
+button.primary svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
+button.primary:hover { filter: brightness(1.1); box-shadow: var(--shadow-2); }
+button.primary:active { transform: translateY(1px); box-shadow: var(--shadow-1); }
+
+button.primary[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+  filter: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.submit-note {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* An error under the submit button is the one place in the form a person has
+   to be stopped, so it is a band rather than a line of red text. */
+.form-error {
+  padding: var(--s3) var(--s4);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  background: var(--danger-tint);
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius);
+}
+
+/* Two link shapes. In running prose a link is a link: underlined, inline, no
+   box — a 44px pill inside a sentence would break the line box it sits in.
+   Standing alone it is a control, and gets the target size. */
 button.link {
   padding: 0;
   font: inherit;
-  font-size: 13px;
-  color: var(--accent);
+  font-size: inherit;
+  font-weight: var(--w-medium);
+  color: var(--ok);
   background: none;
   border: none;
+  border-radius: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
   cursor: pointer;
 }
+
+button.link:hover { text-decoration-thickness: 2px; }
+
+/* The "use my location" control sits on a baseline with its label, so its
+   44px target must not push that baseline around. */
+.field-head button.link {
+  min-height: 44px;
+  padding: 0 var(--s2);
+  margin: -10px 0 -10px var(--s2);
+  font-size: var(--t-meta);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.field-head button.link:hover { background: var(--ok-tint); }
 
 /* Two independent halves: what was seen and where, then what to say about it.
    Explicit columns rather than nth-child placement, because the two sides have
@@ -126,8 +287,8 @@ button.link {
   form {
     grid-template-columns: minmax(320px, 1fr) minmax(300px, 0.85fr);
     align-items: start;
-    gap: 24px;
+    gap: var(--s6);
   }
 
-  .photo-drop { min-height: 220px; }
+  .photo-drop { min-height: 260px; }
 }

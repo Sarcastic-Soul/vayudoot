@@ -714,3 +714,49 @@ a legitimate way for an operator to close intake — crashed on an empty deque,
 found by curling the running server. And the dev server had been running without
 `--reload` for the whole session, so it had been serving stale Python the entire
 time; static files were unaffected, since those are read per request.
+
+## Day 1 — a design pass, and five bugs that only rendering could find
+
+The interface worked and looked like a prototype. A design agent took a pass
+over `src/vayudoot/web` with no behavioural changes allowed.
+
+The substance of it: a real type scale replaced sizes that had been picked ad
+hoc — six steps at roughly 1.2, with body at 16px rather than 13, because this
+is read outdoors at arm's length and because 16px inputs are also what stops iOS
+zooming on focus. Thirteen is now the only step below body, so "small" means one
+thing.
+
+The timeline got the most work, which is right: it is the thing that makes the
+product legible, a citizen watching an agent do legal work on their behalf. Four
+separate boxes became one surface with a rail drawn in the accent behind
+completed work and as a hairline ahead of it, so progress reads as a line. Every
+node carries a state word — DONE, WORKING, WAITING, STOPPED — and a stage
+counter, because a ring and a circle are not far apart in glare.
+
+The case view now has a hierarchy it did not have. The complaint is the artefact:
+the only elevated card, an accent top edge, prose at 16px capped at 66 characters,
+and the wider column on a large screen. The photograph and the timeline read as
+supporting evidence, and the envelope and history are recessed. Five distinct
+statuses got five treatments with a sentence each saying what happens next,
+rather than one small pill doing every job.
+
+The confirm control is green rather than red. It is the most consequential
+control in the product — a human authorising a formal complaint — but a control
+that looks like a warning is a control people learn to click past.
+
+**Five bugs, none of which a test could have caught.** Nav labels were invisible
+at desktop width: the active-item tint is an absolutely positioned `::before`,
+which paints after the parent's inline content, so the lozenge covered the text.
+The icon survived only because it already had `position: relative`. The sandbox
+badge overflowed the collapsed rail and was clipped in the expanded sidebar. A
+case id wrapped mid-token behind a long status pill. The coverage filter wrapped
+onto its own line because `width: min(32ch, 100%)` inside a shrink-to-fit flex
+item resolves circularly. And form control borders sat at 1.68:1 against their
+own fill, under the 3:1 that WCAG 1.4.11 asks for a component's identifying
+boundary — now a separate token at 3.1–3.9:1, with decorative hairlines left
+light deliberately.
+
+Contrast was measured rather than eyeballed: every text pair is AA and most are
+AAA, in both themes, including each functional hue against its own tint. The
+focus ring was checked by rendering it on a green button, not only by computing
+it, because a ring that computes well can still vanish against a specific fill.

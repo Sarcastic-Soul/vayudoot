@@ -4,7 +4,7 @@
 
 import { html } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
-import { CameraIcon, ListIcon, PinIcon, ChevronIcon } from "./Icons.js";
+import { CameraIcon, ListIcon, PinIcon, ChevronIcon, WindMark } from "./Icons.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 
 const SECTIONS = [
@@ -22,7 +22,7 @@ export function Sidebar({ view, collapsed, onCollapse, theme, onTheme }) {
   return html`
     <aside class="sidebar">
       <div class="brand">
-        <span class="mark" aria-hidden="true"></span>
+        <span class="mark" aria-hidden="true"><${WindMark} /></span>
         <div class="brand-text">
           <h1>Vayudoot</h1>
           <p>Photograph to filed complaint</p>

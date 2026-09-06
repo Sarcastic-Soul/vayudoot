@@ -13,6 +13,7 @@ export function Complaint({ complaint }) {
   return html`
     <div class="complaint">
       <div class="complaint-head">
+        <p class="eyebrow">The complaint drafted for you</p>
         <h3>${complaint.subject}</h3>
         ${hasLocal && html`
           <div class="lang-toggle">
@@ -25,8 +26,10 @@ export function Complaint({ complaint }) {
           </div>`}
       </div>
       <pre>${showing === "local" ? complaint.body_local : complaint.body_en}</pre>
-      <p class="statutes muted">
-        ${complaint.cited_statutes.length ? `Cited: ${complaint.cited_statutes.join("; ")}` : ""}
-      </p>
+      ${complaint.cited_statutes.length > 0 && html`
+        <p class="statutes">
+          <span class="statutes-label">Cited under</span>
+          ${complaint.cited_statutes.join("; ")}
+        </p>`}
     </div>`;
 }

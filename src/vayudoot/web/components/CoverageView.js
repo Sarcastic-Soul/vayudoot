@@ -11,6 +11,7 @@ import { html } from "../lib/html.js";
 import { useCoverage } from "../lib/store.js";
 import { words } from "../lib/format.js";
 import { RegionCard } from "./RegionCard.js";
+import { CoverageSkeleton } from "./Skeletons.js";
 
 const TIER_LABEL = {
   municipal: "the city's municipal corporation",
@@ -58,10 +59,13 @@ export function CoverageView() {
           placeholder, and the case says which.</p>
       </header>
 
-      <ul class="stats">
-        ${data && tiles(data).map(([n, label]) => html`
-          <li key=${label}><strong>${n}</strong><span>${label}</span></li>`)}
-      </ul>
+      ${!data && !error && html`<${CoverageSkeleton} />`}
+
+      ${data && html`
+        <ul class="stats">
+          ${tiles(data).map(([n, label]) => html`
+            <li key=${label}><strong class="tnum">${n}</strong><span>${label}</span></li>`)}
+        </ul>`}
 
       ${data && data.addresses_are_placeholders && html`
         <p class="warn">
@@ -70,7 +74,7 @@ export function CoverageView() {
           cannot reach a real regulator. The authority names are real and public.
         </p>`}
 
-      <h3 class="section-label">What each kind of report is filed under</h3>
+      ${data && html`<h3 class="section-label">What each kind of report is filed under</h3>`}
       <ul class="rules">
         ${data && Object.entries(data.categories).filter(([key]) => key !== "default")
           .map(([key, rule]) => html`
@@ -80,7 +84,7 @@ export function CoverageView() {
               <p class="rule-statute">${rule.statute}
                 ${rule.section && html`<span class="muted"><br />${rule.section}</span>`}</p>
               <p class="rule-window">
-                ${rule.response_window_days} days to respond before it escalates
+                ${rule.response_window_days} days to respond
               </p>
             </li>`)}
       </ul>
@@ -101,10 +105,11 @@ export function CoverageView() {
         </div>
       </div>
 
-      ${error && html`<p class="muted empty">Could not load the table: ${error}</p>`}
+      ${error && html`
+        <p class="note is-bad">Could not load the table: ${error}</p>`}
       ${data && shown.length === 0 && html`
-        <p class="muted empty">Nothing matches that. A place not in the table still works —
-          the case resolves to the generic placeholder and says so.</p>`}
+        <p class="note">Nothing matches that. A place not in the table still works — the case
+          resolves to the generic placeholder and says so.</p>`}
 
       <ul class="coverage-list">
         ${shown.map((region) => html`<${RegionCard} key=${region.region} region=${region} />`)}

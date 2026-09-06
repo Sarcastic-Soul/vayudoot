@@ -4,38 +4,42 @@
    container changes. */
 
 .pick-map, .cases-map {
-  height: 220px;
+  height: 240px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
   z-index: 0;
 }
 
-.cases-map { height: 260px; margin-bottom: 16px; }
+.cases-map { height: 260px; margin-bottom: var(--s5); }
 
 .map-wrap { position: relative; }
 
 .map-full {
   position: absolute;
   z-index: 400;
-  top: 8px;
-  right: 8px;
+  top: var(--s2);
+  right: var(--s2);
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  /* 44px, because this is a control on a map that a thumb has to find while
+     the map underneath is also listening for taps. */
+  width: 44px;
+  height: 44px;
   padding: 0;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--field-line);
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-2);
   cursor: pointer;
 }
 
+.map-full:hover { background: var(--surface-2); }
+
 .map-full svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
@@ -61,10 +65,10 @@
 }
 
 .map-wrap.is-full .map-full {
-  top: max(12px, env(safe-area-inset-top));
-  right: 12px;
-  width: 40px;
-  height: 40px;
+  top: max(var(--s3), env(safe-area-inset-top));
+  right: var(--s3);
+  width: 48px;
+  height: 48px;
 }
 
 /* Rotating the icon is enough to say "this closes it" without a second glyph. */
@@ -73,6 +77,6 @@
 body.has-full-map { overflow: hidden; }
 
 @media (min-width: 900px) {
-  .pick-map { height: 290px; }
-  .cases-map { height: 340px; }
+  .pick-map { height: 300px; }
+  .cases-map { height: 360px; }
 }
