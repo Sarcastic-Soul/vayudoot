@@ -23,14 +23,35 @@ class PollutionType(str, Enum):
 
 
 class CaseStatus(str, Enum):
+    """The case's legal lifecycle.
+
+    `draft` through `escalated` are the states the machinery drives. The last
+    four are ends: `resolved` (the problem was dealt with), `withdrawn` (the
+    citizen took the complaint back), `rejected` (the photograph did not support
+    a complaint) and `failed` (the run died).
+    """
+
     DRAFT = "draft"
     AWAITING_CONFIRMATION = "awaiting_confirmation"
     FILED = "filed"
     ACKNOWLEDGED = "acknowledged"
     ESCALATED = "escalated"
     RESOLVED = "resolved"
+    WITHDRAWN = "withdrawn"
     REJECTED = "rejected"
     FAILED = "failed"
+
+
+#: Statuses nothing moves out of. A case in one of these is finished, whether it
+#: ended well or badly, so it can be neither filed, escalated nor withdrawn.
+TERMINAL_STATUSES: frozenset[CaseStatus] = frozenset(
+    {
+        CaseStatus.RESOLVED,
+        CaseStatus.WITHDRAWN,
+        CaseStatus.REJECTED,
+        CaseStatus.FAILED,
+    }
+)
 
 
 class Stage(str, Enum):
@@ -177,6 +198,17 @@ class Case(BaseModel):
     address: str = ""
     filed_at: datetime | None = None
     escalated_at: datetime | None = None
+    # The lifecycle after filing. Every one of these is optional, because a case
+    # written before they existed has to keep loading from disk unchanged.
+    acknowledged_at: datetime | None = None
+    resolved_at: datetime | None = None
+    withdrawn_at: datetime | None = None
+    #: What the authority said when it responded.
+    response_note: str = ""
+    #: What actually happened on the ground, recorded when the case is closed.
+    resolution_note: str = ""
+    #: Why the citizen took the complaint back.
+    withdrawal_note: str = ""
     error: str = ""
     history: list[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

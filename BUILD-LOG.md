@@ -660,3 +660,57 @@ The file boundary between them is the whole reason they can run at once.
 `BUILD-LOG.md`, `SCOPE.md` and `README.md` are excluded from both: an append-only
 decision log with three concurrent writers is a merge conflict waiting to
 happen, and the decisions are mine to record rather than theirs.
+
+## Day 1 — the escalation clock, and what an acknowledgement means
+
+Closed the case lifecycle. `ACKNOWLEDGED` and `RESOLVED` had existed in the enum
+with nothing able to write them; there are now acknowledge, resolve and withdraw
+transitions, a new `WITHDRAWN` status, and `TERMINAL_STATUSES` as the single
+definition of "finished". The transitions live in `lifecycle.py` rather than
+`filing.py` on purpose: filing and escalation produce an envelope and are
+governed by the live-filing rule, while these record what came back and send
+nothing.
+
+The decision worth writing down is what an acknowledgement does to the
+escalation clock. Three options: stop it, ignore it, or restart it.
+
+Stopping it is wrong, and wrong in the specific way this project exists to
+counter. An acknowledgement is a receipt, not a remedy. One automated "your
+complaint has been received" would silence the tracker permanently, which is
+precisely the outcome a citizen has no recourse against today.
+
+Ignoring it is unfair in the other direction: an authority that genuinely
+replies on day 29 would be escalated the following morning for a complaint it
+had just answered.
+
+So the clock restarts from the acknowledgement date. `escalation_due()` is now
+driven by a map from status to the field that starts the window — `FILED` counts
+from `filed_at`, `ACKNOWLEDGED` from `acknowledged_at`, everything else is never
+due. An authority that answers and then does nothing is escalated a full window
+later, which is the honest reading of both facts. `ESCALATED` is deliberately
+absent from that map: a case escalates once, because the authority table has no
+third tier to escalate to. The escalation envelope now distinguishes the two
+cases, since "you acknowledged this and did nothing" is a different complaint
+from "you ignored this".
+
+**Hardening, because the public URL changes the threat model.** A report costs
+about ten model calls against a metered free tier, so an open endpoint means one
+crawler ends the day. There is now a rolling per-client window and a global
+daily cap, in process, with the counters resetting on restart — acceptable for a
+prototype whose case store is JSON files, and recorded as such in the module.
+The client key is the first `X-Forwarded-For` hop, which is forgeable, which is
+exactly why the global cap sits underneath it rather than trusting it.
+
+The upload path was reading an unbounded body into memory before decoding. Now a
+middleware refuses an oversized `Content-Length` before the multipart parser
+spools anything, and the read itself is chunked and counted, because the header
+is a claim rather than a fact. Pillow's own bomb protection turned out to be
+insufficient on its own: between its limit and twice that limit it only *warns*,
+so a 70 megapixel image would have decoded. There is an explicit header check
+after `Image.open`, which reads the header only.
+
+Two things the agent found that the suite could not. A per-client cap of zero —
+a legitimate way for an operator to close intake — crashed on an empty deque,
+found by curling the running server. And the dev server had been running without
+`--reload` for the whole session, so it had been serving stale Python the entire
+time; static files were unaffected, since those are read per request.

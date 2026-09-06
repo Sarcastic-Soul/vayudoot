@@ -62,12 +62,37 @@ def file_complaint(case: Case) -> Path:
     return path
 
 
+#: The statuses an escalation clock runs in, and the date each one runs from.
+#:
+#: An acknowledgement is a receipt, not a remedy, so it does not stop the clock —
+#: otherwise one automated "we have received your complaint" would silence the
+#: tracker forever, which is the exact behaviour this project exists to counter.
+#: What it does is restart the clock from the day the authority replied. That is
+#: fair in both directions: an authority that answers on day 29 is not escalated
+#: the next morning, and an authority that answers and then does nothing is still
+#: escalated a full window later.
+#:
+#: `escalated` is absent deliberately: a case is escalated once, to the tier
+#: above. There is no third tier in the authority table to escalate to.
+ESCALATION_CLOCK: dict[CaseStatus, str] = {
+    CaseStatus.FILED: "filed_at",
+    CaseStatus.ACKNOWLEDGED: "acknowledged_at",
+}
+
+
 def escalation_due(case: Case) -> bool:
-    """True when the statutory response window has passed with no acknowledgement."""
-    if case.status is not CaseStatus.FILED or case.filed_at is None or case.jurisdiction is None:
+    """True when the statutory response window has passed without the case moving.
+
+    A resolved, withdrawn or already escalated case is never due, whatever its
+    dates say.
+    """
+    started_field = ESCALATION_CLOCK.get(case.status)
+    if started_field is None or case.jurisdiction is None:
         return False
-    deadline = case.filed_at + timedelta(days=case.jurisdiction.response_window_days)
-    return datetime.now(UTC) >= deadline
+    started_at = getattr(case, started_field)
+    if started_at is None:
+        return False
+    return datetime.now(UTC) >= started_at + timedelta(days=case.jurisdiction.response_window_days)
 
 
 def escalate(case: Case) -> Path:
@@ -77,13 +102,25 @@ def escalate(case: Case) -> Path:
     if settings.vayudoot_live_filing:
         raise LiveFilingNotConfigured("Live filing is enabled but no transport is configured.")
 
+    was_acknowledged = case.status is CaseStatus.ACKNOWLEDGED
     days = case.jurisdiction.response_window_days
-    body = (
-        f"This complaint was filed with {case.jurisdiction.authority_name} on "
-        f"{case.filed_at.isoformat() if case.filed_at else 'unknown date'} and has received no "
-        f"response within the {days}-day window. It is escalated for your attention.\n\n"
-        f"{case.complaint.body_en}"
-    )
+    filed_on = case.filed_at.isoformat() if case.filed_at else "unknown date"
+    if case.status is CaseStatus.ACKNOWLEDGED and case.acknowledged_at is not None:
+        # Escalating an acknowledged case is a different complaint from escalating
+        # an ignored one, and the escalation authority should be told which it is.
+        preamble = (
+            f"This complaint was filed with {case.jurisdiction.authority_name} on {filed_on} "
+            f"and acknowledged on {case.acknowledged_at.isoformat()}, but no remedial action "
+            f"has followed within the {days}-day window since that acknowledgement. It is "
+            f"escalated for your attention."
+        )
+    else:
+        preamble = (
+            f"This complaint was filed with {case.jurisdiction.authority_name} on {filed_on} "
+            f"and has received no response within the {days}-day window. It is escalated for "
+            f"your attention."
+        )
+    body = f"{preamble}\n\n{case.complaint.body_en}"
     envelope = render(
         case,
         recipient=case.jurisdiction.escalation_email,
@@ -95,8 +132,9 @@ def escalate(case: Case) -> Path:
 
     case.status = CaseStatus.ESCALATED
     case.escalated_at = datetime.now(UTC)
+    since = "no remedial action" if was_acknowledged else "no response"
     case.log(
         f"Escalated to {case.jurisdiction.escalation_authority} after {days} days "
-        f"with no response (sandbox outbox: {path})"
+        f"with {since} (sandbox outbox: {path})"
     )
     return path

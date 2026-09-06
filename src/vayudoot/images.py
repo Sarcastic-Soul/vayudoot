@@ -42,6 +42,16 @@ MAX_EDGE = 1568
 
 JPEG_QUALITY = 88
 
+# A decompression bomb is a small file that declares enormous dimensions: a few
+# kilobytes of PNG can claim 30000x30000 and cost 3.6 GB to decode, which on a
+# free-tier container is the whole machine. Pillow's own default limit is around
+# 89 megapixels and it only *warns* below twice that, so the ceiling is set here
+# and enforced explicitly against the header before anything is decoded. 64
+# megapixels is comfortably above every mainstream phone camera and far below
+# anything that could exhaust the container.
+MAX_PIXELS = 64_000_000
+Image.MAX_IMAGE_PIXELS = MAX_PIXELS
+
 
 class UnsupportedImage(ValueError):
     """The bytes are not an image, or are an image nothing here can read."""
@@ -58,8 +68,12 @@ def normalise(data: bytes) -> tuple[str, bytes]:
 
     try:
         image = Image.open(io.BytesIO(data))
+        # `open` reads the header only, so the declared size is known here —
+        # before any of those pixels have been allocated. Refuse outright rather
+        # than leaving it to Pillow, which only warns until twice the limit.
+        _refuse_a_bomb(image.size)
         image.load()
-    except (UnidentifiedImageError, OSError) as exc:
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
         raise UnsupportedImage(f"Could not read the image: {exc}") from exc
 
     fmt = (image.format or "").lower()
@@ -77,6 +91,15 @@ def normalise(data: bytes) -> tuple[str, bytes]:
         return fmt, data
 
     return _convert(image, fmt)
+
+
+def _refuse_a_bomb(size: tuple[int, int]) -> None:
+    pixels = size[0] * size[1]
+    if pixels > MAX_PIXELS:
+        raise UnsupportedImage(
+            f"That image declares {pixels / 1_000_000:.0f} megapixels, over the "
+            f"{MAX_PIXELS // 1_000_000} megapixel limit; it is too large to decode safely."
+        )
 
 
 def _convert(image: Image.Image, source_format: str) -> tuple[str, bytes]:

@@ -75,6 +75,21 @@ class Settings(BaseSettings):
     vayudoot_case_dir: Path = Path("./data/cases")
     vayudoot_upload_dir: Path = Path("./data/uploads")
 
+    # Intake limits. One report costs about ten model calls, so an open endpoint
+    # on a public URL is an open tap on the day's free-tier quota: a single
+    # crawler that finds the form empties it before a citizen gets there. Both
+    # caps are counted in process; see `ratelimit.py` for why that is enough here.
+    vayudoot_rate_limit: bool = True
+    #: Reports one client may submit inside the rolling window below.
+    vayudoot_reports_per_client: int = 5
+    vayudoot_rate_limit_window_seconds: int = 3600
+    #: Reports the whole instance may accept in one UTC day. Ten model calls each,
+    #: so this is the real budget line.
+    vayudoot_reports_per_day: int = 60
+    #: Largest photograph accepted, in bytes. Phone JPEGs are 2-6 MB; anything
+    #: past this is refused before it is read into a container with little RAM.
+    vayudoot_max_upload_bytes: int = 12 * 1024 * 1024
+
     def provider_for(self, tier: Tier = "primary") -> Provider:
         if tier == "fast" and self.vayudoot_model_provider_fast:
             return self.vayudoot_model_provider_fast

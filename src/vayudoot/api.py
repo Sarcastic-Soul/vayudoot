@@ -11,21 +11,46 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
-from . import filing, store
+from . import filing, lifecycle, store
 from .config import settings
 from .images import UnsupportedImage, normalise, suffix_for
 from .pipeline import new_case, run
+from .ratelimit import limiter
 from .schemas import Case, CaseStatus, Report
 from .tools.authorities import authority_table
 from .tools.geocode import reverse_geocode, search_places
 
 log = logging.getLogger(__name__)
+
+#: How long a note on a lifecycle transition may be. These are one-line records
+#: of what happened — "site inspected, burning stopped" — not correspondence.
+NOTE_MAX = 500
+
+
+class NoteRequest(BaseModel):
+    """A short free-text note attached to a lifecycle transition."""
+
+    note: str = Field(default="", max_length=NOTE_MAX)
+
+
+class AcknowledgeRequest(NoteRequest):
+    """A note, plus when the authority actually responded.
+
+    The date is optional and defaults to now. It matters because the escalation
+    clock restarts from it: a letter dated last week should not buy the authority
+    a fresh window starting from the day it was typed in.
+    """
+
+    responded_at: datetime | None = None
 
 app = FastAPI(
     title="Vayudoot",
@@ -47,11 +72,77 @@ _IMAGE_MEDIA_TYPES = {
     ".webp": "image/webp",
 }
 
+#: Read the upload in pieces, so an oversized file is refused partway through
+#: rather than after it is all in memory.
+_CHUNK = 64 * 1024
+
+#: Multipart framing around the file itself: boundaries, headers, the other form
+#: fields. Small, but the declared body length has to be allowed to exceed the
+#: image limit by something or a file exactly at the limit would be refused.
+_MULTIPART_OVERHEAD = 16 * 1024
+
 
 def _spawn(coro) -> None:
     task = asyncio.create_task(coro)
     _running.add(task)
     task.add_done_callback(_running.discard)
+
+
+@app.middleware("http")
+async def refuse_an_oversized_body(request: Request, call_next):
+    """Reject a body too large to be a photograph before it is parsed.
+
+    Once the endpoint is entered the multipart parser has already consumed the
+    whole request, so this is the only place a huge upload can be turned away
+    without handling it. `Content-Length` is a claim, not proof, which is why the
+    read in `_read_capped` counts the bytes as well.
+    """
+    declared = request.headers.get("content-length")
+    limit = settings.vayudoot_max_upload_bytes
+    oversized = declared and declared.isdigit() and int(declared) > limit + _MULTIPART_OVERHEAD
+    if request.method == "POST" and oversized:
+        return JSONResponse(status_code=413, content={"detail": _too_large(int(declared))})
+    return await call_next(request)
+
+
+def _too_large(size: int | None = None) -> str:
+    limit_mb = settings.vayudoot_max_upload_bytes / (1024 * 1024)
+    seen = f" That one is {size / (1024 * 1024):.1f} MB." if size else ""
+    return (
+        f"That photograph is too large. The limit is {limit_mb:.0f} MB.{seen} "
+        "Most phones can send a smaller copy; a resized photograph is enough here, "
+        "since the image is scaled down before it is read anyway."
+    )
+
+
+async def _read_capped(image: UploadFile) -> bytes:
+    """Read an upload, refusing it the moment it goes past the limit."""
+    limit = settings.vayudoot_max_upload_bytes
+    if image.size is not None and image.size > limit:
+        raise HTTPException(413, _too_large(image.size))
+
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await image.read(_CHUNK):
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(413, _too_large(total))
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _client_key(request: Request) -> str:
+    """Who to count this request against.
+
+    Behind a platform proxy the socket address is the proxy's, so the first hop
+    in `X-Forwarded-For` is the client. It is a header and therefore forgeable —
+    a determined caller can spread itself across made-up addresses — which is
+    exactly why the global daily cap exists underneath the per-client one.
+    """
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded.strip():
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 @app.get("/health")
@@ -62,11 +153,19 @@ def health() -> dict:
         "model_id": settings.model_id,
         "live_filing": settings.vayudoot_live_filing,
         "running_cases": len(_running),
+        "rate_limited": limiter.enabled,
+        # The day's remaining model budget, in reports. Published because an
+        # exhausted budget is the likeliest reason a deployed instance stops
+        # accepting reports, and it should not have to be guessed from a 429.
+        "reports_remaining_today": limiter.remaining_today() if limiter.enabled else None,
+        "reports_per_day": settings.vayudoot_reports_per_day if limiter.enabled else None,
+        "max_upload_bytes": settings.vayudoot_max_upload_bytes,
     }
 
 
 @app.post("/reports", response_model=Case, status_code=202)
 async def submit_report(
+    request: Request,
     latitude: float = Form(...),
     longitude: float = Form(...),
     note: str = Form(""),
@@ -74,13 +173,21 @@ async def submit_report(
     image: UploadFile | None = File(None),
 ) -> Case:
     """Accept a report and start the pipeline. Returns before the run finishes."""
+    # Metered before anything else: this is the endpoint that spends the day's
+    # model quota, and the cheapest refusal is the one made before any work.
+    decision = limiter.check(_client_key(request))
+    if not decision.allowed:
+        raise HTTPException(
+            429, decision.message, headers={"Retry-After": str(decision.retry_after_seconds)}
+        )
+
     image_path = None
     if image is not None and image.filename:
         # Normalise at the door rather than at the model. Whatever the phone sent
         # is decoded here, so an unreadable file is a 415 the citizen can act on
         # instead of a case that fails four seconds later for no visible reason.
         try:
-            image_format, data = normalise(await image.read())
+            image_format, data = normalise(await _read_capped(image))
         except UnsupportedImage as exc:
             raise HTTPException(415, f"That file could not be read as a photograph: {exc}") from exc
 
@@ -187,10 +294,64 @@ def confirm_and_file(case_id: str) -> Case:
 def escalate_case(case_id: str) -> Case:
     case = _require(case_id)
     if not filing.escalation_due(case):
-        raise HTTPException(409, "The statutory response window has not yet lapsed")
+        raise HTTPException(409, _not_due(case))
     filing.escalate(case)
     store.save(case)
     return case
+
+
+def _not_due(case: Case) -> str:
+    """Why this case cannot be escalated, which is not always a matter of time."""
+    if case.status not in filing.ESCALATION_CLOCK:
+        return f"Case is {case.status.value}; only a filed or acknowledged case can be escalated"
+    return "The statutory response window has not yet lapsed"
+
+
+@app.post("/cases/{case_id}/acknowledge", response_model=Case)
+def acknowledge_case(case_id: str, body: AcknowledgeRequest | None = None) -> Case:
+    """Record that the authority responded.
+
+    This does not close the case. An acknowledgement is a receipt, so the
+    escalation clock restarts from the response date rather than stopping: an
+    authority that replies and then does nothing is escalated a window later.
+    """
+    body = body or AcknowledgeRequest()
+    case = _require(case_id)
+    with _transition():
+        lifecycle.acknowledge(case, note=body.note, at=body.responded_at)
+    store.save(case)
+    return case
+
+
+@app.post("/cases/{case_id}/resolve", response_model=Case)
+def resolve_case(case_id: str, body: NoteRequest | None = None) -> Case:
+    """Close the case: the pollution stopped, or the authority acted."""
+    body = body or NoteRequest()
+    case = _require(case_id)
+    with _transition():
+        lifecycle.resolve(case, note=body.note)
+    store.save(case)
+    return case
+
+
+@app.post("/cases/{case_id}/withdraw", response_model=Case)
+def withdraw_case(case_id: str, body: NoteRequest | None = None) -> Case:
+    """The citizen takes the complaint back. Nothing further is filed or chased."""
+    body = body or NoteRequest()
+    case = _require(case_id)
+    with _transition():
+        lifecycle.withdraw(case, note=body.note)
+    store.save(case)
+    return case
+
+
+@contextmanager
+def _transition():
+    """A refused lifecycle transition is a 409, not a 500."""
+    try:
+        yield
+    except lifecycle.InvalidTransition as exc:
+        raise HTTPException(409, str(exc)) from exc
 
 
 def _require(case_id: str) -> Case:
