@@ -11,16 +11,12 @@ import asyncio
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fakes import patch_stages
+from fakes import image_bytes, patch_stages
 from vayudoot import api, pipeline, store
 from vayudoot.config import settings
 from vayudoot.schemas import Case, CaseStatus, Report, Stage
 
-PNG = bytes.fromhex(
-    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4"
-    "890000000a49444154789c6360000002000100ffff03000006000557bfabd400"
-    "00000049454e44ae426082"
-)
+PNG = image_bytes("PNG")
 
 
 @pytest.fixture

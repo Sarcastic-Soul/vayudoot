@@ -26,6 +26,12 @@ Vayudoot does the paperwork.
 A citizen submits a geotagged photograph and an optional note. The agent then runs
 the case end to end.
 
+0. **Intake.** The photograph is decoded rather than taken at its word. Anything
+   Pillow can read is accepted — around seventy formats, including HEIC from an
+   iPhone, AVIF, TIFF, BMP and JPEG 2000 — and converted into one a model
+   accepts, turned upright if it carries an EXIF rotation, and capped at 1568
+   pixels on the longest edge. See [`images.py`](src/vayudoot/images.py).
+
 1. **Evidence.** Multimodal classification of the photograph into a pollution
    category, with a severity estimate, the visible indicators that drove the
    classification, and an explicit confidence score. Below a confidence floor the
@@ -171,7 +177,7 @@ For a run without the browser, `uv run python scripts/demo.py photo.jpg 28.6139
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/reports` | Submit a photo and coordinates. Returns `202` with a case id and runs the pipeline in the background |
+| `POST` | `/reports` | Submit a photo and coordinates. Returns `202` with a case id and runs the pipeline in the background, or `415` if the file is not a readable image |
 | `GET` | `/cases` | List all cases, newest first |
 | `GET` | `/cases/{id}` | One case, with every intermediate result, its `stage`, and its history |
 | `GET` | `/cases/{id}/photo` | The submitted photograph |

@@ -87,3 +87,16 @@ def patch_stages(monkeypatch, module, *, confidence: float = 0.9, fail_at: str =
     monkeypatch.setattr(
         module, "reverse_geocode", lambda *a, **k: {"display_name": "Minto Road, New Delhi, Delhi"}
     )
+
+
+def image_bytes(fmt: str = "PNG", size: tuple[int, int] = (24, 18), mode: str = "RGB") -> bytes:
+    """A small real image. The API and the evidence stage both decode what they
+    are given, so a handcrafted byte string is not good enough here."""
+    import io
+
+    from PIL import Image
+
+    image = Image.new(mode, size, (120, 130, 140) if mode == "RGB" else (120, 130, 140, 255))
+    buffer = io.BytesIO()
+    image.save(buffer, format=fmt)
+    return buffer.getvalue()

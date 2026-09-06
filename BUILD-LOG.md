@@ -343,3 +343,52 @@ confidence is a calibrated estimate rather than a rating of the photograph, that
 a photograph cannot tell you what is burning, whether an emission is permitted, or
 whether a white plume is smoke rather than steam. The same photograph now returns
 0.95, which is a defensible number for two stacks visibly emitting.
+
+## Day 1 — decoding photographs instead of trusting their names
+
+Model content blocks accept four image formats. Phones do not limit themselves to
+four: iOS produces HEIC by default, and uploads arrive as TIFF, BMP, screenshots,
+and whatever else a camera app emitted.
+
+The old code read the file extension, mapped five suffixes, and rewrote anything
+else to `.jpg`. That is the worst possible handling, because it fails silently. An
+iPhone photograph would be stored as `.jpg`, handed to the model labelled JPEG
+with HEIC bytes inside, and the model would see nothing — while the case carried
+on as though a photograph had been read. Nobody would have noticed until the
+classifications looked strange.
+
+`images.py` now decodes the bytes to decide the format, converts anything outside
+the four into JPEG or PNG, and only falls back to a suffix as a storage detail.
+Added Pillow and pillow-heif, and verified a real 3024x4032 HEIC converts to a
+1176x1568 JPEG.
+
+Two things came along with it that are not really about formats:
+
+**EXIF rotation is applied to the pixels.** A phone stores the sensor's
+orientation in a tag and expects the viewer to rotate. A model reads pixels, not
+tags, so a portrait photograph was arriving on its side. This is a classification
+bug that would have been invisible in testing, because every test image so far
+was made programmatically and had no orientation tag.
+
+**The longest edge is capped at 1568 pixels.** A 12 megapixel photograph carries
+far more detail than a classification uses, and the excess is tokens spent for
+nothing. With inference as the only running cost and both providers on free
+tiers, that is worth the two lines. Images already small enough pass through byte
+for byte rather than being re-encoded.
+
+Unreadable bytes are now a 415 at the API boundary rather than a stage failure
+four seconds later.
+
+**The old test PNG was invalid.** A handcrafted 1x1 byte string that Pillow
+refuses to decode, which only surfaced once something actually decoded it — the
+previous code never looked inside the file. Seven API tests failed on the first
+run of the new code, and every one of them was the fixture being wrong rather
+than the code. Tests now generate real images.
+
+**On AVIF specifically:** already worked, because the supported set is not a list.
+Pillow 12 decodes AVIF natively, so it needed no code — which is the argument for
+decoding over enumerating. Anything Pillow reads is accepted, roughly seventy
+extensions including AVIF, HEIC, TIFF, BMP, JPEG 2000, ICO and PSD. Added AVIF,
+JPEG 2000 and a real HEIC to the parametrised tests, and confirmed all of them
+inside the built container rather than only in the development virtualenv, since
+pillow-heif and the AVIF decoder both depend on bundled native libraries.

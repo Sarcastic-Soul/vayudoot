@@ -18,6 +18,36 @@ would have been decoration; using one here is the shape of the problem.
 
 ## Stages
 
+### 0. Intake — `images.py`
+
+Not an agent, and it runs before the pipeline does. Model content blocks accept
+four image formats; phones do not restrict themselves to four. iOS produces HEIC
+by default, and people upload TIFF, BMP, and screenshots in whatever the tool
+emitted.
+
+The format is decided by decoding the bytes, never by the file extension. That
+also means the supported set is "whatever Pillow reads" — roughly seventy
+formats, AVIF and HEIC included — rather than a list kept here. A list would need
+amending every time a phone vendor changed its default, which is how the bug
+below happened in the first place. That
+distinction was a real bug rather than a hypothetical one: an unrecognised suffix
+used to be rewritten to `.jpg`, so HEIC bytes reached the model labelled as JPEG
+and it saw nothing, silently, with the case proceeding as though a photograph had
+been read.
+
+Normalising also does two things the classification depends on. It applies EXIF
+rotation to the pixels, because a model reads pixels and not the orientation tag,
+so a portrait phone photograph would otherwise arrive on its side. And it caps
+the longest edge at 1568 pixels: a 12 megapixel photograph carries far more
+detail than a classification uses, and every pixel above that is tokens spent for
+nothing, which matters when inference is the only running cost. An image that is
+already acceptable, upright and small enough passes through byte for byte rather
+than being re-encoded.
+
+Unreadable bytes are a `415` at the API boundary. Failing at the door gives the
+citizen something to act on; failing at the model gives them a case that dies
+four seconds later for no visible reason.
+
 ### 1. Evidence — `agents/evidence.py`
 
 A single agent with no tools. The photograph is passed as a Strands image content

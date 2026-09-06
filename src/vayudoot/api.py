@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import shutil
 import uuid
 from pathlib import Path
 
@@ -20,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import filing, store
 from .config import settings
+from .images import UnsupportedImage, normalise, suffix_for
 from .pipeline import new_case, run
 from .schemas import Case, CaseStatus, Report
 
@@ -40,7 +40,6 @@ _running: set[asyncio.Task] = set()
 
 _IMAGE_MEDIA_TYPES = {
     ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
     ".png": "image/png",
     ".gif": "image/gif",
     ".webp": "image/webp",
@@ -75,14 +74,18 @@ async def submit_report(
     """Accept a report and start the pipeline. Returns before the run finishes."""
     image_path = None
     if image is not None and image.filename:
+        # Normalise at the door rather than at the model. Whatever the phone sent
+        # is decoded here, so an unreadable file is a 415 the citizen can act on
+        # instead of a case that fails four seconds later for no visible reason.
+        try:
+            image_format, data = normalise(await image.read())
+        except UnsupportedImage as exc:
+            raise HTTPException(415, f"That file could not be read as a photograph: {exc}") from exc
+
         uploads = settings.vayudoot_upload_dir
         uploads.mkdir(parents=True, exist_ok=True)
-        suffix = Path(image.filename).suffix.lower()
-        if suffix not in _IMAGE_MEDIA_TYPES:
-            suffix = ".jpg"
-        image_path = uploads / f"{uuid.uuid4().hex}{suffix}"
-        with image_path.open("wb") as fh:
-            shutil.copyfileobj(image.file, fh)
+        image_path = uploads / f"{uuid.uuid4().hex}{suffix_for(image_format)}"
+        image_path.write_bytes(data)
 
     report = Report(
         report_id=uuid.uuid4().hex,

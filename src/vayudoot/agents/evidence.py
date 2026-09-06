@@ -7,18 +7,19 @@ from pathlib import Path
 from strands import Agent
 from strands.types.content import ContentBlock
 
+from ..images import read_normalised
 from ..models import build_model
 from ..schemas import EvidencePacket, Report
 from .prompts import EVIDENCE
 
-_FORMATS = {".png": "png", ".jpg": "jpeg", ".jpeg": "jpeg", ".gif": "gif", ".webp": "webp"}
-
 
 def _image_block(path: Path) -> ContentBlock:
-    fmt = _FORMATS.get(path.suffix.lower())
-    if fmt is None:
-        raise ValueError(f"Unsupported image format: {path.suffix}")
-    return {"image": {"format": fmt, "source": {"bytes": path.read_bytes()}}}
+    # The format comes from the file's contents, not its name: a submission can
+    # arrive as HEIC, TIFF or anything else a camera emits, and an extension is
+    # only a claim. `read_normalised` converts whatever it finds into one of the
+    # four formats a content block accepts.
+    fmt, data = read_normalised(path)
+    return {"image": {"format": fmt, "source": {"bytes": data}}}
 
 
 def build_evidence_agent() -> Agent:
