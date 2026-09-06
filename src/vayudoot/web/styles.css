@@ -141,6 +141,14 @@ main:focus { outline: none; }
 }
 
 .brand h1 { font-size: 17px; letter-spacing: -0.01em; }
+.brand-text { min-width: 0; flex: 1; }
+
+/* The tagline is a nicety; it gives way before the brand or the toggle do. */
+.brand p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .brand p { font-size: 12px; color: var(--ink-soft); }
 
 .mark {
@@ -391,7 +399,6 @@ button.link {
   cursor: pointer;
 }
 
-.disclaimer { font-size: 12px; color: var(--ink-soft); }
 
 /* ── case view ─────────────────────────────────────────────────────────── */
 
@@ -541,8 +548,11 @@ pre {
 
 
 /* ── coverage ────────────────────────────────────────────────────────────
-   The authority table's edges are the system's edges, so they are shown
-   rather than left to be discovered from a case that quietly fell back. */
+   The question this page answers is "what happens if I report from here", not
+   "here are some rows". So: the numbers first, the rules as sentences, and the
+   regions as cards you can scan. Addresses are the evidence for the safety
+   claim, so they stay available behind a toggle rather than repeating eighty
+   times in the default view. */
 
 .coverage-warning {
   padding: 11px 13px;
@@ -560,80 +570,190 @@ pre {
   border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
 }
 
-.coverage-intro { margin-bottom: 14px; }
-.coverage-intro h2 { font-size: 17px; margin: 0 0 6px; }
-.coverage-intro p { font-size: 13px; line-height: 1.5; margin: 0 0 8px; color: var(--ink-soft); }
+.page-head { margin-bottom: 16px; }
+.page-head h2 { font-size: 19px; margin-bottom: 6px; }
+.page-head p { font-size: 13.5px; color: var(--ink-soft); max-width: 62ch; }
 
-.coverage-intro .warn {
-  padding: 10px 12px;
+.section-label {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 22px 0 10px;
+}
+
+.stats {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.stats li {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.stats strong { font-size: 24px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 12px; line-height: 1.35; color: var(--ink-soft); }
+
+.warn {
+  padding: 11px 13px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--ink);
   background: color-mix(in srgb, var(--warn) 12%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
   border-radius: var(--radius);
 }
 
-.coverage-intro code {
+.warn code {
   font-size: 12px;
-  padding: 1px 4px;
+  padding: 1px 5px;
   background: var(--bg);
   border-radius: 4px;
 }
 
-#coverage-filter { margin-bottom: 12px; max-width: 34ch; }
+/* Rules read as sentences. */
 
-.coverage-categories {
-  width: 100%;
-  margin-bottom: 18px;
-  border-collapse: collapse;
-  font-size: 12.5px;
+.rules {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
 }
 
-.coverage-categories th, .coverage-categories td {
-  padding: 7px 8px;
-  text-align: left;
-  vertical-align: top;
-  border-bottom: 1px solid var(--line);
-}
-
-.coverage-categories th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); }
-
-.coverage-list { list-style: none; display: grid; align-items: start; gap: 10px; }
-
-.coverage-list > li {
-  padding: 12px 13px;
+.rules li {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 12px 14px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
 
-.coverage-region h3 { font-size: 14px; margin: 0 0 2px; }
-.coverage-region p { font-size: 12.5px; margin: 0; }
+.rules h4 { font-size: 13.5px; text-transform: capitalize; }
+.rules p { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
+.rules strong { color: var(--ink); font-weight: 550; }
+.rule-statute { padding-top: 5px; border-top: 1px solid var(--line); }
+.rule-window { font-size: 11.5px; }
 
-.coverage-cities { list-style: none; display: grid; gap: 5px; margin-top: 9px; }
+/* List controls. */
 
-.coverage-cities li {
+.list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.list-head .section-label { margin-bottom: 0; }
+
+.list-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.list-tools input[type="search"] { width: min(30ch, 60vw); padding: 8px 11px; font-size: 14px; }
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 450;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.switch input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+
+.empty { font-size: 13px; max-width: 56ch; margin-top: 12px; }
+
+/* Regions. */
+
+.coverage-list {
+  list-style: none;
   display: grid;
-  grid-template-columns: minmax(80px, 1fr) 1.6fr;
-  gap: 4px 10px;
+  align-items: start;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.coverage-list > li {
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.region-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.region-head h4 { font-size: 14.5px; }
+
+.chip {
+  flex: none;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+}
+
+.chip.is-thin { color: var(--ink-soft); background: var(--bg); }
+
+.region-board { font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
+
+.region-cities { list-style: none; display: grid; gap: 6px; margin: 10px 0 0; padding: 0; }
+
+.region-cities li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 8px;
   font-size: 12.5px;
   padding-top: 7px;
   border-top: 1px solid var(--line);
 }
 
-.coverage-cities li span:first-child { font-weight: 550; }
+.region-cities strong { font-weight: 550; }
 
-.addr {
-  grid-column: 1 / -1;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+.region-foot {
+  margin-top: 10px;
+  padding-top: 9px;
   font-size: 11.5px;
+  line-height: 1.45;
   color: var(--ink-soft);
+  border-top: 1px dashed var(--line);
 }
 
-.coverage-list .none { font-size: 12.5px; margin: 8px 0 0; }
-
-@media (max-width: 420px) {
-  .coverage-cities li { grid-template-columns: 1fr; }
+/* Addresses: present in the markup for anyone who wants them, out of the way
+   until asked for. */
+.addr {
+  display: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
 }
+
+.show-addresses .addr { display: inline; }
+.show-addresses .region-cities li .addr { flex-basis: 100%; }
+
 
 
 /* ── adaptive layout ─────────────────────────────────────────────────────
@@ -763,7 +883,7 @@ pre {
   .coverage-list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 
   /* A line of text stops being readable somewhere past 80 characters. */
-  .complaint pre, .envelope pre, .coverage-intro p { max-width: 72ch; }
+  .complaint pre, .envelope pre { max-width: 72ch; }
 }
 
 @media (min-width: 1240px) {
@@ -806,3 +926,138 @@ pre {
 /* Below the two-column breakpoint the case columns are just stacked blocks. */
 .case-col { display: block; }
 .case-col > * { margin-bottom: 0; }
+
+
+/* ── maps: expandable ────────────────────────────────────────────────────
+   A 300px map is enough to confirm a pin and not enough to find one. The Leaflet
+   instance is untouched; only its container changes size. */
+
+.map-wrap { position: relative; }
+
+.map-full {
+  position: absolute;
+  z-index: 400;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.map-full svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-wrap.is-full {
+  position: fixed;
+  z-index: 900;
+  inset: 0;
+  background: var(--bg);
+  padding: 0;
+}
+
+.map-wrap.is-full .pick-map,
+.map-wrap.is-full .cases-map {
+  height: 100dvh;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.map-wrap.is-full .map-full {
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  width: 40px;
+  height: 40px;
+}
+
+/* Rotating the icon is enough to say "this closes it" without a second glyph. */
+.map-wrap.is-full .map-full svg { transform: rotate(45deg); }
+.map-full svg { transition: transform .18s ease; }
+
+body.has-full-map { overflow: hidden; }
+
+/* ── sidebar: collapsible ────────────────────────────────────────────────
+   Only above 1080px, because below that the sidebar is already a rail or a bar
+   and there is nothing to collapse. */
+
+.collapse {
+  display: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  padding: 0;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.collapse svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .22s ease;
+}
+
+.collapse:hover { color: var(--ink); background: var(--surface-2); }
+
+@media (min-width: 1080px) {
+  .collapse { display: grid; }
+
+  .app { transition: grid-template-columns .22s ease; }
+
+  body.is-collapsed .app { grid-template-columns: 76px 1fr; }
+  body.is-collapsed .brand { justify-content: center; }
+  body.is-collapsed .brand-text { display: none; }
+  body.is-collapsed .collapse svg { transform: rotate(180deg); }
+
+  body.is-collapsed .sidebar { padding: 14px 10px; }
+
+  /* Collapsed, the brand stacks: the mark, then the control that brings the
+     labels back. Absolutely positioning it here put it underneath the nav. */
+  body.is-collapsed .brand { flex-direction: column; gap: 8px; }
+  body.is-collapsed .collapse { border-color: var(--line); }
+  body.is-collapsed .nav-item {
+    grid-template-columns: none;
+    grid-template-areas: none;
+    justify-items: center;
+    gap: 3px;
+    min-height: 56px;
+    padding: 6px 4px;
+    font-size: 11.5px;
+    text-align: center;
+  }
+
+  body.is-collapsed .nav-item svg { grid-area: auto; }
+  body.is-collapsed .nav-label { grid-area: auto; font-weight: 450; }
+  body.is-collapsed .nav-hint { display: none; }
+
+  body.is-collapsed .sidebar-foot { flex-direction: column; }
+  body.is-collapsed .theme { flex-direction: column; border-radius: var(--radius); }
+  body.is-collapsed .theme button { width: 28px; height: 28px; border-radius: var(--radius-sm); }
+  body.is-collapsed .sandbox-badge { font-size: 9.5px; padding: 3px 6px; }
+  body.is-collapsed .sandbox-badge .full { display: none; }
+  body.is-collapsed .sandbox-badge .short { display: inline; }
+}
+

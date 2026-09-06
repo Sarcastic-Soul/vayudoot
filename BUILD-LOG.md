@@ -474,3 +474,52 @@ work and a view linkable. Touch targets are 52px in the phone bar.
 `prefers-reduced-motion` now cancels every animation rather than just the one
 pulsing dot, and `prefers-contrast: more` promotes the border and secondary text
 colours.
+
+## Day 1 — the coverage page was a data dump
+
+Rebuilt it around the question a citizen actually has, which is "what happens if
+I report from here", not "here are some rows".
+
+The counts come first as three tiles. The category rules became cards that read
+as sentences — "open waste burning goes to the city's municipal corporation,
+under Solid Waste Management Rules 2016 Rule 15, 15 days to respond" — instead of
+four columns of terse cells; the question is what happens to a kind of report,
+not how the rows compare. Region cards carry a chip saying how many cities are
+listed, and a footer stating explicitly that anywhere else in that state resolves
+to the board above, which is the fallback rule made visible per region rather
+than explained once at the top.
+
+The eighty-one placeholder addresses were the loudest thing on the page and the
+least useful. They are the evidence for the safety claim, so they stay in the
+markup, behind a "Show addresses" toggle. The filter now reports how many regions
+matched and has a real empty state that says a missing place still works.
+
+A tile reading "0 states with no city listed" is not information, so when that
+number is zero the tile shows the category count instead.
+
+**Three interface changes on top.** The submit disclaimer was removed: the
+Sandbox badge in the sidebar says the same thing permanently, and repeating it
+under a button is noise. Both maps got an expand control that fills the viewport
+and closes on Escape — the Leaflet instance is untouched, only its container
+resizes, so the pin does not move. The desktop sidebar collapses to a rail with
+the state remembered, animating the grid column rather than jumping.
+
+The collapse control was absolutely positioned at first and rendered underneath
+the navigation, invisible. Found it by screenshotting the collapsed state, which
+is the only way that class of bug turns up.
+
+## Day 1 — on adopting a frontend framework
+
+Considered and declined for now. The interface is about 1200 lines of plain HTML,
+CSS and JavaScript in three files with no build step, which is what lets it ship
+as one FastAPI process with no Node in the image. A rewrite buys no capability a
+user can see, and the Space is still not deployed.
+
+If it becomes worth doing, the fit is Alpine.js: one CDN script tag, no build,
+the single-process deployment survives, and it targets the thing that is actually
+unpleasant here — building DOM by concatenating strings into `innerHTML`. Preact
+with htm is the same shape at a smaller size. React, Vue and Svelte all need a
+build step and Node in the container, which trades the free-tier deployment
+property for tooling this size of app does not need. The other direction —
+Jinja2, already a dependency, plus htmx — is coherent but a larger rewrite, and
+the polling loop is genuinely client state rather than a server render.

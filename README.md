@@ -60,8 +60,10 @@ Leaflet for the maps.
 
 The shell is one grid, and the only thing that changes with width is where the
 navigation sits: a bar under the thumb on a phone, an icon rail on a tablet, a
-labelled sidebar on a desktop. Wide screens get two columns rather than a wider
-column, since a complaint is easier to read at 70 characters than at 130.
+labelled sidebar on a desktop, which collapses back to a rail on request. Wide
+screens get two columns rather than a wider column, since a complaint is easier
+to read at 70 characters than at 130. Either map expands to fill the screen —
+300px is enough to confirm a pin and not enough to find one.
 
 Themes are three-state — light, dark, or follow the system — and the choice is
 remembered. There is a skip link, the sections are addressable (`#cases`,

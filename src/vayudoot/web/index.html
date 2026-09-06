@@ -22,6 +22,10 @@
       <h1>Vayudoot</h1>
       <p>Photograph to filed complaint</p>
     </div>
+    <button type="button" class="collapse" id="collapse" aria-expanded="true"
+            aria-label="Collapse the sidebar" title="Collapse the sidebar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 7.5 10 12l4.5 4.5"/></svg>
+    </button>
   </div>
 
   <nav class="nav" aria-label="Sections">
@@ -88,7 +92,13 @@
                  autocomplete="off" autocapitalize="off" spellcheck="false">
           <ul class="place-results" id="place-results" hidden></ul>
         </div>
-        <div id="pick-map" class="pick-map"></div>
+        <div class="map-wrap">
+          <div id="pick-map" class="pick-map"></div>
+          <button type="button" class="map-full" data-fullscreen="pick-map"
+                  aria-label="Expand the map" title="Expand the map">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M15 20h5v-5M9 20H4v-5"/></svg>
+          </button>
+        </div>
         <p class="picked" id="picked-address">Drag the pin to where the pollution is.</p>
         <p class="help">Jurisdiction is decided by this pin, so it needs to be where the
           pollution is — not where you are standing later.</p>
@@ -110,8 +120,6 @@
       </div>
 
       <button type="submit" class="primary" id="submit">Run the case</button>
-      <p class="disclaimer">Nothing is sent to any authority. The complaint is drafted and held
-        for your confirmation, and filing writes to a local sandbox outbox.</p>
       <p class="error" id="form-error" hidden></p>
      </div>
     </form>
@@ -166,31 +174,50 @@
 
   <!-- ────────────────────────────── cases ─────────────────────────────── -->
   <section id="view-cases" class="view">
-    <div id="cases-map" class="cases-map"></div>
+    <div class="map-wrap">
+      <div id="cases-map" class="cases-map"></div>
+      <button type="button" class="map-full" data-fullscreen="cases-map"
+              aria-label="Expand the map" title="Expand the map">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M15 20h5v-5M9 20H4v-5"/></svg>
+      </button>
+    </div>
     <ul class="case-list" id="case-list"></ul>
     <p class="muted empty" id="cases-empty" hidden>No cases yet. Submit a report to start one.</p>
   </section>
 
   <!-- ───────────────────────────── coverage ───────────────────────────── -->
   <section id="view-coverage" class="view">
-    <div class="coverage-intro">
+    <header class="page-head">
       <h2>Which authorities this instance knows</h2>
-      <p>Jurisdiction is resolved from a fixed table, not from a live registry. A region
-        that is not listed here still produces a case, but it resolves to a generic
-        placeholder rather than a named authority, and the case says so.</p>
-      <p class="warn" id="coverage-placeholder-note" hidden>
-        <strong>Every address below is a placeholder.</strong> They are on the reserved
-        <code>.invalid</code> domain, which cannot receive mail, so a misconfigured run
-        cannot reach a real regulator. The authority names are real and public.
-      </p>
-      <p class="muted" id="coverage-counts"></p>
+      <p>Jurisdiction is resolved from a fixed table, not a live registry. A place that is
+        not listed still produces a case — it just resolves to a broader authority, or to a
+        placeholder, and the case says which.</p>
+    </header>
+
+    <ul class="stats" id="coverage-stats"></ul>
+
+    <p class="warn" id="coverage-placeholder-note" hidden>
+      <strong>Every address here is a placeholder.</strong> They are on the reserved
+      <code>.invalid</code> domain, which cannot receive mail, so a misconfigured run
+      cannot reach a real regulator. The authority names are real and public.
+    </p>
+
+    <h3 class="section-label">What each kind of report is filed under</h3>
+    <ul class="rules" id="coverage-rules"></ul>
+
+    <div class="list-head">
+      <h3 class="section-label" id="coverage-list-label">Regions</h3>
+      <div class="list-tools">
+        <input type="search" id="coverage-filter" placeholder="Find a state or city"
+               autocomplete="off" spellcheck="false" aria-describedby="coverage-list-label">
+        <label class="switch">
+          <input type="checkbox" id="show-addresses">
+          <span>Show addresses</span>
+        </label>
+      </div>
     </div>
 
-    <input type="search" id="coverage-filter" placeholder="Filter by state or city"
-           autocomplete="off" spellcheck="false">
-
-    <table class="coverage-categories" id="coverage-categories"></table>
-
+    <p class="muted empty" id="coverage-empty" hidden></p>
     <ul class="coverage-list" id="coverage-list"></ul>
   </section>
 

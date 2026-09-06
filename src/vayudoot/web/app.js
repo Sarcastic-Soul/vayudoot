@@ -62,6 +62,70 @@ let storedTheme = "system";
 try { storedTheme = localStorage.getItem(THEME_KEY) || "system"; } catch { /* private mode */ }
 applyTheme(storedTheme);
 
+/* ── sidebar ───────────────────────────────────────────────────────────
+ *
+ * Collapsing is a desktop affordance: below 1080px the sidebar is already a rail
+ * or a bar, and there is nothing to collapse. The state is remembered, and the
+ * width is a custom property so the grid animates rather than jumping.
+ */
+
+const RAIL_KEY = "vayudoot.rail";
+
+function setCollapsed(collapsed) {
+  document.body.classList.toggle("is-collapsed", collapsed);
+  const button = $("collapse");
+  button.setAttribute("aria-expanded", String(!collapsed));
+  const label = collapsed ? "Expand the sidebar" : "Collapse the sidebar";
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  try { localStorage.setItem(RAIL_KEY, collapsed ? "1" : "0"); } catch { /* private mode */ }
+  // Leaflet needs telling when its container changes size.
+  setTimeout(resizeMaps, 260);
+}
+
+$("collapse").addEventListener("click", () => {
+  setCollapsed(!document.body.classList.contains("is-collapsed"));
+});
+
+let railStored = "0";
+try { railStored = localStorage.getItem(RAIL_KEY) || "0"; } catch { /* private mode */ }
+if (railStored === "1") setCollapsed(true);
+
+/* ── full-screen maps ──────────────────────────────────────────────────
+ *
+ * A 300px map is enough to confirm a pin and not enough to find one. The map
+ * keeps its Leaflet instance and only changes the size of its container, so
+ * nothing is re-created and the pin does not move.
+ */
+
+function resizeMaps() {
+  state.pickMap?.invalidateSize();
+  state.casesMap?.invalidateSize();
+}
+
+function toggleFullscreen(wrap) {
+  const open = wrap.classList.toggle("is-full");
+  document.body.classList.toggle("has-full-map", open);
+  wrap.querySelector(".map-full").setAttribute("aria-label",
+    open ? "Close the expanded map" : "Expand the map");
+  setTimeout(resizeMaps, 220);
+}
+
+document.querySelectorAll(".map-full").forEach((button) => {
+  button.addEventListener("click", () => toggleFullscreen(button.closest(".map-wrap")));
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const open = document.querySelector(".map-wrap.is-full");
+  if (open) toggleFullscreen(open);
+});
+
+window.addEventListener("resize", () => {
+  clearTimeout(window._mapResize);
+  window._mapResize = setTimeout(resizeMaps, 180);
+});
+
 /* ── views ─────────────────────────────────────────────────────────────── */
 
 function show(view) {
@@ -529,54 +593,101 @@ function drawCasesMap(cases) {
  */
 
 async function loadCoverage() {
-  if (state.coverage) return renderCoverageTable();
+  if (state.coverage) return renderCoverage();
   try {
     state.coverage = await api("/authorities");
-    renderCoverageTable();
+    renderCoverage();
   } catch (e) {
-    $("coverage-list").innerHTML = `<li class="muted">Could not load the table: ${escapeHtml(e.message)}</li>`;
+    $("coverage-list").innerHTML =
+      `<li class="muted">Could not load the table: ${escapeHtml(e.message)}</li>`;
   }
 }
 
-function renderCoverageTable() {
-  const data = state.coverage;
-  $("coverage-placeholder-note").hidden = !data.addresses_are_placeholders;
-  $("coverage-counts").textContent =
-    `${data.region_count} states and union territories, ${data.municipal_count} municipal bodies.`;
+const TIER_LABEL = {
+  municipal: "the city's municipal corporation",
+  state: "the state pollution control board",
+  central: "the central board",
+};
 
-  $("coverage-categories").innerHTML =
-    "<thead><tr><th>Pollution type</th><th>Goes to</th><th>Under</th><th>Window</th></tr></thead><tbody>"
-    + Object.entries(data.categories)
-      .filter(([key]) => key !== "default")
-      .map(([key, rule]) => `<tr>
-        <td>${escapeHtml(key.replace(/_/g, " "))}</td>
-        <td>${escapeHtml(rule.tier)}</td>
-        <td>${escapeHtml(rule.statute)}${rule.section ? `<span class="muted"> — ${escapeHtml(rule.section)}</span>` : ""}</td>
-        <td>${rule.response_window_days} days</td>
-      </tr>`).join("")
-    + "</tbody>";
+function renderCoverage() {
+  const data = state.coverage;
+  const stateOnly = data.regions.filter((r) => !r.municipal.length).length;
+
+  $("coverage-placeholder-note").hidden = !data.addresses_are_placeholders;
+
+  const categoryCount = Object.keys(data.categories).filter((k) => k !== "default").length;
+  const tiles = [
+    [data.region_count, "states and union territories"],
+    [data.municipal_count, "municipal bodies"],
+    // A zero is not worth a tile; show what is there instead of what is not.
+    stateOnly
+      ? [stateOnly, stateOnly === 1 ? "state with no city listed" : "states with no city listed"]
+      : [categoryCount, "kinds of report, each with its own statute"],
+  ];
+  $("coverage-stats").innerHTML = tiles
+    .map(([n, label]) => `<li><strong>${n}</strong><span>${escapeHtml(label)}</span></li>`).join("");
+
+  // A rule reads as a sentence rather than four columns of terse cells: the
+  // question is "what happens to this kind of report", not "compare these rows".
+  $("coverage-rules").innerHTML = Object.entries(data.categories)
+    .filter(([key]) => key !== "default")
+    .map(([key, rule]) => `<li>
+      <h4>${escapeHtml(key.replace(/_/g, " "))}</h4>
+      <p>Goes to <strong>${escapeHtml(TIER_LABEL[rule.tier] || rule.tier)}</strong>.</p>
+      <p class="rule-statute">${escapeHtml(rule.statute)}${
+        rule.section ? `<span class="muted"><br>${escapeHtml(rule.section)}</span>` : ""}</p>
+      <p class="rule-window">${rule.response_window_days} days to respond before it escalates</p>
+    </li>`).join("");
 
   drawCoverageList(data.regions);
 }
 
 function drawCoverageList(regions) {
+  const total = state.coverage.regions.length;
+  const empty = $("coverage-empty");
+
+  if (!regions.length) {
+    $("coverage-list").innerHTML = "";
+    empty.textContent = "Nothing matches that. A place not in the table still works — "
+      + "the case resolves to the generic placeholder and says so.";
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+  $("coverage-list-label").textContent =
+    regions.length === total ? "Regions" : `Regions — ${regions.length} of ${total}`;
+
   $("coverage-list").innerHTML = regions.map((r) => `
     <li>
-      <div class="coverage-region">
-        <h3>${escapeHtml(r.region)}</h3>
-        <p class="muted">${escapeHtml(r.state_board.name || "—")}
-          <span class="addr">${escapeHtml(r.state_board.email || "")}</span></p>
+      <div class="region-head">
+        <h4>${escapeHtml(r.region)}</h4>
+        <span class="chip${r.municipal.length ? "" : " is-thin"}">${
+          r.municipal.length ? `${r.municipal.length} ${r.municipal.length === 1 ? "city" : "cities"}`
+                             : "state board only"}</span>
       </div>
-      ${r.municipal.length ? `<ul class="coverage-cities">${r.municipal.map((m) => `
-        <li><span>${escapeHtml(m.city)}</span>
+
+      <p class="region-board">${escapeHtml(r.state_board.name || "—")}
+        ${addr(r.state_board.email)}</p>
+
+      ${r.municipal.length ? `<ul class="region-cities">${r.municipal.map((m) => `
+        <li><strong>${escapeHtml(m.city)}</strong>
             <span class="muted">${escapeHtml(m.name)}</span>
-            <span class="addr">${escapeHtml(m.email || "")}</span></li>`).join("")}</ul>`
-        : `<p class="muted none">No municipal bodies listed — waste and dust complaints here
-             resolve to the state board.</p>`}
+            ${addr(m.email)}</li>`).join("")}</ul>` : ""}
+
+      <p class="region-foot">${r.municipal.length
+        ? `Anywhere else in ${escapeHtml(r.region)} resolves to the board above.`
+        : `Every report in ${escapeHtml(r.region)} resolves to the board above, including
+           the waste and dust categories a municipal body would normally handle.`}</p>
     </li>`).join("");
 }
 
-$("coverage-filter").addEventListener("input", () => {
+/* Addresses are the evidence for the safety claim, so they stay available — but
+ * eighty repetitions of the same placeholder domain is noise, not information. */
+function addr(email) {
+  return email ? `<span class="addr">${escapeHtml(email)}</span>` : "";
+}
+
+function filterCoverage() {
   if (!state.coverage) return;
   const q = $("coverage-filter").value.trim().toLowerCase();
   const regions = !q ? state.coverage.regions : state.coverage.regions.filter((r) =>
@@ -584,6 +695,12 @@ $("coverage-filter").addEventListener("input", () => {
     || r.state_board.name?.toLowerCase().includes(q)
     || r.municipal.some((m) => m.city.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)));
   drawCoverageList(regions);
+}
+
+$("coverage-filter").addEventListener("input", filterCoverage);
+
+$("show-addresses").addEventListener("change", (e) => {
+  $("view-coverage").classList.toggle("show-addresses", e.target.checked);
 });
 
 function escapeHtml(value) {
