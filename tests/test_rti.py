@@ -14,6 +14,7 @@ import re
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from google.genai.errors import ClientError
 from httpx import ASGITransport, AsyncClient
 
 from fakes import StubAgent, complaint, jurisdiction, rti_application
@@ -143,6 +144,27 @@ async def test_drafting_stores_the_application_on_the_case(client, stub_agent):
     stored = store.load(case.case_id)
     assert stored.rti is not None
     assert any("RTI application drafted" in entry for entry in stored.history)
+
+
+async def test_a_provider_rate_limit_during_drafting_is_a_clean_503(client, monkeypatch):
+    """The endpoint's own except block, not just `errors.py` in isolation."""
+    case = make_case()
+    monkeypatch.setattr(settings, "vayudoot_model_provider", "gemini")
+
+    async def exploding(*args, **kwargs):
+        raise ClientError(
+            429,
+            {"error": {"code": 429, "message": "Quota exceeded.", "status": "RESOURCE_EXHAUSTED"}},
+        )
+
+    monkeypatch.setattr(api, "draft_rti_application", exploding)
+    resp = await client.post(f"/cases/{case.case_id}/rti")
+
+    assert resp.status_code == 503
+    detail = resp.json()["detail"]
+    assert "free-tier request quota" in detail
+    assert "RESOURCE_EXHAUSTED" not in detail
+    assert store.load(case.case_id).rti is None
 
 
 async def test_a_second_request_reuses_the_draft_rather_than_the_model(client, stub_agent):

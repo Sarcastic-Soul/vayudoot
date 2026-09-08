@@ -286,12 +286,17 @@ fails leaves `stage` parked on whatever was running when it died.
 
 ## Deploying
 
+Live at <https://vayudoot.onrender.com> (Render's free instance sleeps after 15
+minutes idle; the first request after that takes 30-60 seconds to wake it).
+
 ```bash
 docker build -t vayudoot .
 docker run -p 7860:7860 --env-file .env vayudoot
 ```
 
-Port 7860 and the uid-1000 user are what Hugging Face Spaces expects; see
+The container binds to `$PORT` when it's set (Render assigns one at runtime)
+and falls back to 7860 for a local run like the one above. The uid-1000 user is
+for compatibility with hosts that require a non-root user. See
 [`docs/deployment.md`](docs/deployment.md) for the free-tier reasoning and the
 pre-demo checklist. Confirm `GET /health` reports `live_filing: false` on any
 deployment.

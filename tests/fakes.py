@@ -115,12 +115,20 @@ class StubAgent:
         return type("Result", (), {"structured_output": self.output})()
 
 
-def patch_stages(monkeypatch, module, *, confidence: float = 0.9, fail_at: str = "") -> None:
-    """Replace the agent stages that `module` imported with deterministic ones."""
+def patch_stages(
+    monkeypatch, module, *, confidence: float = 0.9, fail_at: str = "", fail_with=None
+) -> None:
+    """Replace the agent stages that `module` imported with deterministic ones.
+
+    `fail_with` is an exception factory (no arguments) used instead of the
+    default `RuntimeError` when `fail_at` names the failing stage — for tests
+    that need a specific exception type, such as a provider rate limit, to
+    reach the pipeline's failure handling.
+    """
 
     async def _stage(name, value):
         if fail_at == name:
-            raise RuntimeError(f"{name} exploded")
+            raise (fail_with() if fail_with else RuntimeError(f"{name} exploded"))
         return value
 
     stages = {

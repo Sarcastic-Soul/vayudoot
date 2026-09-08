@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from google.genai.errors import ClientError
 from httpx import ASGITransport, AsyncClient
 
 from fakes import image_bytes, patch_stages
@@ -199,3 +200,57 @@ async def test_a_fallback_authority_is_visible_on_the_case(client, monkeypatch):
 
     body = (await client.get(f"/cases/{case_id}")).json()
     assert body["jurisdiction"]["coverage"] in {"exact", "fallback", "generic"}
+
+
+async def test_a_provider_rate_limit_is_shown_as_a_plain_sentence_over_http(client, monkeypatch):
+    """The wiring end to end: a real 429 shape from the SDK, through the
+    pipeline's failure handling, to what a browser polling the case reads."""
+
+    def quota_exceeded():
+        return ClientError(
+            429,
+            {
+                "error": {
+                    "code": 429,
+                    "message": "Quota exceeded.",
+                    "status": "RESOURCE_EXHAUSTED",
+                }
+            },
+        )
+
+    monkeypatch.setattr(settings, "vayudoot_model_provider_fast", "gemini")
+    patch_stages(monkeypatch, pipeline, fail_at="jurisdiction", fail_with=quota_exceeded)
+    case_id = (await _submit(client))["case_id"]
+    await _drain()
+
+    body = (await client.get(f"/cases/{case_id}")).json()
+    assert body["status"] == CaseStatus.FAILED.value
+    error = body["error"]
+    assert "free-tier request quota" in error
+    assert "RESOURCE_EXHAUSTED" not in error
+    assert "{" not in error
+
+
+async def test_cluster_endpoints_are_reachable_over_http(client, monkeypatch):
+    patch_stages(monkeypatch, pipeline)
+    ids = []
+    for _ in range(3):
+        ids.append((await _submit(client))["case_id"])
+        await _drain()
+
+    clusters = (await client.get("/clusters")).json()
+    assert len(clusters) == 1
+    assert clusters[0]["report_count"] == 3
+
+    body = (await client.get(f"/cases/{ids[-1]}/cluster")).json()
+    assert body is not None
+    assert body["cluster_id"] == clusters[0]["cluster_id"]
+
+
+async def test_a_case_with_no_pattern_has_no_cluster_over_http(client, monkeypatch):
+    patch_stages(monkeypatch, pipeline)
+    case_id = (await _submit(client))["case_id"]
+    await _drain()
+
+    assert (await client.get(f"/cases/{case_id}/cluster")).json() is None
+    assert (await client.get("/clusters")).json() == []
