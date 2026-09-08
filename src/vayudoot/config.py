@@ -63,6 +63,19 @@ class Settings(BaseSettings):
     ollama_host: str = "https://ollama.com"
     ollama_api_key: str = ""
 
+    # Ollama Cloud's free tier publishes no request count, only a session
+    # percentage (resets every 4 hours) and a weekly one (resets every 5 days) —
+    # see `docs/deployment.md`. There is nothing to mirror precisely, so this is
+    # a safety cap rather than a copy of the real quota: high enough that normal
+    # use and the test suite never reach it, low enough to stop a retry loop or a
+    # scheduler bug from quietly burning a session or a week of the budget.
+    # `errors.py` turns a trip into the same kind of plain sentence as an actual
+    # provider rate limit.
+    vayudoot_ollama_session_call_limit: int = 200
+    vayudoot_ollama_session_window_hours: float = 4
+    vayudoot_ollama_weekly_call_limit: int = 1000
+    vayudoot_ollama_weekly_window_days: float = 5
+
     # Evidence sources
     firms_map_key: str = ""
     openaq_api_key: str = ""

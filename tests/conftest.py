@@ -12,6 +12,7 @@ suite starts failing in whatever order it happens to run.
 
 import pytest
 
+from vayudoot.callbudget import budget as ollama_budget
 from vayudoot.config import settings
 from vayudoot.ratelimit import limiter
 
@@ -23,4 +24,5 @@ def isolated_storage(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "vayudoot_sandbox_outbox", tmp_path / "outbox")
     monkeypatch.setattr(settings, "vayudoot_live_filing", False)
     limiter.reset()
+    ollama_budget.reset()
     return tmp_path

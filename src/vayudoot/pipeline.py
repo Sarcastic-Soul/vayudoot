@@ -14,13 +14,22 @@ from __future__ import annotations
 import logging
 import uuid
 
-from . import clustering, store
+from . import clustering, errors, store
 from .agents import analyse_evidence, corroborate, draft_complaint, resolve_jurisdiction
 from .schemas import Case, CaseStatus, Cluster, Report, Stage
 from .tools.authorities import coverage_is_generic
 from .tools.geocode import reverse_geocode
 
 log = logging.getLogger(__name__)
+
+#: Which tier was doing the work when a given stage was running, so a failure
+#: there can be traced to the provider actually responsible for it.
+_TIER_FOR_STAGE = {
+    Stage.EVIDENCE: "primary",
+    Stage.CORROBORATION: "fast",
+    Stage.JURISDICTION: "fast",
+    Stage.DRAFTING: "primary",
+}
 
 # Below this confidence the agent will not put a complaint in front of the user
 # without flagging it. A wrong classification becomes a formal complaint against
@@ -58,7 +67,8 @@ async def run(report: Report, persist: bool = True, case: Case | None = None) ->
     except Exception as exc:  # a failed run must leave a readable case, not a 500
         log.exception("Pipeline failed for case %s", case.case_id)
         case.status = CaseStatus.FAILED
-        case.error = f"{type(exc).__name__}: {exc}"
+        tier = _TIER_FOR_STAGE.get(case.stage, "primary")
+        case.error = errors.describe(exc, tier)
         case.log(f"Failed during {case.stage.value}: {case.error}")
         if persist:
             store.save(case)

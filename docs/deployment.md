@@ -50,7 +50,10 @@ all — which is the point of the split.
 
 1. **Gemini free tier** via Google AI Studio. `VAYUDOOT_MODEL_PROVIDER=gemini`.
    The daily caps are the real budget: 20 requests a day on the flash tier, 500
-   on flash-lite, and the pro models are paid.
+   on flash-lite (also 15 requests/minute and 250,000 tokens/minute), and the
+   pro models are paid. `errors.py` uses these exact numbers — for
+   `gemini-3.5-flash-lite` specifically — when a report fails on quota, rather
+   than a generic "try again" message; see that module for why.
 
    A report costs two primary requests (evidence and drafting) and roughly eight
    fast ones, so **the free tier is about ten reports a day** and the primary
@@ -77,6 +80,10 @@ all — which is the point of the split.
 
    The quota is published as session and weekly percentages rather than request
    counts, so treat it as opaque and watch the meter in the Ollama console.
+   Since there is no number to check a report against, `callbudget.py` adds a
+   safety cap of its own — generous defaults so real use and the test suite
+   never reach it, there only to stop a bug from silently burning the whole
+   session or week. It is a backstop, not a substitute for watching the meter.
 
    The same provider also drives a local daemon — set
    `OLLAMA_HOST=http://localhost:11434`, drop the key, and override both model

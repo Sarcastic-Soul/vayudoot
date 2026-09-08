@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import clustering, filing, lifecycle, pack, register, store
+from . import clustering, errors, filing, lifecycle, pack, register, store
 from .agents import draft_rti_application
 from .config import settings
 from .images import UnsupportedImage, normalise, suffix_for
@@ -504,7 +504,14 @@ async def draft_rti(case_id: str, redraft: bool = False) -> Case:
     if not filing.rti_available(case):
         raise HTTPException(409, _rti_not_available(case))
 
-    case.rti = await draft_rti_application(case)
+    try:
+        case.rti = await draft_rti_application(case)
+    except Exception as exc:
+        if not errors.is_rate_limit(exc, tier="primary"):
+            raise  # not a recognised rate limit; keep the default 500 and log it
+        message = errors.describe(exc, tier="primary")
+        log.warning("RTI draft rate-limited for case %s: %s", case_id, message)
+        raise HTTPException(503, message) from exc
     case.rti_drafted_at = datetime.now(UTC)
     case.log(
         "RTI application drafted under the Right to Information Act, 2005. Held for the "

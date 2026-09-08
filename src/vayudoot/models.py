@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .callbudget import OllamaBudgetExceeded
+from .callbudget import budget as ollama_budget
 from .config import Provider, Tier, settings
 
 
@@ -36,6 +38,14 @@ def build_model(temperature: float | None = None, tier: Tier = "primary") -> Any
     if provider == "ollama":
         from strands.models.ollama import OllamaModel
 
+        # The safety cap exists for Ollama Cloud's opaque session/weekly quota;
+        # a local daemon has no such quota to protect and should not be throttled
+        # by a guard that exists for a budget it does not have.
+        if _is_ollama_cloud(settings.ollama_host):
+            decision = ollama_budget.check()
+            if not decision.allowed:
+                raise OllamaBudgetExceeded(decision.message)
+
         # The same provider serves a local daemon and Ollama Cloud; the only
         # difference is the host and a bearer token. Sending an empty header
         # would break a local daemon, so it is only added when a key is set.
@@ -51,3 +61,7 @@ def build_model(temperature: float | None = None, tier: Tier = "primary") -> Any
         )
 
     raise ValueError(f"Unknown model provider: {provider}")
+
+
+def _is_ollama_cloud(host: str) -> bool:
+    return "ollama.com" in host
