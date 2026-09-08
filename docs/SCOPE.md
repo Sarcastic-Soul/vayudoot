@@ -37,8 +37,8 @@ That sentence is the whole target. Anything that does not serve it is out.
       an in-case warning when a match was a fallback or a placeholder
 
 ### Delivery
-- [ ] Deployed on a public URL, free tier, no credit card — `Dockerfile` is
-      written and the image runs; the Space itself is not up yet
+- [x] Deployed on a public URL, free tier, no credit card — live at
+      https://vayudoot.onrender.com
 - [x] Frontend served by the same FastAPI process, so there is one deployment
 - [x] `README.md` and `docs/architecture.md` accurate to what actually ships
 - [x] Architecture diagram as an image, not only the ASCII sketch
