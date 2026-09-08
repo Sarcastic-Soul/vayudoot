@@ -18,7 +18,7 @@ There are only four things that could cost money.
 | --- | --- | --- |
 | Model inference | the only real one | AWS credits; Gemini free tier; Ollama locally |
 | Compute to run the service | free tier | Render |
-| Storage | free tier | JSON on disk; Supabase if it needs to persist |
+| Storage | free tier | Neon Postgres (JSON files if `DATABASE_URL` is unset) |
 | The evidence APIs | free | FIRMS, OpenAQ, Open-Meteo, Nominatim |
 
 ### Inference
@@ -135,14 +135,15 @@ costs a moving part.
 
 ### Storage
 
-Cases are JSON files under `data/cases/`. On a free container that disk is
-ephemeral: a restart or a rebuild loses them.
-
-That is acceptable for a demo and not acceptable for anything else. When cases
-need to survive, **Supabase free Postgres** is the upgrade — no card, and it only
-means rewriting `store.py`, which exists precisely so that this is a
-one-module change. Note that a free Supabase project pauses after a stretch of
-inactivity, so wake it before a demo too.
+Cases are JSON files under `data/cases/` when `DATABASE_URL` is unset. On a
+free container that disk is ephemeral: a restart or a rebuild loses them. Fine
+for a demo, not for anything else — which is why `store.py` supports a second
+backend: set `DATABASE_URL` to any standard Postgres connection string and
+cases become rows instead, `data` as `jsonb`. Nothing in `store.py` is
+provider-specific; **Neon** is what this deployment actually uses, chosen for
+its free tier with no card, but Supabase's free Postgres works exactly the
+same way. Either one pauses after a stretch of inactivity, so wake it before a
+demo alongside the compute host.
 
 ### Evidence APIs
 

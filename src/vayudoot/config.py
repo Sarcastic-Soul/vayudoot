@@ -87,6 +87,14 @@ class Settings(BaseSettings):
     # Storage
     vayudoot_case_dir: Path = Path("./data/cases")
     vayudoot_upload_dir: Path = Path("./data/uploads")
+    #: A Postgres connection string (Neon, Supabase, or any other host — the
+    #: store is plain SQL, nothing provider-specific). Unprefixed, like the
+    #: other external-service credentials above, because it's the name every
+    #: Postgres host already hands you. Empty, the default and what every test
+    #: uses, keeps cases as JSON files under `vayudoot_case_dir` instead; see
+    #: `store.py`. That default is fine for a demo but not for a public
+    #: deployment, where the container's disk does not survive a restart.
+    database_url: str = ""
 
     # Intake limits. One report costs about ten model calls, so an open endpoint
     # on a public URL is an open tap on the day's free-tier quota: a single

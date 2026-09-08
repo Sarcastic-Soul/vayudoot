@@ -23,6 +23,10 @@ def isolated_storage(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "vayudoot_upload_dir", tmp_path / "uploads")
     monkeypatch.setattr(settings, "vayudoot_sandbox_outbox", tmp_path / "outbox")
     monkeypatch.setattr(settings, "vayudoot_live_filing", False)
+    # Force the JSON-file backend regardless of a developer's own shell — a
+    # stray DATABASE_URL must never make the suite touch a real database.
+    # test_store_postgres.py overrides this deliberately.
+    monkeypatch.setattr(settings, "database_url", "")
     limiter.reset()
     ollama_budget.reset()
     return tmp_path
