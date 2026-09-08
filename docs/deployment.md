@@ -17,7 +17,7 @@ There are only four things that could cost money.
 | | Cost | Covered by |
 | --- | --- | --- |
 | Model inference | the only real one | AWS credits; Gemini free tier; Ollama locally |
-| Compute to run the service | free tier | Hugging Face Spaces |
+| Compute to run the service | free tier | Render |
 | Storage | free tier | JSON on disk; Supabase if it needs to persist |
 | The evidence APIs | free | FIRMS, OpenAQ, Open-Meteo, Nominatim |
 
@@ -95,13 +95,21 @@ loop against a live provider will eat a day's reports before lunch.
 
 ### Compute
 
-**Hugging Face Spaces, Docker SDK, free CPU tier.** Chosen because it needs no
-credit card, runs an arbitrary Docker image so FastAPI works unchanged, gives a
-public HTTPS URL, and does not expire. It sleeps after a stretch of inactivity
-and takes a moment to wake — wake it before any live demo.
+**Render, free web service, Docker runtime.** Chosen because it needs no credit
+card, runs an arbitrary Docker image so FastAPI works unchanged, gives a public
+HTTPS URL, and 750 free instance-hours a month is enough for one instance
+running continuously. It spins down after 15 minutes idle and takes 30-60
+seconds to wake on the next request — wake it before any live demo. Render
+assigns the listen port at runtime through `$PORT`; the `Dockerfile`'s `CMD`
+reads it, falling back to 7860 for a local `docker run`.
 
-Fallback: **Render**, free web service. Same shape, spins down when idle with a
-slower cold start.
+Former choice, and why it moved: **Hugging Face Spaces, Docker SDK** was the
+original target and the Dockerfile is still shaped to run unmodified there. As
+of this writing, creating a Docker-SDK Space requires a PRO subscription
+($9/month) — only Static Spaces are free without a paid plan. That fails
+constraint 3 in `CLAUDE.md`, so it is no longer the default. If Hugging Face
+ever reopens free Docker Spaces, reverting is a one-line `CMD` change plus
+setting `PORT=7860`, since the image itself did not have to change.
 
 Rejected, and why:
 
@@ -144,19 +152,19 @@ cache it.
 
 ---
 
-## Deploying to Hugging Face Spaces
+## Deploying to Render
 
-1. Create a Space, SDK **Docker**, visibility public.
-2. Add a `Dockerfile` that installs the project and runs
-   `uvicorn vayudoot.api:app --host 0.0.0.0 --port 7860`. Spaces expect port 7860.
-3. Set every secret from `.env.example` as a Space secret. **Never commit a
-   `.env`.**
+1. Create a Web Service from the repo, runtime **Docker**, plan **Free**.
+2. Render builds `Dockerfile` as-is and binds the container to the `$PORT` it
+   assigns; nothing to configure there.
+3. Set every secret from `.env.example` as an environment variable in the
+   service's Environment tab. **Never commit a `.env`.**
 4. Confirm `GET /health` reports the expected provider and, critically, that
    `live_filing` is `false`.
 
 ## Pre-demo checklist
 
-- [ ] Wake the Space, and the database if one is in use
+- [ ] Wake the service, and the database if one is in use
 - [ ] `GET /health` returns the expected provider and `live_filing: false`
 - [ ] Credits or free-tier quota confirmed to have headroom
 - [ ] One full run completed today, since a stale deployment is the usual failure

@@ -1,9 +1,11 @@
 # Vayudoot, packaged for a free-tier container host.
 #
-# Hugging Face Spaces (Docker SDK) is the deployment target: no credit card, a
-# public HTTPS URL, and it expects the service on port 7860. The image runs as
-# uid 1000 because that is the user a Space runs as; anything the process writes
-# has to be under that user's home.
+# Render (free web service, Docker runtime) is the deployment target: no
+# credit card, a public HTTPS URL. Render assigns the listen port at runtime via
+# $PORT rather than a fixed one, so the CMD below reads it, falling back to 7860
+# for local `docker run`. The image runs as uid 1000 so it works unmodified on
+# hosts (like the former Hugging Face Spaces target) that also require a
+# non-root user; anything the process writes has to be under that user's home.
 
 FROM python:3.12-slim
 
@@ -35,4 +37,4 @@ RUN mkdir -p /home/user/data
 ENV VAYUDOOT_LIVE_FILING=false
 
 EXPOSE 7860
-CMD ["uvicorn", "vayudoot.api:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["sh", "-c", "uvicorn vayudoot.api:app --host 0.0.0.0 --port ${PORT:-7860}"]
