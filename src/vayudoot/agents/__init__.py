@@ -1,6 +1,12 @@
 from .corroboration import build_corroboration_graph, corroborate
 from .drafting import build_drafting_agent, draft_complaint
 from .evidence import analyse_evidence, build_evidence_agent
+from .forecast import (
+    build_forecast_agent,
+    forecast_corridor,
+    forecast_location,
+    upwind_hotspots,
+)
 from .jurisdiction import build_jurisdiction_agent, resolve_jurisdiction
 from .rti import build_rti_agent, draft_rti_application, render_rti
 
@@ -9,11 +15,15 @@ __all__ = [
     "build_corroboration_graph",
     "build_drafting_agent",
     "build_evidence_agent",
+    "build_forecast_agent",
     "build_jurisdiction_agent",
     "build_rti_agent",
     "corroborate",
     "draft_complaint",
     "draft_rti_application",
+    "forecast_corridor",
+    "forecast_location",
     "render_rti",
     "resolve_jurisdiction",
+    "upwind_hotspots",
 ]

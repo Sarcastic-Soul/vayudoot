@@ -234,11 +234,18 @@ class Settings(BaseSettings):
     #: 72 hours is where a wind forecast stops being worth acting on, and a
     #: longer horizon would be confidence the inputs do not support.
     vayudoot_forecast_horizon_hours: int = 72
-    #: How far upwind to look for hotspots that could reach a location. At the
-    #: 3-5 m/s typical of the Indo-Gangetic plain in burning season, smoke covers
-    #: roughly 150 km in twelve hours, which is the distance that actually
-    #: explains a Delhi morning after a Punjab night.
-    vayudoot_forecast_upwind_km: float = 200.0
+    #: How far upwind to look for hotspots that could reach a location.
+    #:
+    #: Set against the horizon above, not against a single night. At the 3-5 m/s
+    #: typical of the Indo-Gangetic plain in burning season, air covers roughly
+    #: 260-430 km a day, so over 72 hours a 400 km reach is the conservative end
+    #: rather than the generous one.
+    #:
+    #: The number is checked against the case the whole thing exists for:
+    #: Ludhiana to Delhi is 286 km. A tighter reach — 200 km was the first
+    #: guess — puts Punjab's burning outside Delhi's forecast entirely, which is
+    #: precisely the event Indian air quality forecasting exists to catch.
+    vayudoot_forecast_upwind_km: float = 400.0
 
     # Federation. A node publishes the hotspots it found and can read a
     # neighbour's; see `federation.py`. What is shared is a detection layer, not
