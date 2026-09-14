@@ -70,6 +70,28 @@ request allowance is and the two judgement calls where the better model is. Keep
 `build_model()` as the only place a provider is constructed, and keep the
 decision in `provider_for()`.
 
+### 6. Google AI is mandatory, and it is a rule, not a preference
+
+The target is the Build with AI: Code for Communities hackathon, problem
+statement 02. Its first rule is that a submission without Google AI integration
+is not considered. The shipped configuration therefore puts **both** tiers on
+Gemini — primary on flash, fast on flash-lite.
+
+This narrows constraint 5 without cancelling it. The tier split survives as a
+cost control inside one provider; what does not survive is shipping with the two
+judgement calls on Ollama, because that puts the only inference a judge would
+call meaningful on a non-Google model. Ollama stays a supported provider for
+local development and the offline test suite, and `build_model()` stays the only
+place a provider is constructed — a system a state could run on its own
+hardware is part of the deployability argument, so the abstraction earns its
+keep.
+
+Free tier still binds, and it decides which Google services are available:
+Gemini via AI Studio, BigQuery sandbox, Firebase Spark and Earth Engine
+noncommercial need no card. Vertex AI, Cloud Run, Maps Platform, Speech-to-Text
+and Translation all need a billing account and are therefore out. See
+`docs/SCOPE.md` under v0.3.
+
 ## Conventions
 
 - **Never construct a model provider directly.** Call `models.build_model()`. It
