@@ -16,7 +16,7 @@ There are only four things that could cost money.
 
 | | Cost | Covered by |
 | --- | --- | --- |
-| Model inference | the only real one | AWS credits; Gemini free tier; Ollama locally |
+| Model inference | the only real one | Gemini free tier (Ollama offline, for development) |
 | Compute to run the service | free tier | Render |
 | Storage | free tier | Neon Postgres (JSON files if `DATABASE_URL` is unset) |
 | The evidence APIs | free | FIRMS, OpenAQ, Open-Meteo, Nominatim |
@@ -29,24 +29,41 @@ invocations. Four of them are mechanical tool-call-and-summarise steps and run o
 the cheap tier; only photograph reading and complaint drafting use the primary
 model.
 
-Two providers, both free tiers with no card. Amazon Bedrock was removed: it
-bills, and constraint 3 in `CLAUDE.md` says a dependency has to be free or
-already paid for.
-
-**Neither free tier is used alone.** A report makes two primary calls and about
-eight fast ones, and the two tiers can run on different providers, so the shipped
-configuration splits them:
+**Gemini serves both tiers. That is a rule, not a tuning choice.** Hard
+constraint 6 in `CLAUDE.md`: the event this is built for does not consider a
+submission without Google AI, and the two primary calls — reading the photograph
+and drafting the complaint — are the only inference anyone would call meaningful.
+Putting them on Ollama would put that inference on a non-Google model.
 
 ```bash
-VAYUDOOT_MODEL_PROVIDER=ollama        # primary: evidence, drafting
-VAYUDOOT_MODEL_PROVIDER_FAST=gemini   # fast: corroboration, jurisdiction
+VAYUDOOT_MODEL_PROVIDER=gemini   # primary: evidence, drafting  -> flash
+VAYUDOOT_MODEL_PROVIDER_FAST=    # empty: fast tier follows      -> flash-lite
 ```
 
-Ollama Cloud takes the two calls that need judgement, including the only one that
-reads an image. Gemini's flash-lite tier takes the eight mechanical ones, where
-500 requests a day is roughly sixty reports and nothing is spent from Ollama's
-opaque session budget. Gemini's flash tier, the 20-a-day one, is then not used at
-all — which is the point of the split.
+An earlier configuration split the tiers across two providers, with the
+judgement calls on Ollama Cloud and the mechanical ones on Gemini flash-lite, to
+spread one report across two free tiers. That is no longer available. What it was
+buying is still worth having, so the tier split stays *inside* Gemini: flash for
+the two primary calls, flash-lite for the eight fast ones, which is why the
+20-a-day flash quota is the number to watch and not the total.
+
+Amazon Bedrock was removed earlier for a different reason: it bills, and
+constraint 3 says a dependency has to be free or already paid for.
+
+### There is no card, and it decides everything here
+
+Google Cloud's free tier — the $300 trial and the Always Free products alike —
+requires a Cloud Billing account, and that requires a card on file even though it
+is not charged. There is no card. So the whole of Google Cloud proper is out:
+Vertex AI, Cloud Run, Cloud Functions, Maps Platform, Speech-to-Text,
+Text-to-Speech, Translation.
+
+The Gemini API through Google AI Studio is the exception and the reason this
+works at all: it needs a Google account, no card and no billing account. It is
+the one mandatory piece, and it is the free one.
+
+Nothing in the event rules requires hosting on Google Cloud — only that Google AI
+is integrated. The deployment therefore stays on Render.
 
 1. **Gemini free tier** via Google AI Studio. `VAYUDOOT_MODEL_PROVIDER=gemini`.
    The daily caps are the real budget: 20 requests a day on the flash tier, 500
@@ -68,7 +85,11 @@ all — which is the point of the split.
    VAYUDOOT_MODEL_ID_FAST=gemini-3.5-flash-lite
    ```
 
-2. **Ollama Cloud free tier.** `VAYUDOOT_MODEL_PROVIDER=ollama` with
+2. **Ollama, the offline path.** Not the shipped provider. It is here for two
+   reasons worth keeping: developing and running the eval harness without
+   spending a metered quota, and the claim that a state could run this on its own
+   hardware, which is part of the deployability argument rather than a
+   convenience. `VAYUDOOT_MODEL_PROVIDER=ollama` with
    `OLLAMA_HOST=https://ollama.com` and a key from
    <https://ollama.com/settings/keys>.
 
