@@ -203,6 +203,66 @@ class Settings(BaseSettings):
         "nh3": 400.0,
     }
 
+    # Signal scanning. The scan is what makes the map non-empty: hotspot
+    # detection can already raise a hotspot from satellite or station evidence,
+    # but something has to go and fetch that evidence. See `scan.py`.
+    #
+    #: Whether the periodic scan runs at all. Off by default, and deliberately:
+    #: an unattended loop calling two external APIs is the kind of thing that
+    #: should be switched on by whoever is watching the quota, not by importing
+    #: a module.
+    vayudoot_scan_enabled: bool = False
+    #: Minutes between scans. VIIRS passes roughly twice a day, so anything under
+    #: an hour is polling for data that has not moved; 60 keeps the map fresh
+    #: without spending requests on unchanged answers.
+    vayudoot_scan_interval_minutes: int = 60
+    #: How far back each scan looks for satellite detections. FIRMS allows up to
+    #: 10 days. Two covers a missed scan and a satellite gap without dragging in
+    #: fires that have long since burnt out.
+    vayudoot_scan_days: int = 2
+    #: Radius each scan point covers, in kilometres.
+    vayudoot_scan_radius_km: float = 50.0
+    #: How long a stored signal stays eligible for detection. Past this it is
+    #: history, not a live hotspot. Matched to the hotspot window so a signal
+    #: cannot age out of a hotspot it is still holding together.
+    vayudoot_signal_retention_days: int = 30
+
+    # Forecasting. Hard constraint 7: everything here produces a model's
+    # reasoning over public data, never an official advisory.
+    #
+    #: How far ahead a forecast looks. Open-Meteo publishes well past this;
+    #: 72 hours is where a wind forecast stops being worth acting on, and a
+    #: longer horizon would be confidence the inputs do not support.
+    vayudoot_forecast_horizon_hours: int = 72
+    #: How far upwind to look for hotspots that could reach a location. At the
+    #: 3-5 m/s typical of the Indo-Gangetic plain in burning season, smoke covers
+    #: roughly 150 km in twelve hours, which is the distance that actually
+    #: explains a Delhi morning after a Punjab night.
+    vayudoot_forecast_upwind_km: float = 200.0
+
+    # Federation. A node publishes the hotspots it found and can read a
+    # neighbour's; see `federation.py`. What is shared is a detection layer, not
+    # trained weights.
+    #
+    #: This instance's identity on that network. The defaults describe a single
+    #: unconfigured deployment rather than pretending to be a state.
+    vayudoot_node_id: str = "vayudoot-local"
+    vayudoot_node_name: str = "Vayudoot (unconfigured node)"
+    vayudoot_node_region: str = "unspecified"
+    vayudoot_node_url: str = ""
+    vayudoot_node_contact: str = ""
+    #: Neighbour feed URLs, comma-separated. A node reads these and folds their
+    #: hotspots into its own forecasting, which is how a Punjab detection reaches
+    #: a Delhi outlook. Empty is a node that federates with nobody.
+    vayudoot_neighbour_feeds: str = ""
+    #: Whether this node publishes its own feed. On by default: a node that reads
+    #: neighbours without publishing is taking from a commons it does not supply.
+    vayudoot_publish_feed: bool = True
+
+    @property
+    def neighbour_feeds(self) -> list[str]:
+        return [url.strip() for url in self.vayudoot_neighbour_feeds.split(",") if url.strip()]
+
     def provider_for(self, tier: Tier = "primary") -> Provider:
         if tier == "fast" and self.vayudoot_model_provider_fast:
             return self.vayudoot_model_provider_fast
