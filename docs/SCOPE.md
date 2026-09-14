@@ -295,9 +295,28 @@ left. Rubric weights are in `PROBLEM-STATEMENTS.md`.
 
 - [x] **Both tiers on Gemini.** Rule 1: no Google AI, no consideration. Done.
 
-- [ ] **`Hotspot` as a stored first-class object, seeded from satellite and
-      station data as well as citizen cases.** This is the pivot. Everything
-      below depends on it existing.
+- [~] **`Hotspot` as a first-class object, seeded from satellite and station
+      data as well as citizen cases.** This is the pivot; everything below
+      depends on it existing.
+
+      Landed: `Signal` and `Hotspot` in `schemas.py`, detection in
+      `hotspots.py`, the shared centroid-linkage rule extracted to
+      `grouping.py` so clustering and detection cannot drift apart, and
+      `GET /hotspots`. Signal builders exist for all three sources, so a
+      satellite detection or a station exceedance raises a hotspot on its own
+      and a citizen photograph upgrades one — proven by test, not asserted.
+
+      Two corrections worth recording. The object is **derived, not stored**:
+      what needs storing is the *signals*, since a satellite scan cannot be
+      recomputed after the fact the way a case can be re-read, while membership
+      changes whenever a signal arrives. And `Signal` carries **both** a
+      `strength` and a `magnitude`, because the first version conflated them and
+      reported one confident photograph of a small fire as `severe` — a model
+      being sure of what it saw is not the same as what it saw being serious.
+
+      Outstanding: the periodic scan that actually fetches FIRMS and OpenAQ into
+      signals. Until it lands `hotspots.current()` reads the case store only, and
+      says so in its docstring rather than implying national coverage.
 
 - [ ] **The operations view as the landing surface.** Map, ranked hotspot list,
       drill-down to the evidence and the forecast. Reuses the existing shell,

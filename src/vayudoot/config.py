@@ -146,6 +146,63 @@ class Settings(BaseSettings):
     #: keeps every one-off report out of the clusters listing.
     vayudoot_cluster_min_reports: int = 3
 
+    # Hotspot detection. A hotspot is the unit of work from v0.3 on and these
+    # numbers are its whole definition, so each is a judgement about pollution
+    # rather than a tuning knob. See `hotspots.py`.
+    #
+    #: How far apart two observations can be and still be one event. Wider than
+    #: the 500 m clustering radius, and deliberately: clustering groups citizen
+    #: photographs of one visible pile, where tight is right, while detection
+    #: must also group a VIIRS pixel — 375 m on its own, and located to the pixel
+    #: rather than to the fire inside it — against a photograph taken from the
+    #: roadside. 2 km absorbs that error without merging neighbourhoods.
+    vayudoot_hotspot_radius_km: float = 2.0
+    #: The smallest radius a hotspot may be published with, whatever the signals
+    #: say. Hard constraint 7: a hotspot drawn around one building is a public
+    #: accusation against whoever occupies it. 1 km is a neighbourhood — enough
+    #: to dispatch an inspector to, not enough to point at a gate.
+    vayudoot_hotspot_min_radius_km: float = 1.0
+    #: Longest gap between consecutive signals that still reads as one ongoing
+    #: event. Shorter than clustering's 30 days, which is a statutory window and
+    #: answers a different question — whether an authority sat on a pattern.
+    #: This answers whether something is happening *now*, and a fortnight is
+    #: already generous for that: a seasonal burn or an industrial stack running
+    #: nightly produces signals far more often.
+    vayudoot_hotspot_window_days: int = 14
+    #: Signals needed before a hotspot is published. One is deliberate and is the
+    #: sharpest difference from clustering, which needs three. A single VIIRS
+    #: detection is an instrument in orbit recording a fire; requiring it to
+    #: repeat would discard exactly the hyper-local event the brief says
+    #: monitoring misses. Confidence, not suppression, is how a thin hotspot is
+    #: reported honestly.
+    vayudoot_hotspot_min_signals: int = 1
+    #: The most confidence a hotspot may carry when every signal supporting it
+    #: came from the public. Hard constraint 7: without a cap, coordinated false
+    #: reporting manufactures a hotspot and a public map becomes a weapon. 0.6
+    #: sits below the 0.7 the severity bands treat as "high", so an uncorroborated
+    #: hotspot is always visible, always marked, and never top of the list.
+    vayudoot_hotspot_uncorroborated_cap: float = 0.6
+    #: Indian National Ambient Air Quality Standards, CPCB notification
+    #: S.O. 384(E) of 18 November 2009, 24-hour averages in µg/m³ (CO in mg/m³,
+    #: which is the unit its standard is written in). A station reading below its
+    #: standard produces no signal at all; see `hotspots._exceedance`.
+    #:
+    #: These are the Indian standards, not the WHO guidelines, which are several
+    #: times stricter. A hotspot is raised so that an Indian authority acts on
+    #: it, and it must be measured against the number that authority is bound by
+    #: — a map flagging half the country for exceeding a guideline nobody is
+    #: obliged to meet tells an inspector nothing.
+    naaqs_standards: dict[str, float] = {
+        "pm25": 60.0,
+        "pm2.5": 60.0,
+        "pm10": 100.0,
+        "no2": 80.0,
+        "so2": 80.0,
+        "o3": 100.0,
+        "co": 2.0,
+        "nh3": 400.0,
+    }
+
     def provider_for(self, tier: Tier = "primary") -> Provider:
         if tier == "fast" and self.vayudoot_model_provider_fast:
             return self.vayudoot_model_provider_fast

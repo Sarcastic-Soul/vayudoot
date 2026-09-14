@@ -20,13 +20,13 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import clustering, errors, filing, lifecycle, pack, register, store
+from . import clustering, errors, filing, hotspots, lifecycle, pack, register, store
 from .agents import draft_rti_application
 from .config import settings
 from .images import UnsupportedImage, normalise, suffix_for
 from .pipeline import new_case, run
 from .ratelimit import limiter
-from .schemas import Case, CaseStatus, Cluster, Report
+from .schemas import Case, CaseStatus, Cluster, Hotspot, Report
 from .tools.authorities import authority_table
 from .tools.geocode import reverse_geocode, search_places
 
@@ -307,6 +307,36 @@ def list_clusters() -> list[Cluster]:
     arithmetic over them, so recomputing costs nothing worth caching.
     """
     return clustering.clusters()
+
+
+@app.get("/hotspots", response_model=list[Hotspot])
+def list_hotspots() -> list[Hotspot]:
+    """Places where pollution is happening, most confident first.
+
+    The unit of work from v0.3 on, and not the same thing as `/clusters`. A
+    cluster is repeat *citizen cases* at one place, used to argue a pattern
+    inside a complaint. A hotspot is what the map shows, and unlike a cluster it
+    can exist with no citizen involvement at all — a satellite detection or a
+    station exceedance raises one on its own.
+
+    Derived on every call for `/clusters`' reason: membership changes whenever a
+    signal arrives, and a cached copy would be wrong within the hour.
+
+    Two fields deserve to be read together. `corroborated` says whether any
+    source outside the public supports this, and `confidence` is capped when it
+    is false, however many reports there are. An interface that shows the
+    confidence without the flag is hiding the part that matters — see hard
+    constraint 7 in `CLAUDE.md`.
+    """
+    return hotspots.current()
+
+
+@app.get("/hotspots/{hotspot_id}", response_model=Hotspot)
+def get_hotspot(hotspot_id: str) -> Hotspot:
+    found = next((h for h in hotspots.current() if h.hotspot_id == hotspot_id), None)
+    if found is None:
+        raise HTTPException(status_code=404, detail=f"Unknown hotspot: {hotspot_id}")
+    return found
 
 
 @app.get("/cases", response_model=list[Case], response_model_exclude=CASE_LIST_EXCLUDE)

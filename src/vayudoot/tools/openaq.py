@@ -95,6 +95,11 @@ def get_nearby_air_quality(latitude: float, longitude: float, radius_km: float =
     return {
         "nearest_station": nearest.get("name"),
         "station_id": nearest.get("id"),
+        # The station's own coordinates, not the ones searched from. Hotspot
+        # detection places a station signal where the instrument is; putting it
+        # at the query point would draw a hotspot around whoever asked.
+        "latitude": coords.get("latitude"),
+        "longitude": coords.get("longitude"),
         "distance_km": distance,
         "provider": (nearest.get("provider") or {}).get("name"),
         "measurements": measurements,

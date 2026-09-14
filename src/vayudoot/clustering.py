@@ -35,7 +35,7 @@ import math
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 
-from . import store
+from . import grouping, store
 from .config import settings
 from .schemas import Case, CaseStatus, Cluster, ClusterMember, PollutionType
 from .tools.geo import haversine_km
@@ -130,7 +130,7 @@ def _observed(case: Case) -> datetime:
 def _groups(cases: Iterable[Case]) -> list[list[Case]]:
     """Partition eligible cases into same-problem groups, one pollution type at a time."""
     by_type: dict[PollutionType, list[Case]] = {}
-    for case in sorted((c for c in cases if _eligible(c)), key=_observed):
+    for case in (c for c in cases if _eligible(c)):
         assert case.evidence is not None  # _eligible guarantees it
         by_type.setdefault(case.evidence.pollution_type, []).append(case)
 
@@ -140,45 +140,28 @@ def _groups(cases: Iterable[Case]) -> list[list[Case]]:
     return groups
 
 
+def _coords(case: Case) -> tuple[float, float]:
+    return (case.report.latitude, case.report.longitude)
+
+
 def _link(cases: Sequence[Case]) -> list[list[Case]]:
     """Leader clustering in observation order, joining to the nearest centroid.
 
-    `cases` must already be sorted by observation time and share one pollution
-    type. Order is deterministic, so the same store always yields the same
-    groups — which is what lets a cluster id be stable.
+    `cases` must share one pollution type. The rule, and why it is centroid
+    linkage rather than nearest-member, lives in `grouping.py`, which hotspot
+    detection uses for the same job over satellite and station observations.
     """
-    radius = settings.vayudoot_cluster_radius_km
-    max_gap = timedelta(days=settings.vayudoot_cluster_window_days)
-
-    groups: list[list[Case]] = []
-    for case in cases:
-        lat, lon = case.report.latitude, case.report.longitude
-        best: list[Case] | None = None
-        best_km = math.inf
-        for group in groups:
-            if _observed(case) - _observed(group[-1]) > max_gap:
-                continue
-            centre_lat, centre_lon = _centroid(group)
-            km = haversine_km(lat, lon, centre_lat, centre_lon)
-            if km <= radius and km < best_km:
-                best, best_km = group, km
-        if best is None:
-            groups.append([case])
-        else:
-            best.append(case)
-    return groups
+    return grouping.link(
+        cases,
+        position=_coords,
+        timestamp=_observed,
+        radius_km=settings.vayudoot_cluster_radius_km,
+        max_gap=timedelta(days=settings.vayudoot_cluster_window_days),
+    )
 
 
 def _centroid(group: Sequence[Case]) -> tuple[float, float]:
-    """Arithmetic mean of the members' coordinates.
-
-    A flat mean is wrong on a globe and irrelevant here: every group spans well
-    under a kilometre, where the error is centimetres.
-    """
-    return (
-        sum(c.report.latitude for c in group) / len(group),
-        sum(c.report.longitude for c in group) / len(group),
-    )
+    return grouping.centroid(group, _coords)
 
 
 # --------------------------------------------------------------------------- #

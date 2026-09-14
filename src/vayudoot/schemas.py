@@ -263,6 +263,129 @@ class Cluster(BaseModel):
     members: list[ClusterMember] = Field(default_factory=list)
 
 
+class SignalSource(str, Enum):
+    """Where an observation came from.
+
+    The distinction that matters is not the technology but whether two
+    observations could have been staged by the same person. `CITIZEN_REPORT` and
+    `CITIZEN_SENSOR` are both ground truth submitted by members of the public and
+    both can be coordinated; `SATELLITE` and `GROUND_STATION` are instruments
+    nobody reporting a hotspot controls. `Hotspot.corroborated` turns on exactly
+    that line — see hard constraint 7 in `CLAUDE.md`.
+    """
+
+    CITIZEN_REPORT = "citizen_report"
+    CITIZEN_SENSOR = "citizen_sensor"
+    SATELLITE = "satellite"
+    GROUND_STATION = "ground_station"
+
+
+#: Sources nobody submitting a report controls. A hotspot supported only by
+#: sources outside this set has its confidence capped, however many there are.
+INDEPENDENT_SOURCES: frozenset[SignalSource] = frozenset(
+    {SignalSource.SATELLITE, SignalSource.GROUND_STATION}
+)
+
+
+class Signal(BaseModel):
+    """One observation that something is polluting at a place and time.
+
+    The unit the detection layer consumes. A citizen's classified photograph is
+    one; so is a VIIRS thermal detection, and so is a station reading above its
+    threshold. Reducing all of them to this shape is what lets a hotspot exist in
+    a district nobody has reported from — which is the whole point of the v0.3
+    reframe, and the reason this type exists rather than hotspots being computed
+    over cases the way clusters are.
+
+    `strength` is deliberately coarse. It is not a probability and nothing
+    calibrates it across sources; it ranks observations within one source and
+    contributes to a hotspot's severity. Reading it as "how likely is this real"
+    across sources would be wrong.
+    """
+
+    source: SignalSource
+    #: Stable identity within the source: a case id, a station id, or a
+    #: satellite detection's coordinates and acquisition time.
+    signal_id: str
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    observed_at: datetime
+    #: What the observation is of. `unclear` is normal and honest for satellite
+    #: and station signals: a thermal anomaly is a fire of unknown fuel, and a
+    #: PM2.5 spike names no source at all. Only a citizen photograph, read by the
+    #: evidence stage, classifies.
+    pollution_type: PollutionType = PollutionType.UNCLEAR
+    #: How sure we are the observation is *real*. For a citizen photograph this
+    #: is the evidence stage's own calibrated confidence; for a satellite
+    #: detection it is VIIRS's confidence band; for a station it is high, because
+    #: a reference-grade instrument reporting a number is not in doubt.
+    strength: float = Field(
+        default=0.5, ge=0.0, le=1.0, description="How sure we are this observation is real"
+    )
+    #: How *big* the observed thing is, which is a different question and was
+    #: worth the extra field. Collapsing the two made a single confident
+    #: photograph of a small fire read as `severe`, because a model being sure of
+    #: what it saw is not the same as what it saw being serious. Sources measure
+    #: magnitude in their own terms — an evidence severity band, fire radiative
+    #: power, how far a reading is past its standard — and each is normalised
+    #: here rather than compared across sources.
+    magnitude: float = Field(
+        default=0.5, ge=0.0, le=1.0, description="How large the observed event is"
+    )
+    #: One line a person can read, carried through to the map so a hotspot can
+    #: always show what it was built from.
+    summary: str = ""
+
+    @property
+    def is_independent(self) -> bool:
+        return self.source in INDEPENDENT_SOURCES
+
+
+class Hotspot(BaseModel):
+    """A place where pollution is happening, built from every signal that agrees.
+
+    The unit of work of the system from v0.3 on. `Cluster` is the older, narrower
+    idea — repeat *citizen cases* at one place, used to argue a pattern inside a
+    complaint — and it stays for that job. A hotspot is what the map shows and
+    what an authority acts on, and unlike a cluster it can exist with no citizen
+    involvement at all.
+
+    Derived rather than stored, for `Cluster`'s reason: membership changes
+    whenever a signal arrives, and a cached copy would be wrong within the hour.
+    What is stored is the *signals* — a satellite scan cannot be recomputed after
+    the fact the way a case can be re-read.
+    """
+
+    hotspot_id: str
+    pollution_type: PollutionType
+    centre_latitude: float
+    centre_longitude: float
+    #: Never smaller than the configured floor, however tightly the signals
+    #: agree. A hotspot drawn around a single building is a public accusation
+    #: against whoever occupies it; see hard constraint 7.
+    radius_km: float
+    #: How much the system believes this is real, 0 to 1. Capped below 1 unless
+    #: an independent source agrees — see `corroborated`.
+    confidence: float = Field(ge=0.0, le=1.0)
+    severity: Literal["low", "moderate", "high", "severe"]
+    #: True when at least one satellite or station signal supports the hotspot.
+    #: False means every signal came from the public, which caps confidence no
+    #: matter how many reports there are: otherwise coordinated false reporting
+    #: manufactures a hotspot and the map becomes a weapon.
+    corroborated: bool
+    signal_count: int
+    #: Signals per source, so the interface can show what a hotspot rests on
+    #: without walking the list.
+    source_counts: dict[SignalSource, int] = Field(default_factory=dict)
+    first_seen_at: datetime
+    last_seen_at: datetime
+    span_days: int
+    #: Distinct citizen cases contributing, which is the number a complaint
+    #: cites. Zero is normal for a hotspot the satellites found first.
+    case_ids: list[str] = Field(default_factory=list)
+    signals: list[Signal] = Field(default_factory=list)
+
+
 class RTIApplication(BaseModel):
     """A Right to Information application under the RTI Act, 2005.
 
