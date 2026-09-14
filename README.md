@@ -3,7 +3,18 @@
 **An agent that takes a citizen's pollution report from a photograph to a filed,
 tracked, and escalated complaint.**
 
-Built on the [Strands Agents SDK](https://strandsagents.com/).
+Built on the [Strands Agents SDK](https://strandsagents.com/), with
+[Gemini](https://ai.google.dev/) doing the inference.
+
+> **This README describes what ships today, and the point of view is changing.**
+> Through v0.2 the unit of work was one citizen's case, and this document
+> reflects that. v0.3 makes the unit of work a *hotspot*: a corroborated
+> pollution event that satellite and station evidence can raise on their own,
+> which a citizen photograph then upgrades. Complaint drafting, filing and RTI —
+> everything below — are retained as actions taken from a detection rather than
+> as the purpose of the system. The reasoning is in
+> [`docs/SCOPE.md`](docs/SCOPE.md) under v0.3. Sections here are rewritten as
+> that work lands, rather than in advance of it.
 
 ---
 

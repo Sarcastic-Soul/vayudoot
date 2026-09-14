@@ -1,5 +1,11 @@
 # Architecture
 
+> **Scope note.** This document describes the pipeline that ships today,
+> whose unit of work is a case. v0.3 makes the unit of work a *hotspot* and
+> adds a detection, forecasting and federation layer above this pipeline;
+> everything described here is retained beneath it. See [`SCOPE.md`](SCOPE.md)
+> under v0.3. This file is updated as that layer lands, not before.
+
 ![Vayudoot architecture](architecture.svg)
 
 ## Why this shape

@@ -188,200 +188,224 @@ Consider it first.
 
 # Scope — v0.3: the Code for Communities pivot
 
-## Why this section exists
+## What changed and why this section is long
 
-v0.1 and v0.2 were built for an AWS hackathon. That target is dropped. The new
-target is **Build with AI: Code for Communities — Second Edition**, a Google
-Cloud / Hack2skill / GDG India event, **problem statement 02, Clean Air &
-Climate Resilience**. The brief, the rules and the evaluation weights are
-recorded verbatim in `PROBLEM-STATEMENTS.md`; read that file before arguing with
-anything below.
+The AWS hackathon is dropped. The new target is **Build with AI: Code for
+Communities — Second Edition**, a Google Cloud / Hack2skill / GDG India event,
+**problem statement 02, Clean Air & Climate Resilience**. The brief, the rules
+and the evaluation weights are in `PROBLEM-STATEMENTS.md`; read that before
+arguing with anything here.
 
-**Hard deadline: 30 September 2026.** At the time of writing that is sixteen
-days.
+**Hard deadline: 30 September 2026.** At the time of writing, sixteen days.
 
-This is a change of target, not a change of product. The pivot is cheap because
-the thing already built is close to what the new brief asks for — but "close" is
-not "aligned", and the gaps are where the marks are.
+The first pass at this section assumed the pivot was a matter of adding two
+missing features. That was wrong, and it is worth saying so rather than quietly
+rewriting: the point of view is wrong, not the feature list.
 
-## Eligibility, settled
+## The diagnosis
 
-Rule 2 disqualifies pre-existing projects "unless substantially extended for
-this challenge". The first commit is dated 6 September 2026 and the hackathon
-window opened 11 August 2026, so the entire repository was written inside the
-window. The work in this section is a substantial extension on top of that.
-Nothing here depends on arguing the point, but the point is worth not losing.
+**Vayudoot's protagonist is a citizen with a grievance.** The unit of work is a
+*case*: one report becomes one complaint to one authority, tracked to
+resolution. The API says so plainly — twenty-three routes, seventeen of them
+under `/cases/{id}`. The verbs are classify, corroborate, draft, file, escalate.
 
-## What the new brief asks for, against what exists
+**The brief's protagonist is a city or state air quality cell.** The unit of work
+is a *hotspot*: a place where pollution is happening that macro-level monitoring
+missed, carrying a severity, a trend and a forecast. The verbs are detect,
+forecast, alert, coordinate, share.
 
-The challenge text: *combine citizen-sourced data (photos, local sensor
-readings) with satellite imagery and meteorological data; detect hidden
-pollution hotspots; forecast air quality spikes across major economic corridors;
-alert relevant authorities for rapid intervention; designed for interoperability
-so Indian cities and states can share predictive models and coordinate
-resources.*
+These are not the same product. A complaint desk that happens to collect data is
+not a climate action platform, however good the complaints are.
 
-| Clause | Where it stands |
-| --- | --- |
-| Citizen photos | Built. Evidence stage, up to four photographs per report. |
-| Local sensor readings | Built. OpenAQ ground stations. |
-| Satellite imagery | Partial. FIRMS thermal detections, no imagery. |
-| Meteorological data | Built. Open-Meteo, plus the upwind back-trace. |
-| Detect hidden hotspots | Built. Clustering is exactly this, and it is the strongest existing answer to the brief. |
-| **Forecast air quality spikes** | **Missing entirely.** Nothing in the system predicts. |
-| Alert authorities | Built, and deliberately stops short of delivery. See below. |
-| **Interoperability / sharing across states** | **Explicitly a non-goal in v0.1**, on the grounds that it is invisible in a demo. That reasoning is now wrong: it is 40% of the score. |
+**But the bridge is already built, and it is the best part of the system.** A
+citizen photograph on its own is an anecdote. Joined to FIRMS thermal
+detections, OpenAQ station readings and wind data by the corroboration graph, it
+becomes a *measurement* — which is exactly what the brief means by combining
+citizen-sourced data with satellite imagery and meteorological data. That
+machinery is already written, already tested, and already better than the brief
+asks for. The error was pointing its output at a complaint letter instead of at
+a map.
 
-The evaluation weights are the real specification. Depth & Reach Across India
-(20%) plus Deployability & Scalability (20%) are 40% of the total and reward the
-architecture and the scale story rather than features. Problem-Solution Fit is a
-further 20% and is scored against the clause list above, including the two rows
-marked missing.
+## The reframe
 
-## Constraint changes
+Vayudoot stops being a complaint desk that gathers data along the way, and
+becomes **a hyper-local pollution detection network in which citizen reports are
+one class of sensor**. Complaint drafting, filing and RTI survive — demoted from
+the product's purpose to one of the actions available from a detection, which is
+what "alert relevant authorities for rapid intervention" actually describes.
 
-### New hard constraint: Google AI, and it is not optional
+Nothing already built is thrown away. `images.py`, the evidence agent, the
+corroboration graph, every tool, jurisdiction, drafting, the evidence pack, the
+public register, storage, rate limiting and the model layer all carry over
+unchanged. What changes is what sits on top of them and what the front door
+shows.
 
-Rule 1 of the event: no Google AI, no consideration. This is now recorded in
-`CLAUDE.md` as hard constraint 6. The shipped configuration must put **both**
-tiers on Gemini.
+### The new spine: `Hotspot`
 
-This partly voids the two-provider split described in hard constraint 5. That
-split existed to spread one report across two free tiers, with the two judgement
-calls on Ollama and the eight mechanical ones on Gemini. Under the new rules
-that arrangement puts the only calls a judge would call meaningful — reading the
-photograph, drafting the complaint — on a non-Google model, which is the
-specific thing rule 1 forbids.
+A hotspot is a place and a pollution type, carrying a confidence, a severity
+trend over time, the signals supporting it, a forecast, and the jurisdiction
+that owns it.
 
-What survives: the **tier split itself**, as a cost control within one provider,
-primary on Gemini flash and fast on Gemini flash-lite. What changes: the shipped
-`.env` flips to `VAYUDOOT_MODEL_PROVIDER=gemini` with the fast override either
-unset or also `gemini`. What stays: `build_model()` as the only place a provider
-is constructed, and Ollama as a working offline path for development and for the
-test suite. The abstraction is not being removed — it is what makes the claim
-"this runs on a state's own infrastructure" true rather than aspirational, and
-that claim is worth marks under Deployability.
+`Cluster` in `schemas.py` is already most of this object — it has an id, a
+pollution type, a centroid, members and a time window, and `clustering.py`
+already contains the three hard judgements about what makes two observations
+*the same problem*. The work is promotion, not invention: widen its inputs,
+give it a forecast and a severity score, and make it a first-class stored object
+rather than a view computed over cases.
 
-### Unchanged: nothing reaches a real regulator, and a human confirms
+### The one decision that changes the whole build
 
-Hard constraints 1 and 2 stand exactly as written. The brief says "alert
-relevant authorities for rapid intervention"; the system drafts, addresses and
-raises the alert, and does not deliver it. Every committed address stays on
-`.invalid`, `tests/test_filing_safety.py` stays as it is, and the pipeline
-continues to halt at `AWAITING_CONFIRMATION`.
+**A hotspot must not require a citizen report to exist.**
 
-This is a deliberate position and should be presented as one in the deck rather
-than hidden: a prototype that can email a real State Pollution Control Board
-during a demo is a liability, and a system that files on a citizen's behalf
-without their confirmation is a worse one. Say so on a slide.
+Today, clustering runs over cases, so a hotspot can only exist where somebody
+photographed something. That is the failure mode of every crowdsourced platform:
+the map is empty in every district where nobody has reported yet, which is most
+of India, and an empty map is indistinguishable from clean air.
 
-### Free tier, under a new kind of pressure
+So satellite detections and station anomalies must **also** seed hotspots. FIRMS
+covers the whole country and publishes continuously, which means the map has
+content nationally from the first minute, before a single citizen has used the
+app. A citizen photograph then does the thing it is uniquely good at: it
+*upgrades* a hotspot — raising its confidence, naming what is actually burning,
+and turning a thermal anomaly into a classified, describable event that a
+complaint can be written about.
 
-Hard constraint 3 is unchanged and is now the binding constraint on which Google
-services can be used, because the recommended stack is split down the middle by
-it:
+This also settles a problem the citizen-only design had no answer for. Fifteen
+coordinated fake reports would have manufactured a hotspot. Under the new rule a
+hotspot's confidence is capped unless independent evidence agrees, and the
+corroboration graph that produces that agreement is already written.
 
-**Usable — genuine free tier, no card:** Gemini API via Google AI Studio;
-BigQuery sandbox; Firebase Spark plan; Google Earth Engine on a noncommercial
-registration.
+### Two faces, one system
 
-**Not usable without a billing account and a card:** Vertex AI, Cloud Run, Cloud
-Functions, Google Maps Platform, Cloud Speech-to-Text, Cloud Text-to-Speech,
-Cloud Translation.
+- `/` — **the operations view.** Map first: live hotspots ranked by severity,
+  corridor forecasts, the evidence behind each, and the alert an authority can
+  raise from one. This becomes the landing surface.
+- `/report` — **citizen intake**, the existing form and pipeline, unchanged.
+- `/register` — **the public record**, the existing register, unchanged.
 
-Two consequences. The deployment stays on **Render**, which already works and is
-already live — nothing in the rules requires hosting on Google Cloud, only that
-Google AI is integrated. And **Vertex AI is off the table**, which decides the
-shape of the forecasting work below.
-
-There is no card, and this is settled rather than pending. A service that needs
-one is not a candidate, and a plan that assumes one will appear is not a plan.
-Anything below that could only be built on Vertex AI is built another way or is
-not built.
+No login. A real operations console would have roles, and roles cost a day and
+show nothing — but more than that, a *public* dashboard is the stronger position
+for something claiming to be a digital public good: everyone sees the same air
+data, which is the whole argument. "Authority view" is a view, not an account.
 
 ## In scope for v0.3
 
 Ordered by marks per day, which is the only sensible order with sixteen days
-left.
+left. Rubric weights are in `PROBLEM-STATEMENTS.md`.
 
-- [ ] **Both tiers on Gemini.** Flip the shipped configuration, update
-      `docs/deployment.md` — which still says "AWS credits" in its cost table —
-      and update the README's framing. Half a day, and rule 1 makes it the one
-      item that is not optional.
+- [x] **Both tiers on Gemini.** Rule 1: no Google AI, no consideration. Done.
 
-- [ ] **Authority table to full national coverage.** 24 states are present; 28
-      states and 8 union territories exist. The missing entries are the
-      north-east, the union territories, Jammu & Kashmir and Ladakh. This is a
-      JSON edit with no code change, it is the single cheapest thing that moves
-      Depth & Reach Across India, and the coverage view already renders it. A
-      judge asking "does this work outside Delhi" gets a list rather than an
-      assurance.
+- [ ] **`Hotspot` as a stored first-class object, seeded from satellite and
+      station data as well as citizen cases.** This is the pivot. Everything
+      below depends on it existing.
 
-- [ ] **Forecasting.** The brief names it, nothing in the system does it, and
-      25% of the score is AI / Technical Execution. Vertex AI would be the
-      obvious tool and is excluded by the free-tier constraint, so the version
-      being built is: Open-Meteo's forecast endpoint for the next 72 hours,
-      OpenAQ's recent history for the location, and the cluster's own report
-      history, joined by a Gemini call with structured output into a risk
-      window with a stated confidence and the reasoning that produced it.
+- [ ] **The operations view as the landing surface.** Map, ranked hotspot list,
+      drill-down to the evidence and the forecast. Reuses the existing shell,
+      map components and theming rather than starting a new interface — the
+      front door changes, the furniture does not.
+
+- [ ] **Forecasting.** The brief names it and nothing in the system predicts.
+      Vertex AI is the obvious tool and is excluded by the free-tier constraint,
+      so: Open-Meteo's 72-hour forecast, recent OpenAQ history, and the hotspots
+      currently active upwind, joined by a Gemini call with structured output
+      into a risk window with a stated confidence and its reasoning.
 
       This is a model reasoning over real data, not a trained predictor, and it
-      must be labelled as exactly that in the interface and in the deck. An
-      overclaimed forecast is worse than an honest one — a judge who finds the
-      label has learned the project is careful, and a judge who finds the
-      overclaim has learned the opposite.
+      must be labelled as exactly that everywhere it appears. An overclaimed
+      forecast is worse than an honest one: a judge who finds the label learns
+      the project is careful, and one who finds the overclaim learns the
+      opposite.
 
-- [ ] **Interoperability, stated concretely.** The non-goal is reversed because
-      40% of the score rests on it. What is *not* being built is federated model
-      training, which cannot be demonstrated in sixteen days and could not be
-      seen if it were. What is being built is the part a second state could
-      actually use: the authority table as a documented, versioned open data
-      file another instance can fork and extend; the public register at
-      `GET /register` as a documented open endpoint with a published schema, so
-      two instances can read each other's confirmed cases; and a page in
-      `docs/` stating precisely what a second state has to do to stand up its
-      own instance. Interoperability as a described and demonstrated data
-      contract, which is what "designed as a digital public good" means in
-      practice.
+- [ ] **Economic corridors as data.** The brief says "across major economic
+      corridors", so they are named objects, not an abstraction: NCR, the
+      Delhi–Mumbai Industrial Corridor, the Punjab–Haryana stubble belt,
+      Mumbai–Pune, Chennai–Bengaluru. A JSON file beside `authorities.example.json`,
+      because jurisdiction data is data. Forecasts are reported per corridor.
+
+- [ ] **Federation, demonstrated rather than asserted.** Each deployment is a
+      **node** with a declared region. A node publishes its hotspots on an open,
+      versioned feed and can subscribe to a neighbour's.
+
+      The demo this exists for: a Punjab node detects stubble burning; the Delhi
+      node ingests it and its forecast shows the incoming plume a day and a half
+      before it arrives. That is the actual story of Indian air pollution, it is
+      the clearest possible answer to "share predictive models and coordinate
+      resources", and it needs no model training.
+
+      Be precise about the claim. What is shared is a **detection layer** —
+      hotspot feeds, corridor definitions, detection thresholds, the authority
+      table — not trained weights. Sharing weights is not happening in sixteen
+      days, and claiming it in a deck without building it costs more than it
+      earns.
+
+- [ ] **Citizen sensor readings.** The brief's own sentence is "photos, local
+      sensor readings", and only the first half exists. An endpoint accepting a
+      reading from a low-cost PM sensor, feeding hotspot confidence the same way
+      a station reading does. A schema and a route.
+
+- [ ] **Authority table to full national coverage.** 24 states present; 28 states
+      and 8 union territories exist. A JSON edit with no code change, and the
+      cheapest thing on this list that moves Depth & Reach Across India.
 
 - [ ] **Submission package.** Public repo (already), a 3–5 minute end-to-end
-      demo video, a 10–12 slide deck covering problem, solution, AI approach,
-      who it serves, deployability and national scale, a 2–3 line description,
-      and the deployed link. The deck and the video are not overhead — under
-      these weights they are where Deployability and Impact are actually
-      argued, and they need days, not the last evening.
+      demo video, a 10–12 slide deck, a 2–3 line description, the deployed link.
+      Under these weights the deck is where Deployability and Impact are
+      actually argued. It needs days, not the last evening.
 
-## Under consideration, not yet committed
+## Under consideration, not committed
 
-- **ISRO / Bhuvan or Earth Engine imagery.** The organisers name both and the
-  brief says "satellite imagery", which FIRMS detections are not. Earth Engine
-  is free on a noncommercial registration. Genuine depth if it lands; a rabbit
-  hole if it does not, and v0.1 already called it one. Decide by day four or
-  drop it.
+- **Population exposure per hotspot.** "Threatens public health" is the brief's
+  own framing and Impact Potential is 15%. A coarse district population density
+  table shipped as data would give every hotspot a number of people. Cheap if
+  the data is clean, droppable if it is not.
+
+- **ISRO / Bhuvan or Earth Engine imagery.** The organisers name both, and FIRMS
+  detections are not imagery. Free on a noncommercial registration. Decide by
+  day four or drop it; v0.1 already called tiles a rabbit hole and was right.
 
 - **CPCB / data.gov.in station data alongside OpenAQ.** More India-specific than
-  OpenAQ and named by the organisers as a source, which is worth something under
-  Problem-Solution Fit. Cheap if the endpoint behaves.
-
-- **Multilingual interface.** The complaint is already drafted in the region's
-  language, which is the part with legal weight. Translating the interface
-  chrome is a larger job for a smaller gain, and the build requirement asks for
-  multilingual support "where the track calls for it" — track 02 does not, track
-  01 does.
+  OpenAQ and named by the organisers. Cheap if the endpoint behaves.
 
 ## Still out of scope
 
-Every non-goal from v0.1 and v0.2 stands unless listed above, and three are
-worth restating because the new brief will be read as inviting them.
+Every non-goal from v0.1 and v0.2 stands unless listed above. Four are worth
+restating because the new brief reads as an invitation to build them.
 
-**Voice intake.** Cloud Speech-to-Text needs a billing account, and track 02
-does not ask for voice. Track 01 does; we are not entering track 01.
+**Accounts, logins and roles.** Decided above: the operations view is public.
 
-**Federated model training.** Reversed only as far as the data contract above.
-Actually training or exchanging models across instances is not happening in
-sixteen days, and claiming it in a deck without building it is the kind of thing
-that loses a project more than it gains.
+**Voice intake.** Cloud Speech-to-Text needs a billing account and there is no
+card. Track 02 does not ask for voice; track 01 does, and we are not entering
+track 01.
+
+**Training or exchanging models between nodes.** Federation is reversed only as
+far as the data contract. Actual federated learning is not happening in sixteen
+days.
 
 **A real delivery transport, automatic escalation, and naming a responsible
-party.** Safety properties. The brief's "alert relevant authorities" does not
-change them.
+party.** Safety properties, and the reframe makes the third one sharper rather
+than softer — see hard constraint 7 in `CLAUDE.md`. "Alert relevant authorities"
+does not change any of them.
+
+## The free-tier constraint, settled
+
+There is no card. Google Cloud's free tier — the $300 trial and the Always Free
+products alike — requires a Cloud Billing account, which requires a card on file
+even though it is never charged. So Vertex AI, Cloud Run, Cloud Functions, Maps
+Platform, Speech-to-Text, Text-to-Speech and Translation are all unavailable.
+
+The Gemini API through Google AI Studio needs a Google account and nothing else,
+which is why it is the one Google service this project uses — and it happens to
+be the one the rules require. Hosting stays on Render; nothing in the rules asks
+for Google Cloud hosting, only Google AI.
+
+This is settled, not pending. A plan that assumes a card will appear is not a
+plan, and anything that could only be built on Vertex AI is built another way or
+is not built.
+
+## Eligibility, settled
+
+Rule 2 disqualifies pre-existing projects "unless substantially extended for
+this challenge". The first commit is dated 6 September 2026 and the window
+opened 11 August 2026, so the whole repository was written inside it. The work
+above is a substantial extension on top of that. Nothing here depends on
+arguing the point, but the point is worth not losing.

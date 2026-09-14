@@ -5,10 +5,26 @@ so they do not get relitigated or quietly undone.
 
 ## What this is
 
-An agent that takes a citizen's photograph of a pollution event and runs the
-whole case end to end: classify the photo, corroborate it against independent
-evidence, resolve which authority holds jurisdiction, draft the formal complaint,
-file it, then track and escalate it when the statutory window lapses.
+A hyper-local pollution detection network in which citizen reports are one class
+of sensor. It joins citizen photographs to satellite thermal detections, ground
+station readings and meteorology to find pollution events that macro-level
+monitoring misses, forecasts where air quality is about to degrade, and hands
+the relevant authority a corroborated case it can act on — drafted, jurisdiction
+resolved, and tracked if it is filed.
+
+**The unit of work is a hotspot, not a case.** That sentence is the product
+decision the whole design turns on, and it is recent: through v0.2 the unit of
+work was one citizen's complaint, and the system was a complaint desk that
+collected data along the way. `docs/SCOPE.md` under v0.3 records why that point
+of view was wrong and what it changed. Complaint drafting, filing and RTI are
+retained and are still the strongest thing the project does — they are now one
+of the *actions* available from a detection rather than the purpose of the
+system.
+
+A hotspot does not need a citizen report to exist. Satellite and station
+evidence seed hotspots on their own; a citizen photograph upgrades one. If you
+find yourself writing code that assumes otherwise, read the v0.3 section before
+continuing.
 
 Built on the Strands Agents SDK. See `README.md` for the user-facing description
 and `docs/architecture.md` for how the pieces fit and why.
@@ -91,6 +107,31 @@ Gemini via AI Studio, BigQuery sandbox, Firebase Spark and Earth Engine
 noncommercial need no card. Vertex AI, Cloud Run, Maps Platform, Speech-to-Text
 and Translation all need a billing account and are therefore out. See
 `docs/SCOPE.md` under v0.3.
+
+### 7. A hotspot is a public claim about a place. Treat it as one
+
+Through v0.2 the system's output was a private complaint to an authority. It is
+now a public map of where pollution is happening, plus a forecast of where it is
+about to happen. That is a different class of harm, and three rules follow.
+
+**Area granularity, never a point on a building.** A tightly drawn hotspot
+around one facility is a public accusation against an identifiable operator even
+though no name appears anywhere. Hotspots carry a minimum radius, render as an
+area, and always display their confidence. Constraint 4's non-goal — never
+naming a responsible party — is sharper here, not softer.
+
+**Corroboration gates publication.** A hotspot's confidence is capped unless
+independent evidence agrees with the citizen reports. Without this, coordinated
+false reporting manufactures a hotspot, and the map becomes a weapon. The
+corroboration graph already produces the agreement; it must gate the hotspot,
+not merely annotate it.
+
+**A forecast is a model's reasoning, never an official advisory.** Everything
+predictive is labelled as model-derived, shows the inputs it reasoned over, and
+states conditions rather than instructions. It must never present itself as, or
+be confusable with, a CPCB or IMD forecast. People act on air quality
+predictions — that is the point of making them — so an unlabelled wrong one does
+real harm to real lungs.
 
 ## Conventions
 
