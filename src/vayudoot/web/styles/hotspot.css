@@ -1,0 +1,593 @@
+/* The operations view and one hotspot.
+ *
+ * The layout question this file answers is which of two things is larger. An
+ * operations view is opened to answer "where", so the map takes the majority of
+ * the surface and the ranked list sits beside it on anything wide enough and
+ * under it on a phone. The map is sticky at desktop width: the list is what
+ * gets scrolled, and a map that scrolls away is a map you have to keep
+ * scrolling back to.
+ *
+ * The presentation rule underneath everything here is hard constraint 7.
+ * Severity is on a colour ramp; confidence is a number in plain ink and is on
+ * no ramp at all; and `corroborated: false` gets a full-width band in attention
+ * colour under every confidence it qualifies. A capped number shown without
+ * the cap is the one thing this interface must never do, so the band is
+ * deliberately the loudest element on an uncorroborated card. */
+
+/* ── the view ────────────────────────────────────────────────────────── */
+
+.ops-head { margin-bottom: var(--s3); }
+
+/* The one-line summary, announced when it changes. It carries the count and
+   how much of it is uncorroborated, so a reader who never scrolls still knows
+   how the list should be read. */
+.ops-status {
+  margin-bottom: var(--s4);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+}
+
+.ops-layout { display: grid; gap: var(--s5); align-items: start; }
+
+.ops-list-col { min-width: 0; }
+.ops-map-col { min-width: 0; }
+
+.ops-map {
+  height: 44vh;
+  min-height: 300px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  z-index: 0;
+}
+
+.hotspot-map {
+  height: 300px;
+  margin-bottom: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  z-index: 0;
+}
+
+.map-wrap.is-full .ops-map,
+.map-wrap.is-full .hotspot-map {
+  height: 100dvh;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.map-caption {
+  margin-bottom: var(--s5);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+}
+
+/* ── the legend ──────────────────────────────────────────────────────────
+   Two rows, because there are two variables on the map. Merging them into one
+   row is how a reader comes to believe a dashed red circle is a fifth severity
+   band. */
+
+.legend {
+  display: grid;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.legend-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+
+.legend-label {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  flex: none;
+  min-width: 62px;
+}
+
+.legend ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend li { display: flex; align-items: center; gap: 6px; color: var(--ink); }
+
+.legend-swatch {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+}
+
+.legend-ring {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--ink-soft);
+}
+
+.legend-ring.is-solid { background: color-mix(in srgb, var(--ink-soft) 22%, transparent); }
+.legend-ring.is-dashed { border-style: dashed; }
+
+.legend-note { color: var(--ink-soft); font-size: var(--t-meta); }
+
+/* The swatches borrow the same ramp as the chips. The map itself draws in
+   fixed hexes — it sits on light tiles in both themes — so these are the
+   theme-aware cousins of those, close enough to be recognised. */
+[data-severity="low"] { --sev: var(--sev-low); --sev-tint: var(--sev-low-tint);
+  --sev-line: var(--sev-low-line); }
+[data-severity="moderate"] { --sev: var(--sev-moderate); --sev-tint: var(--sev-moderate-tint);
+  --sev-line: var(--sev-moderate-line); }
+[data-severity="high"] { --sev: var(--sev-high); --sev-tint: var(--sev-high-tint);
+  --sev-line: var(--sev-high-line); }
+[data-severity="severe"] { --sev: var(--sev-severe); --sev-tint: var(--sev-severe-tint);
+  --sev-line: var(--sev-severe-line); }
+
+.legend-swatch { color: var(--sev); background: var(--sev-tint); }
+
+/* ── the ranked list ─────────────────────────────────────────────────── */
+
+.hotspot-list { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
+
+.hotspot-list-skeleton {
+  display: grid;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hotspot-list-skeleton li { height: 168px; border-radius: var(--radius); }
+
+.hotspot-card {
+  display: grid;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s4);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+}
+
+.hotspot-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-2); }
+.hotspot-card:active { transform: translateY(1px); }
+
+.hotspot-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.hotspot-kind {
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-tight);
+  text-transform: capitalize;
+}
+
+.hotspot-id {
+  flex: none;
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}
+
+/* ── severity and confidence, kept apart ─────────────────────────────────
+   Side by side, each under its own word. The labels are load-bearing: "72%"
+   next to "High" with nothing naming them is exactly how two measures get
+   read as one. */
+
+.figures { display: flex; flex-wrap: wrap; gap: var(--s4) var(--s5); }
+
+.figures .figure { display: grid; gap: 4px; align-content: start; }
+
+.figure-label {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.sev {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  text-transform: capitalize;
+  color: var(--sev, var(--ink));
+  background: var(--sev-tint, var(--surface-2));
+  border: 1px solid var(--sev-line, var(--line));
+  border-radius: var(--radius-pill);
+}
+
+.sev-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Confidence is deliberately colourless. The meter is a length, the number is
+   the fact, and neither borrows the severity ramp. */
+.conf { display: grid; gap: 4px; min-width: 116px; }
+
+.conf-num { font-size: var(--t-lead); font-weight: var(--w-semi); line-height: 1.1; }
+
+.meter {
+  display: block;
+  height: 6px;
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.meter-fill { display: block; height: 100%; background: var(--ink-soft); }
+
+/* A capped meter gets a hatched fill rather than a second colour, so it reads
+   as "this bar cannot go further" instead of as a fifth status hue. */
+.conf.is-capped .meter-fill {
+  background: repeating-linear-gradient(
+    135deg, var(--attention) 0 4px, var(--attention-tint) 4px 8px);
+}
+
+/* ── corroboration ───────────────────────────────────────────────────────
+   Full width, under the confidence it qualifies, in words. On an
+   uncorroborated hotspot this is the loudest thing on the card on purpose. */
+
+.corr {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.corr svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.corr-body { display: grid; gap: 4px; min-width: 0; }
+.corr-label { font-weight: var(--w-semi); }
+.corr-detail { color: inherit; opacity: .92; font-weight: var(--w-normal); }
+
+.corr.is-ok {
+  color: var(--ok);
+  background: var(--ok-tint);
+  border-color: var(--ok-line);
+}
+
+.corr.is-uncorroborated {
+  color: var(--attention);
+  background: var(--attention-tint);
+  border-color: var(--attention-line);
+}
+
+.corr.is-full { padding: var(--s3) var(--s4); font-size: var(--t-body); }
+.corr.is-full .corr-detail { font-size: var(--t-meta); }
+
+/* ── where a hotspot's signals came from ─────────────────────────────── */
+
+.hotspot-sources { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+.src {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+/* Independent evidence is the half of the tally that decides corroboration,
+   so it is drawn in ink rather than in the muted grey of the rest. */
+.src.is-independent {
+  color: var(--ink);
+  background: var(--info-tint);
+  border-color: var(--info-line);
+}
+
+.src svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hotspot-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.ops-caveat { margin-top: 0; }
+
+/* ── the empty state ─────────────────────────────────────────────────────
+   The state this instance is in most of the time, and the one a first-time
+   reader is most likely to hit. It has one sentence to get right — an empty
+   map is not clean air — and then it says what a hotspot could be built from,
+   so that "nothing detected" is legible as a statement about coverage. */
+
+.ops-empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--s3);
+  padding: var(--s5) var(--s4);
+  background: var(--surface);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+}
+
+.ops-empty > svg {
+  width: 30px;
+  height: 30px;
+  color: var(--ink-soft);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.ops-empty h3 { font-size: var(--t-lead); }
+
+.ops-empty p {
+  font-size: var(--t-meta);
+  line-height: var(--lh-body);
+  color: var(--ink-soft);
+  max-width: 56ch;
+}
+
+.ops-empty-lead strong { color: var(--ink); font-weight: var(--w-semi); }
+
+.source-key {
+  display: grid;
+  gap: var(--s3);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source-key li, .source-tally li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.source-key li.is-independent, .source-tally li.is-independent {
+  border-left-color: var(--info);
+  background: var(--info-tint);
+}
+
+.source-key svg, .tally-mark svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.source-key strong { display: block; font-size: var(--t-body); font-weight: var(--w-semi); }
+.source-key p { margin-top: 2px; }
+
+/* ── one hotspot ─────────────────────────────────────────────────────── */
+
+.hotspot-lead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  font-size: var(--t-body);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+}
+
+.hotspot-lead strong { color: var(--ink); text-transform: capitalize; }
+
+.hotspot-lead svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-top: 3px;
+  color: var(--ink-soft);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+.hotspot-headline {
+  display: grid;
+  gap: var(--s4);
+  padding: var(--s4);
+  margin-bottom: var(--s5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+
+.figures.is-large .conf-num { font-size: var(--t-title); }
+.figures.is-large .sev { font-size: var(--t-body); padding: 5px 14px 5px 11px; }
+.figures.is-large .conf { min-width: 150px; }
+.figures.is-large .meter { height: 8px; }
+
+.source-tally {
+  display: grid;
+  gap: var(--s2);
+  margin: 0 0 var(--s5);
+  padding: 0;
+  list-style: none;
+}
+
+.tally-body { display: grid; gap: 2px; min-width: 0; }
+.tally-body strong { font-size: var(--t-body); font-weight: var(--w-semi); }
+
+.tally-body span {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.hotspot-cases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: 0 0 var(--s4);
+  padding: 0;
+  list-style: none;
+}
+
+.hotspot-cases button.link { font-variant-numeric: tabular-nums; }
+
+/* ── the signals ─────────────────────────────────────────────────────────
+   A list and never pins on a map. Each signal has coordinates, and plotting
+   them would hand back the address the hotspot's radius exists to withhold —
+   hard constraint 7. */
+
+.signal-lead {
+  margin-bottom: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+}
+
+.signal-lead strong { color: var(--ink); font-weight: var(--w-semi); }
+
+.signal-list { display: grid; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
+
+.signal {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.signal.is-independent { border-left-color: var(--info); }
+
+.signal-mark svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.signal-body { display: grid; gap: 4px; min-width: 0; flex: 1; }
+
+.signal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.signal-source { font-weight: var(--w-semi); }
+.signal-when { font-size: var(--t-meta); color: var(--ink-soft); }
+
+.signal-summary {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.signal-figures { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); margin-top: 2px; }
+
+.signal-figures > span { display: inline-flex; align-items: baseline; gap: 6px; }
+.signal-figures .figure-label { font-size: 10px; }
+.signal-kind { font-size: var(--t-meta); color: var(--ink-soft); text-transform: capitalize; }
+
+/* ── wider ───────────────────────────────────────────────────────────────
+   The map takes the larger column and stays put while the list is scrolled.
+   700px is where the shell gains a sidebar; 900px is where two columns stop
+   squeezing the cards, so the split happens there and not before. */
+
+@media (min-width: 900px) {
+  .ops-layout { grid-template-columns: minmax(0, 1.45fr) minmax(310px, 1fr); }
+
+  .ops-map-col { position: sticky; top: var(--s4); }
+
+  .ops-map { height: min(62vh, 620px); }
+
+  .hotspot-map { height: 360px; }
+
+  .ops-empty { padding: var(--s6) var(--s5); }
+}
+
+/* A phone: one column, and the map is still the first thing. 44vh is enough
+   to see a circle in context and small enough that the first card is on
+   screen underneath it — the ranking is the second half of the answer. */
+@media (max-width: 899.98px) {
+  .ops-map { height: 42vh; min-height: 260px; max-height: 340px; }
+}

@@ -235,7 +235,9 @@ def signals_from_stations(payload: dict, observed_fallback: datetime | None = No
     out: list[Signal] = []
     for measurement in payload.get("measurements", []):
         parameter = measurement.get("parameter")
-        strength = _exceedance(parameter, measurement.get("value"))
+        strength = _exceedance(
+            parameter, measurement.get("value"), measurement.get("unit")
+        )
         if strength is None:
             continue
         observed = _parse_time(measurement.get("measured_at")) or (
@@ -521,7 +523,9 @@ def _detection_time(detection: dict) -> datetime | None:
         return None
 
 
-def exceedance_strength(parameter: object, value: object) -> float | None:
+def exceedance_strength(
+    parameter: object, value: object, unit: object = None
+) -> float | None:
     """Public name for `_exceedance`.
 
     A citizen sensor reading arrives through the API rather than through a
@@ -529,15 +533,21 @@ def exceedance_strength(parameter: object, value: object) -> float | None:
     its standard is this, and is it past it at all. Two implementations of that
     would be two places for the standards to disagree.
     """
-    return _exceedance(parameter, value)
+    return _exceedance(parameter, value, unit)
 
 
-def _exceedance(parameter: object, value: object) -> float | None:
+def _exceedance(parameter: object, value: object, unit: object = None) -> float | None:
     """How far past its standard a reading is, or None if it is not past it.
 
     Returns 0.0 at the standard and 1.0 at three times it. A reading below the
     standard returns None rather than 0, because a clean reading is not a weak
     signal — it is not a signal at all.
+
+    The reading is converted to µg/m³ first. This is not defensive tidiness: the
+    standards table once held CO's 2 mg/m³ verbatim while OpenAQ reported CO in
+    µg/m³, and a real reading of 1680 µg/m³ — comfortably below the standard —
+    scored as a maximum-severity exceedance. A thousand-fold unit error is
+    invisible in a number and glaring on a map.
     """
     if parameter is None or value is None:
         return None
@@ -545,12 +555,33 @@ def _exceedance(parameter: object, value: object) -> float | None:
     if not standard:
         return None
     try:
-        reading = float(value)  # type: ignore[arg-type]
+        reading = _micrograms(float(value), unit)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return None
-    if reading < standard:
+    if reading is None or reading < standard:
         return None
     return round(min((reading - standard) / (2 * standard), 1.0), 3)
+
+
+def _micrograms(value: float, unit: object) -> float | None:
+    """A reading in µg/m³, whatever unit it arrived in.
+
+    An unrecognised unit returns None rather than being assumed. Guessing wrong
+    is how a thousand-fold error reaches the map; refusing to guess costs one
+    signal.
+    """
+    if unit is None:
+        # Most sources, including OpenAQ, report µg/m³ and many omit the unit
+        # entirely. Assuming the common case is reasonable; assuming a *named*
+        # unit means something other than what it says is not.
+        return value
+
+    text = str(unit).strip().lower().replace("μ", "µ")
+    if text in {"µg/m³", "ug/m3", "µg/m3", "ugm3", "ug/m^3", "µg/m^3", ""}:
+        return value
+    if text in {"mg/m³", "mg/m3", "mgm3", "mg/m^3"}:
+        return value * 1000
+    return None
 
 
 def _parse_time(value: object) -> datetime | None:

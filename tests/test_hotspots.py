@@ -775,3 +775,68 @@ def test_a_scan_alone_puts_hotspots_on_the_map(monkeypatch):
 
     assert len(found) == 1
     assert found[0].case_ids == []
+
+
+# --------------------------------------------------------------------------- #
+# Units
+# --------------------------------------------------------------------------- #
+
+
+def test_carbon_monoxide_in_micrograms_is_not_a_thousandfold_exceedance():
+    """REGRESSION. Found by scanning Ludhiana with the real OpenAQ API.
+
+    The NAAQS notification writes CO's 24-hour standard as 2 mg/m³ and the
+    standards table copied that number verbatim, while OpenAQ reports CO in
+    µg/m³. A real reading of 1680 µg/m³ — 1.68 mg/m³, comfortably below the
+    standard — scored as a maximum-severity exceedance. Clean air rendering as a
+    severe hotspot on a public map is exactly the harm hard constraint 7 is about.
+    """
+    payload = station_payload("co", 1680.0)
+    payload["measurements"][0]["unit"] = "µg/m³"
+
+    assert hotspots.signals_from_stations(payload) == []
+
+
+def test_carbon_monoxide_genuinely_over_the_standard_is_still_a_signal():
+    """The fix must not silence CO altogether."""
+    payload = station_payload("co", 4000.0)
+    payload["measurements"][0]["unit"] = "µg/m³"
+
+    built = hotspots.signals_from_stations(payload)
+
+    assert len(built) == 1
+    assert built[0].magnitude == pytest.approx(0.5)
+
+
+def test_a_reading_reported_in_milligrams_is_converted_before_comparing():
+    """A source that does report mg/m³ must not be read as a thousand times less."""
+    payload = station_payload("co", 4.0)
+    payload["measurements"][0]["unit"] = "mg/m3"
+
+    built = hotspots.signals_from_stations(payload)
+
+    assert len(built) == 1
+    assert built[0].magnitude == pytest.approx(0.5)
+
+
+def test_an_unrecognised_unit_is_refused_rather_than_assumed():
+    """Guessing wrong is how a thousand-fold error reaches the map.
+
+    Refusing to guess costs one signal, which is the cheaper mistake.
+    """
+    payload = station_payload("pm25", 500.0)
+    payload["measurements"][0]["unit"] = "parts per furlong"
+
+    assert hotspots.signals_from_stations(payload) == []
+
+
+def test_a_missing_unit_is_read_as_micrograms():
+    """Most sources report µg/m³ and many omit the unit; that is a fair default.
+
+    Assuming the common case when nothing is stated is different from assuming a
+    named unit means something other than what it says.
+    """
+    payload = station_payload("pm25", 200.0)
+    del payload["measurements"][0]["unit"]
+
+    assert len(hotspots.signals_from_stations(payload)) == 1

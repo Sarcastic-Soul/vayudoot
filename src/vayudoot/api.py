@@ -539,7 +539,7 @@ def submit_sensor_reading(reading: SensorReading, request: Request) -> Signal:
             429, decision.message, headers={"Retry-After": str(decision.retry_after_seconds)}
         )
 
-    exceedance = hotspots.exceedance_strength(reading.parameter, reading.value)
+    exceedance = hotspots.exceedance_strength(reading.parameter, reading.value, reading.unit)
     if exceedance is None:
         raise HTTPException(
             status_code=422,

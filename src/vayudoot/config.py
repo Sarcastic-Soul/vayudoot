@@ -183,9 +183,18 @@ class Settings(BaseSettings):
     #: hotspot is always visible, always marked, and never top of the list.
     vayudoot_hotspot_uncorroborated_cap: float = 0.6
     #: Indian National Ambient Air Quality Standards, CPCB notification
-    #: S.O. 384(E) of 18 November 2009, 24-hour averages in µg/m³ (CO in mg/m³,
-    #: which is the unit its standard is written in). A station reading below its
-    #: standard produces no signal at all; see `hotspots._exceedance`.
+    #: S.O. 384(E) of 18 November 2009, 24-hour averages.
+    #:
+    #: **Every value here is µg/m³, including CO.** The notification writes CO's
+    #: standard as 2 mg/m³ and an earlier version of this table copied that
+    #: number as-is. OpenAQ reports CO in µg/m³, so a real Ludhiana reading of
+    #: 1680 µg/m³ — which is 1.68 mg/m³ and below the standard — was scored as a
+    #: maximum-severity exceedance, putting clean air on a public map as a severe
+    #: hotspot. One unit, stated once, is worth more than a comment on each row;
+    #: `hotspots._exceedance` converts a reading reported in mg/m³ before
+    #: comparing rather than trusting that every source agrees with this one.
+    #:
+    #: A station reading below its standard produces no signal at all.
     #:
     #: These are the Indian standards, not the WHO guidelines, which are several
     #: times stricter. A hotspot is raised so that an Indian authority acts on
@@ -199,7 +208,7 @@ class Settings(BaseSettings):
         "no2": 80.0,
         "so2": 80.0,
         "o3": 100.0,
-        "co": 2.0,
+        "co": 2000.0,
         "nh3": 400.0,
     }
 
