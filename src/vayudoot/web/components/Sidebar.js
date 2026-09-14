@@ -4,13 +4,19 @@
 
 import { html } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
-import { CameraIcon, ListIcon, PinIcon, ChevronIcon, WindMark } from "./Icons.js";
+import { CameraIcon, ListIcon, PinIcon, ChevronIcon, WindMark, HotspotIcon } from "./Icons.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 
+/* Live first, because it is the landing surface and the unit of work. Report
+ * second rather than buried: it is the intake channel the whole detection layer
+ * is fed by, and it has to stay one thumb-reach away on a phone held in front
+ * of the problem. */
 const SECTIONS = [
-  { view: "report", target: "", label: "Report", hint: "Photograph a pollution event",
+  { view: "ops", target: "", label: "Live", hint: "Hotspots detected right now",
+    Icon: HotspotIcon },
+  { view: "report", target: "report", label: "Report", hint: "Photograph a pollution event",
     Icon: CameraIcon },
-  { view: "cases", target: "cases", label: "Cases", hint: "Everything submitted so far",
+  { view: "cases", target: "cases", label: "Cases", hint: "Complaints drafted and filed",
     Icon: ListIcon },
   { view: "coverage", target: "coverage", label: "Coverage", hint: "Which authorities are known",
     Icon: PinIcon },
@@ -25,7 +31,7 @@ export function Sidebar({ view, collapsed, onCollapse, theme, onTheme }) {
         <span class="mark" aria-hidden="true"><${WindMark} /></span>
         <div class="brand-text">
           <h1>Vayudoot</h1>
-          <p>Photograph to filed complaint</p>
+          <p>Hyper-local pollution detection</p>
         </div>
         <button type="button" class="collapse" aria-expanded=${String(!collapsed)}
                 aria-label=${label} title=${label} onClick=${onCollapse}>
@@ -38,6 +44,7 @@ export function Sidebar({ view, collapsed, onCollapse, theme, onTheme }) {
           // A case and a repeat pattern are both reached from the case list,
           // so Cases stays current while either is being read.
           const active = name === view
+            || (name === "ops" && view === "hotspot")
             || (name === "cases" && (view === "case" || view === "cluster"));
           return html`
             <button key=${name} class=${`nav-item${active ? " is-active" : ""}`}

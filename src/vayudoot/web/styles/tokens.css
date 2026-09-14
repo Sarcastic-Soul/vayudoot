@@ -98,6 +98,33 @@
   --danger-tint: #fdeeeb;
   --danger-line: #eebeb6;
 
+  /* ── severity ──────────────────────────────────────────────────────────
+     A hotspot's severity is how *bad* the thing is; its confidence is how sure
+     we are it is there. They are different questions and must never share a
+     ramp — one scale carrying both is how a certain photograph of a small fire
+     comes to look like a catastrophe. So severity gets the only sequential
+     ramp in the system, and confidence gets a number in plain ink.
+
+     Four steps, separated by lightness as well as by hue so the ramp survives
+     a screenshot, a printout, and a reader who does not separate red from
+     green. The word is always beside the colour; none of these ever carries a
+     meaning on its own. */
+  --sev-low: #3a6076;
+  --sev-low-tint: #eaf1f5;
+  --sev-low-line: #b9cedb;
+
+  --sev-moderate: #7a5606;
+  --sev-moderate-tint: #fbf3e0;
+  --sev-moderate-line: #e3d0a1;
+
+  --sev-high: #a8430f;
+  --sev-high-tint: #fdeee4;
+  --sev-high-line: #efc9ae;
+
+  --sev-severe: #8f1d16;
+  --sev-severe-tint: #fbe9e6;
+  --sev-severe-line: #eebfb7;
+
   /* Aliases kept so that "the accent" still means one thing everywhere. */
   --accent: var(--ok);
   --accent-soft: var(--ok-tint);
@@ -152,6 +179,22 @@
     --danger-tint: #2b1a17;
     --danger-line: #5d3630;
 
+    --sev-low: #8fb9d1;
+    --sev-low-tint: #17222a;
+    --sev-low-line: #335060;
+
+    --sev-moderate: #d9b45a;
+    --sev-moderate-tint: #26210f;
+    --sev-moderate-line: #4e4322;
+
+    --sev-high: #f0a077;
+    --sev-high-tint: #2b1d14;
+    --sev-high-line: #5b3c28;
+
+    --sev-severe: #f0847a;
+    --sev-severe-tint: #2c1816;
+    --sev-severe-line: #5c322c;
+
     --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-2: 0 2px 4px rgb(0 0 0 / 40%), 0 12px 28px rgb(0 0 0 / 34%);
 
@@ -189,6 +232,22 @@
   --danger: #ef8b7c;
   --danger-tint: #2b1a17;
   --danger-line: #5d3630;
+
+  --sev-low: #8fb9d1;
+  --sev-low-tint: #17222a;
+  --sev-low-line: #335060;
+
+  --sev-moderate: #d9b45a;
+  --sev-moderate-tint: #26210f;
+  --sev-moderate-line: #4e4322;
+
+  --sev-high: #f0a077;
+  --sev-high-tint: #2b1d14;
+  --sev-high-line: #5b3c28;
+
+  --sev-severe: #f0847a;
+  --sev-severe-tint: #2c1816;
+  --sev-severe-line: #5c322c;
 
   --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
   --shadow-2: 0 2px 4px rgb(0 0 0 / 40%), 0 12px 28px rgb(0 0 0 / 34%);
@@ -328,5 +387,9 @@ p { margin: 0; }
     --attention-line: var(--attention);
     --info-line: var(--info);
     --danger-line: var(--danger);
+    --sev-low-line: var(--sev-low);
+    --sev-moderate-line: var(--sev-moderate);
+    --sev-high-line: var(--sev-high);
+    --sev-severe-line: var(--sev-severe);
   }
 }

@@ -714,3 +714,64 @@ async def test_an_empty_store_is_an_empty_list_not_an_error(client, monkeypatch)
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+# --------------------------------------------------------------------------- #
+# The join between scanned signals and citizen cases
+# --------------------------------------------------------------------------- #
+
+
+def test_scanned_signals_and_citizen_cases_are_detected_together(monkeypatch):
+    """The two halves of the evidence must meet.
+
+    `scan.py` fills the signal store and cases arrive from citizens. If
+    `current()` read only one of them, the scan would fill a store nothing looks
+    at — or the map would go back to being citizen-only, which is the state the
+    v0.3 reframe exists to end.
+    """
+    from vayudoot import store
+
+    monkeypatch.setattr(store, "all_cases", lambda: [case("VD-JOIN0001", at=HERE)])
+    monkeypatch.setattr(
+        store, "live_signals", lambda: [signal(SignalSource.SATELLITE, at=NEAR)]
+    )
+
+    found = hotspots.current()
+
+    assert len(found) == 1
+    assert found[0].corroborated is True
+    assert found[0].case_ids == ["VD-JOIN0001"]
+    assert found[0].signal_count == 2
+
+
+def test_a_signal_present_in_both_sources_is_counted_once(monkeypatch):
+    """Signal count drives severity and the agreement term in confidence.
+
+    Two copies of one reading must never read as two instruments agreeing.
+    """
+    from vayudoot import store
+
+    duplicated = signal(SignalSource.GROUND_STATION, signal_id="station:1234:pm25")
+    monkeypatch.setattr(store, "all_cases", list)
+    monkeypatch.setattr(store, "live_signals", lambda: [duplicated, duplicated])
+
+    found = hotspots.current()
+
+    assert found[0].signal_count == 1
+
+
+def test_a_scan_alone_puts_hotspots_on_the_map(monkeypatch):
+    """No citizen has used this instance, and the map is still not empty."""
+    from vayudoot import store
+
+    monkeypatch.setattr(store, "all_cases", list)
+    monkeypatch.setattr(
+        store,
+        "live_signals",
+        lambda: [signal(SignalSource.SATELLITE, at=FAR, signal_id="viirs:1")],
+    )
+
+    found = hotspots.current()
+
+    assert len(found) == 1
+    assert found[0].case_ids == []

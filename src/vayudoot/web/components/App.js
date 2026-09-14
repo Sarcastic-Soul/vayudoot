@@ -1,18 +1,28 @@
 /* The shell.
  *
- * All five sections live in the document at once and the stylesheet decides
- * which is on screen — the report form in particular, because its map and its
- * geolocation prompt belong to page load rather than to a route change. The
- * four other views mount only while they are the route, which is what stops
- * the case poll when the reader leaves. */
+ * The operations view is the landing surface: the empty hash is `ops`, not the
+ * report form. That is the v0.3 reframe — the unit of work is a hotspot, a
+ * place where pollution is happening, rather than one citizen's complaint — and
+ * the front door has to say so. Intake keeps its own route and its own nav
+ * item, unchanged and no further from a thumb than it was.
+ *
+ * Every view mounts only while it is the route, which is what stops the case
+ * poll and the hotspot poll when the reader leaves. The report form is the one
+ * exception, and only after its first visit: once it has been opened it stays
+ * in the document so a half-filled form survives a look at the map. It is not
+ * mounted before that, because `LocationPicker` asks for the reader's location
+ * on mount, and the front door of a public dashboard is not the place to raise
+ * a geolocation prompt nobody asked for. */
 
-import { useEffect } from "../vendor/hooks.mjs";
+import { useEffect, useState } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
 import { useRoute } from "../lib/router.js";
 import { useTheme } from "../lib/theme.js";
 import { useRail } from "../lib/rail.js";
 import { resizeMaps } from "../lib/maps.js";
 import { Sidebar } from "./Sidebar.js";
+import { OpsView } from "./OpsView.js";
+import { HotspotView } from "./HotspotView.js";
 import { ReportForm } from "./ReportForm.js";
 import { CaseView } from "./CaseView.js";
 import { CasesView } from "./CasesView.js";
@@ -23,13 +33,18 @@ export function App() {
   const route = useRoute();
   const [theme, chooseTheme] = useTheme();
   const [collapsed, toggleRail] = useRail();
+  const [intakeOpened, setIntakeOpened] = useState(route.view === "report");
+
+  useEffect(() => {
+    if (route.view === "report") setIntakeOpened(true);
+  }, [route.view]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
     // A map that was hidden has no size; it needs telling once it is shown.
     const timer = setTimeout(resizeMaps, 80);
     return () => clearTimeout(timer);
-  }, [route.view, route.caseId, route.clusterId]);
+  }, [route.view, route.caseId, route.clusterId, route.hotspotId]);
 
   useEffect(() => {
     let timer = null;
@@ -53,7 +68,16 @@ export function App() {
         <${Sidebar} view=${route.view} collapsed=${collapsed} onCollapse=${toggleRail}
                     theme=${theme} onTheme=${chooseTheme} />
         <main id="main" tabindex="-1">
-          <section class=${viewClass("report")}><${ReportForm} /></section>
+          <section class=${viewClass("ops")}>
+            ${route.view === "ops" && html`<${OpsView} />`}
+          </section>
+          <section class=${viewClass("hotspot")}>
+            ${route.view === "hotspot"
+              && html`<${HotspotView} key=${route.hotspotId} hotspotId=${route.hotspotId} />`}
+          </section>
+          <section class=${viewClass("report")}>
+            ${intakeOpened && html`<${ReportForm} />`}
+          </section>
           <section class=${viewClass("case")}>
             ${route.view === "case"
               && html`<${CaseView} key=${route.caseId} caseId=${route.caseId} />`}

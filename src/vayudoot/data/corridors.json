@@ -1,0 +1,100 @@
+{
+  "_comment": [
+    "Major economic corridors, keyed by corridor id. The brief asks for forecasts",
+    "'across major economic corridors', so a corridor is a named object with a real",
+    "alignment rather than an abstraction over whatever hotspots happen to line up.",
+    "Like the authority table this is data: adding a corridor is an edit here, never",
+    "a change to corridors.py.",
+    "Waypoints are SAMPLING POINTS, not a route to drive. A forecast is produced per",
+    "waypoint and summarised for the corridor, so four to eight sparse points along",
+    "the real alignment is the right density.",
+    "Each waypoint names the place it sits on. The Corridor schema keeps only the",
+    "coordinate pair, but forty bare numbers are unreviewable — the name is what",
+    "lets somebody check a number against a map before trusting a forecast built on",
+    "it."
+  ],
+  "corridors": {
+    "ncr": {
+      "name": "National Capital Region",
+      "states": ["Delhi", "Haryana", "Uttar Pradesh"],
+      "description": "The Delhi conurbation and its satellite cities, the most densely monitored and most consistently polluted air shed in India.",
+      "waypoints": [
+        { "place": "New Delhi", "latitude": 28.6139, "longitude": 77.209 },
+        { "place": "Gurugram", "latitude": 28.4595, "longitude": 77.0266 },
+        { "place": "Faridabad", "latitude": 28.4089, "longitude": 77.3178 },
+        { "place": "Noida", "latitude": 28.5355, "longitude": 77.391 },
+        { "place": "Ghaziabad", "latitude": 28.6692, "longitude": 77.4538 },
+        { "place": "Sonipat", "latitude": 28.9931, "longitude": 77.0151 }
+      ]
+    },
+    "delhi-mumbai": {
+      "name": "Delhi-Mumbai Industrial Corridor",
+      "states": ["Delhi", "Haryana", "Rajasthan", "Gujarat", "Maharashtra"],
+      "description": "India's largest industrial corridor, following the western dedicated freight line from the capital through Rajasthan and the Gujarat petrochemical belt to Mumbai.",
+      "waypoints": [
+        { "place": "New Delhi", "latitude": 28.6139, "longitude": 77.209 },
+        { "place": "Jaipur", "latitude": 26.9124, "longitude": 75.7873 },
+        { "place": "Ajmer", "latitude": 26.4499, "longitude": 74.6399 },
+        { "place": "Palanpur", "latitude": 24.1722, "longitude": 72.4319 },
+        { "place": "Ahmedabad", "latitude": 23.0225, "longitude": 72.5714 },
+        { "place": "Vadodara", "latitude": 22.3072, "longitude": 73.1812 },
+        { "place": "Surat", "latitude": 21.1702, "longitude": 72.8311 },
+        { "place": "Mumbai", "latitude": 19.076, "longitude": 72.8777 }
+      ]
+    },
+    "punjab-haryana-stubble": {
+      "name": "Punjab-Haryana stubble belt",
+      "states": ["Punjab", "Haryana"],
+      "description": "The Indo-Gangetic paddy belt whose post-harvest residue burning, carried south-east on the winter wind, is the single largest seasonal driver of Delhi's smog.",
+      "waypoints": [
+        { "place": "Amritsar", "latitude": 31.634, "longitude": 74.8723 },
+        { "place": "Ludhiana", "latitude": 30.901, "longitude": 75.8573 },
+        { "place": "Bathinda", "latitude": 30.211, "longitude": 74.9455 },
+        { "place": "Patiala", "latitude": 30.3398, "longitude": 76.3869 },
+        { "place": "Ambala", "latitude": 30.3782, "longitude": 76.7767 },
+        { "place": "Karnal", "latitude": 29.6857, "longitude": 76.9905 },
+        { "place": "Panipat", "latitude": 29.3909, "longitude": 76.9635 }
+      ]
+    },
+    "mumbai-pune": {
+      "name": "Mumbai-Pune industrial belt",
+      "states": ["Maharashtra"],
+      "description": "The chemical, refining and manufacturing strip along the Mumbai-Pune expressway, where industrial emission and construction dust sit on top of a dense population.",
+      "waypoints": [
+        { "place": "Mumbai", "latitude": 19.076, "longitude": 72.8777 },
+        { "place": "Thane", "latitude": 19.2183, "longitude": 72.9781 },
+        { "place": "Navi Mumbai", "latitude": 19.033, "longitude": 73.0297 },
+        { "place": "Panvel", "latitude": 18.9894, "longitude": 73.1175 },
+        { "place": "Khopoli", "latitude": 18.7857, "longitude": 73.3435 },
+        { "place": "Pimpri-Chinchwad", "latitude": 18.6298, "longitude": 73.7997 },
+        { "place": "Pune", "latitude": 18.5204, "longitude": 73.8567 }
+      ]
+    },
+    "chennai-bengaluru": {
+      "name": "Chennai-Bengaluru Industrial Corridor",
+      "states": ["Tamil Nadu", "Andhra Pradesh", "Karnataka"],
+      "description": "The southern manufacturing and automotive corridor running inland from the Chennai port through Ranipet and Hosur to Bengaluru.",
+      "waypoints": [
+        { "place": "Chennai", "latitude": 13.0827, "longitude": 80.2707 },
+        { "place": "Sriperumbudur", "latitude": 12.9675, "longitude": 79.943 },
+        { "place": "Ranipet", "latitude": 12.9249, "longitude": 79.3308 },
+        { "place": "Chittoor", "latitude": 13.2172, "longitude": 79.1003 },
+        { "place": "Hosur", "latitude": 12.7409, "longitude": 77.8253 },
+        { "place": "Bengaluru", "latitude": 12.9716, "longitude": 77.5946 }
+      ]
+    },
+    "kolkata-durgapur": {
+      "name": "Kolkata-Asansol-Durgapur industrial belt",
+      "states": ["West Bengal"],
+      "description": "The lower Damodar valley coal, steel and thermal power belt, running north-west from Kolkata along the Grand Trunk Road to the Raniganj coalfield.",
+      "waypoints": [
+        { "place": "Kolkata", "latitude": 22.5726, "longitude": 88.3639 },
+        { "place": "Howrah", "latitude": 22.5958, "longitude": 88.2636 },
+        { "place": "Bardhaman", "latitude": 23.2324, "longitude": 87.8615 },
+        { "place": "Durgapur", "latitude": 23.5204, "longitude": 87.3119 },
+        { "place": "Raniganj", "latitude": 23.6146, "longitude": 87.1322 },
+        { "place": "Asansol", "latitude": 23.6739, "longitude": 86.9524 }
+      ]
+    }
+  }
+}

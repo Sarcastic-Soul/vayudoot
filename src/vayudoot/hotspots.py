@@ -97,22 +97,44 @@ def detect(signals: Iterable[Signal]) -> list[Hotspot]:
 def current() -> list[Hotspot]:
     """Every hotspot the instance can presently see.
 
-    Today this reads the case store only, so the map shows what citizens have
-    reported. That is the state the v0.3 reframe exists to end, and the shape of
-    the fix is already here: `signals_from_satellite` and `signals_from_stations`
-    turn a tool payload into signals, and `detect` does not care where a signal
-    came from. What is missing is only the scan that periodically fetches them —
-    until it lands, this function is honest about being a citizen-only view
-    rather than pretending to national coverage.
+    Reads both halves of the evidence: signals derived from the cases citizens
+    submitted, and signals `scan.py` fetched from FIRMS and OpenAQ. The second
+    half is what lets a hotspot appear in a district nobody has reported from,
+    which was the whole point of the v0.3 reframe.
+
+    Scanned signals are filtered by retention before they get here —
+    `store.live_signals()` — so a fire from two months ago is history rather than
+    a live hotspot. Case-derived signals are not filtered the same way: the
+    hotspot window already decides what still groups, and a case is a durable
+    record of a complaint rather than a transient observation.
     """
-    return detect(_signals_from_store())
+    from . import store
+
+    return detect(_deduplicate([*_signals_from_cases(), *store.live_signals()]))
 
 
-def _signals_from_store() -> list[Signal]:
+def _signals_from_cases() -> list[Signal]:
     from . import store
 
     built = (signal_from_case(case) for case in store.all_cases())
     return [signal for signal in built if signal is not None]
+
+
+def _deduplicate(signals: Iterable[Signal]) -> list[Signal]:
+    """One observation, counted once.
+
+    The two sources can legitimately overlap — a scan stores a station signal,
+    and a later scan of a nearby point returns the same station — and
+    `store.save_signals` already dedupes on the way in. This guards the join
+    rather than the store: a duplicate here would inflate a hotspot's signal
+    count, and signal count drives both severity and the agreement term in
+    confidence. Two copies of one reading must never read as two instruments
+    agreeing.
+    """
+    seen: dict[str, Signal] = {}
+    for signal in signals:
+        seen.setdefault(signal.signal_id, signal)
+    return list(seen.values())
 
 
 # --------------------------------------------------------------------------- #
@@ -497,6 +519,17 @@ def _detection_time(detection: dict) -> datetime | None:
         )
     except ValueError:
         return None
+
+
+def exceedance_strength(parameter: object, value: object) -> float | None:
+    """Public name for `_exceedance`.
+
+    A citizen sensor reading arrives through the API rather than through a
+    payload from a tool, but the question asked of it is identical: how far past
+    its standard is this, and is it past it at all. Two implementations of that
+    would be two places for the standards to disagree.
+    """
+    return _exceedance(parameter, value)
 
 
 def _exceedance(parameter: object, value: object) -> float | None:

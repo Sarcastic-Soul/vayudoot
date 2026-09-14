@@ -217,3 +217,123 @@ export function ordinal(n) {
     : ({ 1: "st", 2: "nd", 3: "rd" })[n % 10] || "th";
   return `${n}${suffix}`;
 }
+
+/* ── hotspots ────────────────────────────────────────────────────────────
+ * A hotspot is the unit of work from v0.3 on: a *place* where pollution is
+ * happening, built from citizen photographs, satellite thermal detections and
+ * ground-station exceedances alike. Everything here exists to keep two rules
+ * from hard constraint 7 visible in the interface rather than only in the
+ * server.
+ *
+ * First: severity and confidence are different questions and must never be
+ * collapsed into one number or one colour. Severity is how bad the thing is,
+ * confidence is how sure we are it is there. A ramp that carried both would
+ * make a certain small fire look like a catastrophe, which is the exact
+ * overclaim `hotspots.signal_from_case` was rewritten to prevent.
+ *
+ * Second: `corroborated: false` is not a footnote. It means every signal came
+ * from a member of the public, which caps confidence however many reports
+ * arrive, because otherwise coordinated false reporting manufactures a hotspot
+ * and a public map becomes a weapon. So the phrasing below always says it in
+ * words, never in a colour or an icon alone. */
+
+/* Sources nobody submitting a report controls — `INDEPENDENT_SOURCES` in
+ * `schemas.py`. A citizen sensor is deliberately *not* here: a device is as
+ * easy to place and misreport as an account is to create. */
+export const INDEPENDENT_SOURCES = ["satellite", "ground_station"];
+
+export const isIndependent = (source) => INDEPENDENT_SOURCES.includes(source);
+
+export const SOURCE_LABEL = {
+  citizen_report: "Citizen report",
+  citizen_sensor: "Citizen sensor",
+  satellite: "Satellite",
+  ground_station: "Ground station",
+};
+
+/* What each source is, in one line, for the drill-down and the empty state.
+ * A reader who has never heard of FIRMS should still be able to tell which
+ * of these a stranger could have staged. */
+export const SOURCE_BLURB = {
+  citizen_report: "A photograph submitted by a member of the public and classified by the "
+    + "evidence stage.",
+  citizen_sensor: "A reading from a low-cost sensor somebody owns. Not independent: nobody "
+    + "has looked at it, and a device is as easy to place as an account is to create.",
+  satellite: "A thermal anomaly from an orbiting instrument. Independent — nobody reporting "
+    + "a hotspot controls it.",
+  ground_station: "A reference-grade station reading past its standard. Independent, and the "
+    + "reading itself is not in doubt.",
+};
+
+export const sourceLabel = (source) => SOURCE_LABEL[source] || words(source);
+
+/* Signals per source, ordered so the independent ones are read first — they
+ * are the half of the list that decides whether this is corroborated at all. */
+export function sourceBreakdown(counts) {
+  return Object.entries(counts || {})
+    .map(([source, count]) => ({ source, count, independent: isIndependent(source) }))
+    .sort((a, b) => (b.independent - a.independent) || (b.count - a.count));
+}
+
+/* "2 satellite detections and 1 ground station reading". Said in the units
+ * each source actually produces rather than in a generic "signals", because
+ * "three signals" hides which of them a stranger could have staged. */
+const SOURCE_NOUN = {
+  citizen_report: "citizen report",
+  citizen_sensor: "citizen sensor reading",
+  satellite: "satellite detection",
+  ground_station: "ground station reading",
+};
+
+function joinPhrases(parts) {
+  if (parts.length <= 1) return parts.join("");
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+}
+
+export function countedSources(counts, { independentOnly = false } = {}) {
+  const rows = sourceBreakdown(counts).filter((r) => !independentOnly || r.independent);
+  return joinPhrases(rows.map((r) => plural(r.count, SOURCE_NOUN[r.source] || words(r.source))));
+}
+
+/* The corroboration state, in words, every time confidence is shown.
+ *
+ * `label` is short enough for a badge on a list row; `detail` is the sentence
+ * that says what the flag actually costs. Neither is optional and neither is
+ * ever replaced by a colour: this is read outdoors, in glare, by people who do
+ * not separate amber from green. */
+export function corroborationOf(hotspot) {
+  if (hotspot.corroborated) {
+    return {
+      ok: true,
+      label: "Independently corroborated",
+      short: "Corroborated",
+      detail: `Supported by ${countedSources(hotspot.source_counts, { independentOnly: true })} `
+        + "— evidence nobody submitting a report controls. The confidence above is not capped.",
+    };
+  }
+  return {
+    ok: false,
+    label: "Citizen reports only — not independently corroborated",
+    short: "Not corroborated",
+    detail: "Every signal behind this came from a member of the public. No satellite detection "
+      + "and no ground station reading agrees with it yet, so its confidence is capped however "
+      + "many more reports arrive. Read it as unverified.",
+  };
+}
+
+/* A hotspot is an area, never a point — hard constraint 7 — so the radius is
+ * part of what it *is* and is written out wherever the hotspot appears. */
+export function radiusLabel(km) {
+  if (!Number.isFinite(km)) return "";
+  if (km < 1) return `${Math.max(50, Math.round((km * 1000) / 50) * 50)} m`;
+  return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
+}
+
+/* Confidence and severity are both written as a percentage nowhere. This is
+ * the only percentage in the hotspot interface, and it is always labelled
+ * "Confidence", so the two can never be read as the same measure. */
+export const percent = (value) => `${Math.round((value || 0) * 100)}%`;
+
+/* How long a hotspot has been running. `span_days` of zero is real — several
+ * signals in one afternoon — and "0 days" reads as missing data. */
+export const activeFor = (days) => spanLabel(days);

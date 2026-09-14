@@ -272,3 +272,132 @@ async def test_every_waypoint_is_named_in_its_own_forecast():
 )
 def test_risk_ordering_is_worst_first(risks, expected):
     assert max(risks, key=forecast.RISK_ORDER.index) == expected
+
+
+# --------------------------------------------------------------------------- #
+# The HTTP surface
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture
+async def client():
+    from httpx import ASGITransport, AsyncClient
+
+    from vayudoot import api
+
+    transport = ASGITransport(app=api.app)
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        yield c
+
+
+async def test_the_corridors_are_published(client):
+    body = (await client.get("/corridors")).json()
+
+    ids = {c["corridor_id"] for c in body}
+    assert "punjab-haryana-stubble" in ids
+    assert all(c["waypoints"] for c in body)
+
+
+async def test_an_unknown_corridor_is_a_404(client):
+    assert (await client.get("/corridors/atlantis/forecast")).status_code == 404
+
+
+async def test_a_corridor_forecast_carries_the_disclaimer_over_http(client, monkeypatch):
+    from vayudoot import api as api_module
+
+    async def stub(corridor, hotspots=None):
+        from vayudoot.schemas import CorridorForecast
+
+        return CorridorForecast(
+            corridor_id=corridor.corridor_id,
+            corridor_name=corridor.name,
+            risk="high",
+            summary="Stub.",
+        )
+
+    monkeypatch.setattr(api_module, "forecast_corridor", stub)
+
+    body = (await client.get("/corridors/ncr/forecast")).json()
+
+    assert body["risk"] == "high"
+    assert body["disclaimer"] == FORECAST_DISCLAIMER
+
+
+async def test_a_provider_failure_is_a_readable_502_not_a_stack_trace(client, monkeypatch):
+    from vayudoot import api as api_module
+
+    async def boom(corridor, hotspots=None):
+        raise RuntimeError("provider exploded")
+
+    monkeypatch.setattr(api_module, "forecast_corridor", boom)
+
+    response = await client.get("/corridors/ncr/forecast")
+
+    assert response.status_code == 502
+    assert "provider exploded" in response.json()["detail"]
+
+
+# --------------------------------------------------------------------------- #
+# Citizen sensor readings
+# --------------------------------------------------------------------------- #
+
+
+def reading(parameter: str = "pm25", value: float = 180.0) -> dict:
+    return {
+        "sensor_id": "balcony-01",
+        "latitude": 28.6139,
+        "longitude": 77.2090,
+        "parameter": parameter,
+        "value": value,
+        "unit": "ug/m3",
+        "observed_at": "2026-09-14T06:00:00+00:00",
+    }
+
+
+async def test_a_sensor_reading_above_the_standard_becomes_a_signal(client):
+    response = await client.post("/sensors/readings", json=reading())
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["source"] == "citizen_sensor"
+    assert body["magnitude"] > 0
+
+
+async def test_a_citizen_sensor_can_never_corroborate_on_its_own(client):
+    """HARD CONSTRAINT 7. Not a tuning assertion.
+
+    A cheap sensor may be indoors, beside a kitchen, or reporting whatever its
+    owner wants. Treating it as instrument evidence would reopen the hole the
+    corroboration cap closes: manufacturing a hotspot would cost one device
+    instead of one satellite.
+    """
+    from vayudoot.schemas import INDEPENDENT_SOURCES, SignalSource
+
+    await client.post("/sensors/readings", json=reading())
+    listed = (await client.get("/hotspots")).json()
+
+    assert SignalSource.CITIZEN_SENSOR not in INDEPENDENT_SOURCES
+    assert listed[0]["corroborated"] is False
+
+
+async def test_a_clean_reading_is_refused_rather_than_stored(client):
+    """A reading that is not an exceedance is not evidence of an event."""
+    response = await client.post("/sensors/readings", json=reading(value=20.0))
+
+    assert response.status_code == 422
+    assert "below the Indian standard" in response.json()["detail"]
+
+
+async def test_a_pollutant_with_no_indian_standard_is_refused(client):
+    assert (await client.post("/sensors/readings", json=reading("radon"))).status_code == 422
+
+
+async def test_the_same_reading_twice_is_stored_once(client):
+    """Signal count drives severity and confidence; a resent reading must not inflate it."""
+    await client.post("/sensors/readings", json=reading())
+    await client.post("/sensors/readings", json=reading())
+
+    listed = (await client.get("/hotspots")).json()
+
+    assert len(listed) == 1
+    assert listed[0]["signal_count"] == 1

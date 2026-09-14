@@ -95,3 +95,81 @@ def test_a_category_never_cites_a_statute_its_authority_cannot_enforce():
     assert rule["authority_tier"] == "state"
     assert "Air (Prevention and Control of Pollution) Act" in rule["statute"]
     assert "Motor Vehicles Act" not in rule["statute"]
+
+
+#: Every state and union territory of India, spelled as a reverse geocoder
+#: returns it. The list is written out rather than derived from the table so
+#: that a region silently dropped from the JSON fails a test instead of
+#: quietly shrinking the country.
+STATES = [
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chhattisgarh",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal",
+]
+
+UNION_TERRITORIES = [
+    "Andaman and Nicobar Islands",
+    "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu",
+    "Delhi",
+    "Jammu and Kashmir",
+    "Ladakh",
+    "Lakshadweep",
+    "Puducherry",
+]
+
+
+def test_the_table_covers_every_state_and_union_territory():
+    """National coverage is the claim; a generic fallback anywhere breaks it."""
+    assert len(STATES) == 28
+    assert len(UNION_TERRITORIES) == 8
+    missing = [
+        region
+        for region in STATES + UNION_TERRITORIES
+        if coverage_is_generic(lookup_authority(region, "", "industrial_emission")["email"])
+    ]
+    assert not missing, missing
+
+
+def test_a_union_territory_resolves_to_a_committee_not_a_board():
+    """Union territories have Pollution Control Committees, states have Boards.
+
+    Getting this wrong addresses a complaint to a body that does not exist, so
+    the distinction is asserted rather than assumed.
+    """
+    for region in ["Puducherry", "Ladakh", "Lakshadweep", "Jammu and Kashmir"]:
+        name = lookup_authority(region, "", "industrial_emission")["authority_name"]
+        assert "Pollution Control Committee" in name, (region, name)
+
+
+def test_a_region_a_geocoder_still_names_the_old_way_resolves():
+    """Dadra and Nagar Haveli and Daman and Diu merged in 2020; most address
+    databases have not caught up, and 'Orissa' and 'Pondicherry' never will."""
+    for old_name in ["Orissa", "Pondicherry", "Dadra and Nagar Haveli", "Daman and Diu"]:
+        result = lookup_authority(old_name, "", "industrial_emission")
+        assert not coverage_is_generic(result["email"]), old_name

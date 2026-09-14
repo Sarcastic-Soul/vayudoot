@@ -244,3 +244,82 @@ def test_context_preserves_what_the_forecast_stage_reads(field):
     restored = federation.as_context(published)[0]
 
     assert getattr(restored, field) == getattr(original, field)
+
+
+# --------------------------------------------------------------------------- #
+# The HTTP surface
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture
+async def client():
+    from httpx import ASGITransport, AsyncClient
+
+    from vayudoot import api
+
+    transport = ASGITransport(app=api.app)
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        yield c
+
+
+async def test_a_node_publishes_who_it_is(client, monkeypatch):
+    monkeypatch.setattr(settings, "vayudoot_node_id", "punjab-node")
+    monkeypatch.setattr(settings, "vayudoot_node_region", "punjab")
+
+    body = (await client.get("/node")).json()
+
+    assert body["node_id"] == "punjab-node"
+    assert body["region"] == "punjab"
+
+
+async def test_the_feed_is_served_as_a_versioned_document(client):
+    body = (await client.get("/feed")).json()
+
+    assert body["feed_version"] == "1.0"
+    assert "node" in body
+    assert "hotspots" in body
+
+
+async def test_a_node_may_decline_to_publish(client, monkeypatch):
+    monkeypatch.setattr(settings, "vayudoot_publish_feed", False)
+    assert (await client.get("/feed")).status_code == 404
+
+
+async def test_the_feed_never_carries_a_case_id(client, monkeypatch):
+    """The allowlist, asserted at the edge rather than only at the projection."""
+    from vayudoot import hotspots as hotspot_module
+
+    monkeypatch.setattr(hotspot_module, "current", lambda: [hotspot()])
+
+    raw = (await client.get("/feed")).text
+
+    assert "VD-SECRET01" not in raw
+    assert "case_ids" not in raw
+
+
+async def test_neighbours_reports_which_peers_answered(client, monkeypatch, respx_mock):
+    monkeypatch.setattr(
+        settings,
+        "vayudoot_neighbour_feeds",
+        "https://up.example.invalid/feed,https://down.example.invalid/feed",
+    )
+    respx_mock.get("https://up.example.invalid/feed").mock(
+        return_value=httpx.Response(200, json=feed_payload())
+    )
+    respx_mock.get("https://down.example.invalid/feed").mock(
+        side_effect=httpx.ConnectError("refused")
+    )
+
+    body = (await client.get("/neighbours")).json()
+
+    assert body["configured"] == 2
+    assert body["reachable"] == 1
+    failed = [n for n in body["neighbours"] if n["error"]]
+    assert len(failed) == 1
+
+
+async def test_a_node_with_no_neighbours_reports_none(client, monkeypatch):
+    monkeypatch.setattr(settings, "vayudoot_neighbour_feeds", "")
+    body = (await client.get("/neighbours")).json()
+
+    assert body == {"configured": 0, "reachable": 0, "neighbours": []}

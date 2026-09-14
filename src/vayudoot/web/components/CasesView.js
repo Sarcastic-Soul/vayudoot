@@ -136,7 +136,7 @@ export function CasesView() {
           <p>A case starts with a photograph. Take one in front of the problem and this
             instance will classify it, corroborate it, work out who is responsible, and
             draft the complaint.</p>
-          <button type="button" class="primary" onClick=${() => navigate("")}>
+          <button type="button" class="primary" onClick=${() => navigate("report")}>
             <${CameraIcon} /> Report a pollution event
           </button>
         </div>

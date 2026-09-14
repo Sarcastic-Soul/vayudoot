@@ -227,6 +227,17 @@ class Settings(BaseSettings):
     #: cannot age out of a hotspot it is still holding together.
     vayudoot_signal_retention_days: int = 30
 
+    #: How much a citizen's own sensor reading is believed.
+    #:
+    #: Well below a ground station's, and the gap is the point. A reference-grade
+    #: station is operated by somebody accountable and sited to a standard; a
+    #: low-cost sensor may be indoors, beside a kitchen, or reporting whatever
+    #: its owner wants it to. It is genuine evidence and it is weaker evidence,
+    #: and `SignalSource.CITIZEN_SENSOR` is deliberately outside
+    #: `INDEPENDENT_SOURCES` so a sensor can never corroborate a report on its
+    #: own. Hard constraint 7.
+    vayudoot_citizen_sensor_reliability: float = 0.5
+
     # Forecasting. Hard constraint 7: everything here produces a model's
     # reasoning over public data, never an official advisory.
     #

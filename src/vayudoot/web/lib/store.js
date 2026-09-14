@@ -130,3 +130,65 @@ export function useCaseCluster(caseId, key) {
   }, [caseId, key]);
   return cluster;
 }
+
+/* Hotspots — places where pollution is happening.
+ *
+ * Derived server-side on every call, exactly like clusters, so there is no
+ * cache here either: a hotspot gains a signal, moves its centre and changes
+ * its confidence without anything being stored, and a cached copy would be
+ * wrong within the hour.
+ *
+ * This is an operations view, so it re-asks on a slow timer rather than only
+ * on mount. `POLL_MS` is the pipeline's tempo and far too quick for this; a
+ * minute is roughly how often the underlying signals can actually change. */
+const HOTSPOT_POLL_MS = 60000;
+
+export function useHotspots() {
+  const [state, setState] = useState({ data: null, error: null, at: null });
+
+  useEffect(() => {
+    let live = true;
+    let timer = null;
+
+    async function tick() {
+      try {
+        const data = await api("/hotspots");
+        if (live) setState({ data, error: null, at: Date.now() });
+      } catch (e) {
+        // Keep whatever is on screen; an operations view that blanks itself
+        // on one failed poll is worse than one showing a stale minute.
+        if (live) setState((was) => ({ ...was, data: was.data || [], error: e.message }));
+      }
+      if (live) timer = setTimeout(tick, HOTSPOT_POLL_MS);
+    }
+
+    tick();
+    return () => { live = false; clearTimeout(timer); };
+  }, []);
+
+  return state;
+}
+
+/* One hotspot, asked for by id.
+ *
+ * `GET /hotspots/{id}` exists, unlike `/clusters/{id}`, so this asks for the
+ * one rather than filtering the list. A 404 is a real answer and not a broken
+ * link: detection is derived, so a hotspot stops existing the moment its
+ * signals age out of the window or a case behind it is withdrawn. */
+export function useHotspot(hotspotId) {
+  const [state, setState] = useState({ data: null, error: null, gone: false });
+
+  useEffect(() => {
+    if (!hotspotId) return undefined;
+    let live = true;
+    setState({ data: null, error: null, gone: false });
+    api(`/hotspots/${encodeURIComponent(hotspotId)}`)
+      .then((data) => { if (live) setState({ data, error: null, gone: false }); })
+      .catch((e) => {
+        if (live) setState({ data: null, error: e.message, gone: e.status === 404 });
+      });
+    return () => { live = false; };
+  }, [hotspotId]);
+
+  return state;
+}

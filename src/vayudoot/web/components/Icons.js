@@ -130,3 +130,41 @@ export const AskIcon = icon(html`
 export const CopyIcon = icon(html`
   <rect x="9" y="9" width="11" height="11.5" rx="1.6" />
   <path d="M15.5 5.5A1.5 1.5 0 0 0 14 4H5.5A1.5 1.5 0 0 0 4 5.5V14a1.5 1.5 0 0 0 1.5 1.5" />`);
+
+/* ── hotspots: the sources a detection is built from ──────────────────── */
+
+/* The operations view. Concentric rings around a place, not a pin in one:
+   a hotspot is an area by construction, and the nav glyph should not be the
+   first thing in the interface to imply otherwise. */
+export const HotspotIcon = icon(html`
+  <circle cx="12" cy="12" r="2.4" />
+  <circle cx="12" cy="12" r="6" />
+  <circle cx="12" cy="12" r="9.6" />`);
+
+/* A satellite: an instrument in orbit, with its panels out. Independent
+   evidence, and the glyph should read as machinery rather than as a person. */
+export const SatelliteIcon = icon(html`
+  <rect x="9.2" y="9.2" width="5.6" height="5.6" rx="1" transform="rotate(45 12 12)" />
+  <path d="M7.5 7.5 4 4M16.5 16.5 20 20M16.5 7.5 20 4M7.5 16.5 4 20" />`);
+
+/* A ground station: a fixed mast taking a reading. */
+export const StationIcon = icon(html`
+  <path d="M12 20V9" /><circle cx="12" cy="6.4" r="2.4" />
+  <path d="M7 20h10M8.2 13.5 12 9l3.8 4.5" />`);
+
+/* A citizen sensor: a small device reporting a number. Deliberately drawn
+   like a gadget rather than like the station above — it is not independent
+   evidence and the two must not read as the same class of thing. */
+export const SensorIcon = icon(html`
+  <rect x="5.5" y="4.5" width="13" height="15" rx="2" />
+  <path d="M8.5 15.5h7M8.5 8h7v4h-7z" />`);
+
+/* Uncorroborated: an open ring with a break in it. Not a warning triangle —
+   nothing has gone wrong, a piece of the evidence is simply missing. */
+export const UnverifiedIcon = icon(html`
+  <path d="M12 3.8a8.2 8.2 0 1 1-5.8 14" />
+  <path d="M4.4 14.6A8.2 8.2 0 0 1 4.2 11" />
+  <path d="M12 8.2v4.4M12 16v.2" />`);
+
+export const SourceIcon = { satellite: SatelliteIcon, ground_station: StationIcon,
+  citizen_sensor: SensorIcon, citizen_report: CameraIcon };

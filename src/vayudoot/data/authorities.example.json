@@ -5,9 +5,11 @@
     "misconfigured run cannot reach a real regulator. Real contact addresses belong in",
     "authorities.json, which overrides this file and is not committed.",
     "Keys are lowercased state and city names as returned by reverse geocoding.",
-    "Coverage is the states and union territories most likely to appear in a demo,",
-    "each with its pollution control board, its one to three largest municipal",
-    "corporations, and the Central Pollution Control Board as the escalation body.",
+    "Coverage is every one of India's 28 states and 8 union territories, each with its",
+    "pollution control board or committee, its one to three largest municipal bodies,",
+    "and the Central Pollution Control Board as the escalation body. A few keys are",
+    "aliases for a region a geocoder may still name the old way, so the key count is",
+    "higher than the region count.",
     "A state absent from this table still resolves, via default_state, to a generic",
     "state board entry rather than failing."
   ],
@@ -640,6 +642,313 @@
           "name": "Municipal Corporation Chandigarh",
           "office": "Municipal Corporation Head Office, Sector 17, Chandigarh",
           "email": "mc-chandigarh@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "arunachal pradesh": {
+      "state_board": {
+        "name": "Arunachal Pradesh State Pollution Control Board",
+        "office": "APSPCB, Itanagar",
+        "email": "spcb-arunachal@example.invalid"
+      },
+      "municipal": {
+        "itanagar": {
+          "name": "Itanagar Municipal Corporation",
+          "office": "Municipal Corporation Head Office, Itanagar",
+          "email": "imc-itanagar@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "manipur": {
+      "state_board": {
+        "name": "Manipur Pollution Control Board",
+        "office": "MPCB, Imphal",
+        "email": "pcb-manipur@example.invalid"
+      },
+      "municipal": {
+        "imphal": {
+          "name": "Imphal Municipal Corporation",
+          "office": "Municipal Corporation Head Office, Imphal",
+          "email": "imc-imphal@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "meghalaya": {
+      "state_board": {
+        "name": "Meghalaya State Pollution Control Board",
+        "office": "MSPCB, Shillong",
+        "email": "mspcb-meghalaya@example.invalid"
+      },
+      "municipal": {
+        "shillong": {
+          "name": "Shillong Municipal Board",
+          "office": "Municipal Board Head Office, Shillong",
+          "email": "smb-shillong@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "mizoram": {
+      "state_board": {
+        "name": "Mizoram Pollution Control Board",
+        "office": "MPCB, Aizawl",
+        "email": "pcb-mizoram@example.invalid"
+      },
+      "municipal": {
+        "aizawl": {
+          "name": "Aizawl Municipal Corporation",
+          "office": "Municipal Corporation Head Office, Aizawl",
+          "email": "amc-aizawl@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "nagaland": {
+      "state_board": {
+        "name": "Nagaland Pollution Control Board",
+        "office": "NPCB, Dimapur",
+        "email": "pcb-nagaland@example.invalid"
+      },
+      "municipal": {
+        "dimapur": {
+          "name": "Dimapur Municipal Council",
+          "office": "Municipal Council Head Office, Dimapur",
+          "email": "dmc-dimapur@example.invalid"
+        },
+        "kohima": {
+          "name": "Kohima Municipal Council",
+          "office": "Municipal Council Head Office, Kohima",
+          "email": "kmc-kohima@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "sikkim": {
+      "state_board": {
+        "name": "Sikkim State Pollution Control Board",
+        "office": "SSPCB, Deorali, Gangtok",
+        "email": "sspcb-sikkim@example.invalid"
+      },
+      "municipal": {
+        "gangtok": {
+          "name": "Gangtok Municipal Corporation",
+          "office": "Municipal Corporation Head Office, Gangtok",
+          "email": "gmc-gangtok@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "tripura": {
+      "state_board": {
+        "name": "Tripura State Pollution Control Board",
+        "office": "TSPCB, Agartala",
+        "email": "tspcb-tripura@example.invalid"
+      },
+      "municipal": {
+        "agartala": {
+          "name": "Agartala Municipal Corporation",
+          "office": "Municipal Corporation Head Office, Agartala",
+          "email": "amc-agartala@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "jammu and kashmir": {
+      "state_board": {
+        "name": "Jammu and Kashmir Pollution Control Committee",
+        "office": "JKPCC, Srinagar and Jammu",
+        "email": "jkpcc@example.invalid"
+      },
+      "municipal": {
+        "srinagar": {
+          "name": "Srinagar Municipal Corporation",
+          "office": "Municipal Corporation Head Office, Srinagar",
+          "email": "smc-srinagar@example.invalid"
+        },
+        "jammu": {
+          "name": "Jammu Municipal Corporation",
+          "office": "Municipal Corporation Head Office, Jammu",
+          "email": "jmc-jammu@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "ladakh": {
+      "state_board": {
+        "name": "Ladakh Pollution Control Committee",
+        "office": "LPCC, Leh",
+        "email": "pcc-ladakh@example.invalid"
+      },
+      "municipal": {
+        "leh": {
+          "name": "Municipal Committee Leh",
+          "office": "Municipal Committee Head Office, Leh",
+          "email": "mc-leh@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "puducherry": {
+      "state_board": {
+        "name": "Puducherry Pollution Control Committee",
+        "office": "PPCC, Puducherry",
+        "email": "ppcc-puducherry@example.invalid"
+      },
+      "municipal": {
+        "puducherry": {
+          "name": "Puducherry Municipality",
+          "office": "Municipality Head Office, Puducherry",
+          "email": "municipality-puducherry@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "andaman and nicobar islands": {
+      "state_board": {
+        "name": "Andaman and Nicobar Pollution Control Committee",
+        "office": "ANPCC, Port Blair",
+        "email": "pcc-andaman@example.invalid"
+      },
+      "municipal": {
+        "port blair": {
+          "name": "Port Blair Municipal Council",
+          "office": "Municipal Council Head Office, Port Blair",
+          "email": "pbmc-port-blair@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "lakshadweep": {
+      "state_board": {
+        "name": "Lakshadweep Pollution Control Committee",
+        "office": "LPCC, Kavaratti",
+        "email": "pcc-lakshadweep@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "dadra and nagar haveli and daman and diu": {
+      "state_board": {
+        "name": "Dadra and Nagar Haveli and Daman and Diu Pollution Control Committee",
+        "office": "PCC, Silvassa",
+        "email": "pcc-dnhdd@example.invalid"
+      },
+      "municipal": {
+        "silvassa": {
+          "name": "Silvassa Municipal Council",
+          "office": "Municipal Council Head Office, Silvassa",
+          "email": "smc-silvassa@example.invalid"
+        },
+        "daman": {
+          "name": "Daman Municipal Council",
+          "office": "Municipal Council Head Office, Daman",
+          "email": "dmc-daman@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "dadra and nagar haveli": {
+      "state_board": {
+        "name": "Dadra and Nagar Haveli and Daman and Diu Pollution Control Committee",
+        "office": "PCC, Silvassa",
+        "email": "pcc-dnhdd@example.invalid"
+      },
+      "municipal": {
+        "silvassa": {
+          "name": "Silvassa Municipal Council",
+          "office": "Municipal Council Head Office, Silvassa",
+          "email": "smc-silvassa@example.invalid"
+        },
+        "daman": {
+          "name": "Daman Municipal Council",
+          "office": "Municipal Council Head Office, Daman",
+          "email": "dmc-daman@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "daman and diu": {
+      "state_board": {
+        "name": "Dadra and Nagar Haveli and Daman and Diu Pollution Control Committee",
+        "office": "PCC, Silvassa",
+        "email": "pcc-dnhdd@example.invalid"
+      },
+      "municipal": {
+        "silvassa": {
+          "name": "Silvassa Municipal Council",
+          "office": "Municipal Council Head Office, Silvassa",
+          "email": "smc-silvassa@example.invalid"
+        },
+        "daman": {
+          "name": "Daman Municipal Council",
+          "office": "Municipal Council Head Office, Daman",
+          "email": "dmc-daman@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Central Pollution Control Board",
+        "email": "cpcb@example.invalid"
+      }
+    },
+    "pondicherry": {
+      "state_board": {
+        "name": "Puducherry Pollution Control Committee",
+        "office": "PPCC, Puducherry",
+        "email": "ppcc-puducherry@example.invalid"
+      },
+      "municipal": {
+        "puducherry": {
+          "name": "Puducherry Municipality",
+          "office": "Municipality Head Office, Puducherry",
+          "email": "municipality-puducherry@example.invalid"
         }
       },
       "escalation": {

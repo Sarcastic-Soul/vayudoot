@@ -57,3 +57,13 @@ export function CoverageSkeleton() {
       </div>
     <//>`;
 }
+
+export function HotspotListSkeleton() {
+  return html`
+    <${Fragment}>
+      <p class="visually-hidden" role="status">Loading the hotspots.</p>
+      <ul class="hotspot-list-skeleton" aria-hidden="true">
+        ${[0, 1, 2].map((i) => html`<li key=${i} class="skeleton"></li>`)}
+      </ul>
+    <//>`;
+}

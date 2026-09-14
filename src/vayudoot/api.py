@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -20,13 +20,39 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import clustering, errors, filing, hotspots, lifecycle, pack, register, store
-from .agents import draft_rti_application
+from . import (
+    clustering,
+    corridors,
+    errors,
+    federation,
+    filing,
+    hotspots,
+    lifecycle,
+    pack,
+    register,
+    scan,
+    store,
+)
+from .agents import draft_rti_application, forecast_corridor, forecast_location
 from .config import settings
 from .images import UnsupportedImage, normalise, suffix_for
 from .pipeline import new_case, run
 from .ratelimit import limiter
-from .schemas import Case, CaseStatus, Cluster, Hotspot, Report
+from .schemas import (
+    AirQualityForecast,
+    Case,
+    CaseStatus,
+    Cluster,
+    Corridor,
+    CorridorForecast,
+    Hotspot,
+    HotspotFeed,
+    NodeIdentity,
+    Report,
+    SensorReading,
+    Signal,
+    SignalSource,
+)
 from .tools.authorities import authority_table
 from .tools.geocode import reverse_geocode, search_places
 
@@ -64,7 +90,48 @@ class AcknowledgeRequest(NoteRequest):
 
     responded_at: datetime | None = None
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Run the signal scan on a timer, if it has been switched on.
+
+    Off by default and gated on `vayudoot_scan_enabled`, deliberately: this is a
+    loop calling two external APIs unattended, and it should start because
+    somebody watching the quota decided so, not because the process booted.
+
+    Note what this is not. `docs/SCOPE.md` keeps automatic *escalation* out of
+    scope because an unsupervised process acting on a legal deadline is a
+    different class of risk. Scanning has no such property — it fetches public
+    observations and writes them to a store. Nothing is filed, nothing is sent,
+    and hard constraint 2 still holds: a human confirms before anything is filed.
+    """
+    task: asyncio.Task | None = None
+    if settings.vayudoot_scan_enabled:
+        task = asyncio.create_task(_scan_loop())
+        _running.add(task)
+        task.add_done_callback(_running.discard)
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+
+
+async def _scan_loop() -> None:
+    interval = max(settings.vayudoot_scan_interval_minutes, 1) * 60
+    while True:
+        try:
+            # The scan is blocking HTTP; a thread keeps it off the event loop.
+            summary = await asyncio.to_thread(scan.run_once)
+            log.info("scan complete: %s", summary)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # A failed scan must not end the loop.
+            log.exception("scan failed; continuing")
+        await asyncio.sleep(interval)
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="Vayudoot",
     description="An agent that takes a citizen pollution report from photo to filed, "
     "tracked, escalated complaint.",
@@ -337,6 +404,168 @@ def get_hotspot(hotspot_id: str) -> Hotspot:
     if found is None:
         raise HTTPException(status_code=404, detail=f"Unknown hotspot: {hotspot_id}")
     return found
+
+
+@app.get("/node", response_model=NodeIdentity)
+def get_node() -> NodeIdentity:
+    """Who this instance is on the network of instances.
+
+    A second state standing up its own deployment is what federation is for, and
+    the first thing it needs is to be able to say who it is and read who you are.
+    """
+    return federation.identity()
+
+
+@app.get("/feed", response_model=HotspotFeed)
+def get_feed() -> HotspotFeed:
+    """This node's hotspots, published for its neighbours.
+
+    The open contract that makes the system interoperable. What is shared is a
+    detection layer, not trained weights — see `federation.py` for why that
+    distinction is the honest reading of the brief rather than a smaller one.
+
+    The projection is an explicit allowlist: no signals, no case ids, nothing
+    identifying a reporter. Uncorroborated hotspots are published carrying their
+    flag, because a neighbour deciding what to trust needs the weak signals as
+    well as the strong ones.
+    """
+    if not settings.vayudoot_publish_feed:
+        raise HTTPException(status_code=404, detail="This node does not publish a feed")
+    return federation.publish(hotspots.current())
+
+
+@app.get("/neighbours")
+def get_neighbours() -> dict:
+    """What this node's configured neighbours are currently reporting.
+
+    Read live rather than cached, and failures are reported rather than hidden: a
+    peer being unreachable is ordinary on a federated network, and an operator
+    needs to see which of them answered.
+    """
+    results = [federation.fetch_neighbour(url) for url in settings.neighbour_feeds]
+    return {
+        "configured": len(results),
+        "reachable": sum(1 for r in results if "error" not in r),
+        "neighbours": [
+            {
+                "url": r["url"],
+                "node": r["feed"].node.model_dump() if "feed" in r else None,
+                "hotspot_count": r.get("hotspot_count", 0),
+                "error": r.get("error"),
+            }
+            for r in results
+        ],
+    }
+
+
+@app.get("/forecast", response_model=AirQualityForecast)
+async def get_forecast(lat: float, lon: float, place: str = "") -> AirQualityForecast:
+    """Where air quality is heading at one location, and why.
+
+    Model-derived and labelled as such on the object itself. This is not an
+    official forecast and not a health advisory; hard constraint 7 and the
+    `disclaimer` field.
+
+    The outlook reads this node's own hotspots and its neighbours' together. That
+    is the whole point of federating: Punjab's burning is the best available
+    explanation of a Delhi morning, and a node that can only see its own reports
+    learns about it when the smoke arrives.
+    """
+    context = hotspots.current() + federation.as_context(federation.neighbour_hotspots())
+    try:
+        return await forecast_location(
+            latitude=lat, longitude=lon, location_name=place, nearby_hotspots=context
+        )
+    except Exception as exc:
+        # The forecast stage is a fast-tier call, so a quota trip reports as one.
+        raise HTTPException(status_code=502, detail=errors.describe(exc, "fast")) from exc
+
+
+@app.get("/corridors", response_model=list[Corridor])
+def list_corridors() -> list[Corridor]:
+    """The economic corridors this instance forecasts along.
+
+    Data, not code: adding one is an edit to `data/corridors.json`, the same
+    property the authority table has. A second state standing up its own
+    instance adds its own corridors without touching Python.
+    """
+    return corridors.all_corridors()
+
+
+@app.get("/corridors/{corridor_id}/forecast", response_model=CorridorForecast)
+async def get_corridor_forecast(corridor_id: str) -> CorridorForecast:
+    """The air quality outlook along one corridor.
+
+    Model-derived, and labelled as such on the object. The corridor takes the
+    worst risk any of its waypoints carries rather than an average: a corridor is
+    a population strip and a supply line, so the segment in trouble is the thing
+    an authority needs to see.
+
+    Every waypoint is forecast against this node's hotspots *and* its
+    neighbours'. That is the case the federation exists for — a corridor running
+    out of Punjab into Delhi is forecast with Punjab's detections in hand.
+    """
+    corridor = corridors.get_corridor(corridor_id)
+    if corridor is None:
+        raise HTTPException(status_code=404, detail=f"Unknown corridor: {corridor_id}")
+
+    context = hotspots.current() + federation.as_context(federation.neighbour_hotspots())
+    try:
+        return await forecast_corridor(corridor, hotspots=context)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=errors.describe(exc, "fast")) from exc
+
+
+@app.post("/sensors/readings", response_model=Signal, status_code=201)
+def submit_sensor_reading(reading: SensorReading, request: Request) -> Signal:
+    """Accept a reading from a low-cost sensor somebody owns.
+
+    The brief's phrase is "citizen-sourced data (photos, local sensor readings)",
+    and only the first half existed.
+
+    A reading is not a photograph and is not treated like one. Nobody has looked
+    at it, it names no pollution type, and a cheap sensor is not a
+    reference-grade instrument — so it enters as a `CITIZEN_SENSOR` signal, which
+    is deliberately **not** independent for corroboration. Treating it as
+    instrument evidence would reopen the hole hard constraint 7 closes: a sensor
+    is as easy to place and misreport as an account is to create.
+
+    Rate limited on the same budget as reports. This endpoint spends no model
+    quota, but an open write to the signal store is an open write to the map.
+    """
+    decision = limiter.check(_client_key(request))
+    if not decision.allowed:
+        raise HTTPException(
+            429, decision.message, headers={"Retry-After": str(decision.retry_after_seconds)}
+        )
+
+    exceedance = hotspots.exceedance_strength(reading.parameter, reading.value)
+    if exceedance is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"{reading.parameter} at {reading.value} is below the Indian standard "
+                "or is not a pollutant with one. A reading that is not an exceedance "
+                "is not evidence of an event."
+            ),
+        )
+
+    signal = Signal(
+        source=SignalSource.CITIZEN_SENSOR,
+        signal_id=(
+            f"sensor:{reading.sensor_id}:{reading.parameter}:"
+            f"{reading.observed_at.isoformat()}"
+        ),
+        latitude=reading.latitude,
+        longitude=reading.longitude,
+        observed_at=reading.observed_at,
+        strength=settings.vayudoot_citizen_sensor_reliability,
+        magnitude=exceedance,
+        summary=f"Citizen sensor {reading.sensor_id}: {reading.parameter} "
+        f"{reading.value} {reading.unit}",
+    )
+    store.save_signals([signal])
+    return signal
 
 
 @app.get("/cases", response_model=list[Case], response_model_exclude=CASE_LIST_EXCLUDE)
