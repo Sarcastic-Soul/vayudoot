@@ -80,8 +80,35 @@ async def forecast_location(
             "longitude": longitude,
             "location_name": location_name or outlook.location_name,
             "horizon_hours": horizon,
+            **_sane_peak_window(outlook),
         }
     )
+
+
+def _sane_peak_window(outlook: AirQualityForecast) -> dict:
+    """Drop a peak window that has already happened.
+
+    Observed on a live run: asked for a 72-hour outlook, the model returned a
+    peak window beginning the previous day. It is reading a forecast series that
+    starts at midnight and reporting the whole of it, which is reasonable as
+    arithmetic and wrong as a forecast — a reader shown "peak: yesterday"
+    concludes the system is broken, and they are not wrong to.
+
+    A window that has wholly passed is removed rather than moved, because
+    inventing a replacement would be exactly the guess the prompt forbids. A
+    window that merely *starts* in the past is clipped to now, since the part
+    still ahead is a real prediction.
+    """
+    start, end = outlook.peak_window_start, outlook.peak_window_end
+    if start is None and end is None:
+        return {}
+
+    now = outlook.generated_at
+    if end is not None and end <= now:
+        return {"peak_window_start": None, "peak_window_end": None}
+    if start is not None and start < now:
+        return {"peak_window_start": now}
+    return {}
 
 
 async def forecast_corridor(

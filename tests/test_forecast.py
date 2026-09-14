@@ -401,3 +401,74 @@ async def test_the_same_reading_twice_is_stored_once(client):
 
     assert len(listed) == 1
     assert listed[0]["signal_count"] == 1
+
+
+# --------------------------------------------------------------------------- #
+# The peak window
+# --------------------------------------------------------------------------- #
+
+
+async def test_a_peak_window_that_has_wholly_passed_is_dropped():
+    """REGRESSION. Seen on a live run against Gemini and real Open-Meteo data.
+
+    Asked for a 72-hour outlook, the model returned a peak window starting the
+    previous day: it was reading a forecast series that begins at midnight and
+    reporting all of it. Sound arithmetic, wrong as a forecast — a reader shown
+    "peak: yesterday" concludes the system is broken, and they are right to.
+
+    It is dropped rather than replaced, because inventing a window is the guess
+    the prompt forbids.
+    """
+    generated = datetime(2026, 9, 15, 12, 0, tzinfo=UTC)
+    agent = StubAgent(
+        outlook(
+            generated_at=generated,
+            peak_window_start=generated - timedelta(days=2),
+            peak_window_end=generated - timedelta(days=1),
+        )
+    )
+
+    result = await forecast.forecast_location(*DELHI, agent=agent)
+
+    assert result.peak_window_start is None
+    assert result.peak_window_end is None
+
+
+async def test_a_peak_window_still_partly_ahead_is_clipped_to_now():
+    """The part still ahead is a real prediction and must survive."""
+    generated = datetime(2026, 9, 15, 12, 0, tzinfo=UTC)
+    ends = generated + timedelta(days=1)
+    agent = StubAgent(
+        outlook(
+            generated_at=generated,
+            peak_window_start=generated - timedelta(days=1),
+            peak_window_end=ends,
+        )
+    )
+
+    result = await forecast.forecast_location(*DELHI, agent=agent)
+
+    assert result.peak_window_start == generated
+    assert result.peak_window_end == ends
+
+
+async def test_a_future_peak_window_is_left_alone():
+    generated = datetime(2026, 9, 15, 12, 0, tzinfo=UTC)
+    starts = generated + timedelta(hours=6)
+    agent = StubAgent(
+        outlook(
+            generated_at=generated,
+            peak_window_start=starts,
+            peak_window_end=starts + timedelta(hours=8),
+        )
+    )
+
+    result = await forecast.forecast_location(*DELHI, agent=agent)
+
+    assert result.peak_window_start == starts
+
+
+async def test_no_peak_window_stays_absent():
+    """Null is an acceptable answer and must not be filled in."""
+    result = await forecast.forecast_location(*DELHI, agent=StubAgent(outlook()))
+    assert result.peak_window_start is None
