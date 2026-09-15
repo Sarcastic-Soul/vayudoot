@@ -24,10 +24,16 @@ There are only four things that could cost money.
 ### Inference
 
 This is where the money actually goes, so the two-tier model split in
-`config.py` is a cost control, not a style choice. A single report runs six agent
-invocations. Four of them are mechanical tool-call-and-summarise steps and run on
-the cheap tier; only photograph reading and complaint drafting use the primary
-model.
+`config.py` is a cost control, not a style choice. A single report runs seven
+agent invocations — evidence, three corroboration agents, their synthesis node,
+jurisdiction, drafting — and about ten model calls, since an agent that uses a
+tool spends one call deciding to and another reading the result. Only two of
+those invocations, photograph reading and complaint drafting, run on the primary
+model. Everything else is mechanical tool-call-and-summarise work on the cheap
+tier.
+
+Forecasting is on the fast tier too, and it is the one model call that happens
+without a citizen having submitted anything.
 
 **Gemini serves both tiers. That is a rule, not a tuning choice.** Hard
 constraint 6 in `CLAUDE.md`: the event this is built for does not consider a
@@ -49,6 +55,31 @@ the two primary calls, flash-lite for the eight fast ones, which is why the
 
 Amazon Bedrock was removed earlier for a different reason: it bills, and
 constraint 3 says a dependency has to be free or already paid for.
+
+### The scan, which costs no inference at all
+
+`scan.py` is the piece that makes the map non-empty, and it is worth being
+precise about what it spends: nothing on a model. It calls FIRMS and OpenAQ
+directly and hands the payloads to the converters in `hotspots.py`. No agent is
+involved.
+
+What it does spend is HTTP requests against the evidence APIs, on a schedule.
+Thirty scan points at the shipped corridor set, two calls each, once an hour.
+Both APIs are free, but free is not unlimited, and a deployed instance shares
+that allowance with every forecast anyone asks for.
+
+That is not hypothetical. The first live forecast after the scan was switched on
+came back with the wind lookup rate limited:
+
+> Wind forecast tool returned a 429 Too Many Requests error, so wind direction
+> and stagnation data are unavailable.
+
+The forecast handled it correctly — it reported the failure in its own `basis`,
+lowered its confidence and declined to claim the upwind hotspots were
+contributing — but a degraded outlook is still a degraded outlook. If an
+instance is being demonstrated, raise `VAYUDOOT_SCAN_INTERVAL_MINUTES` first.
+VIIRS passes roughly twice a day, so scanning every three hours loses nothing
+real and leaves the quota for the thing a person is watching.
 
 ### There is no card, and it decides everything here
 
@@ -193,8 +224,19 @@ cache it.
 
 ## Pre-demo checklist
 
-- [ ] Wake the service, and the database if one is in use
+- [ ] Wake the service, and the database if one is in use. Render's free
+      instance sleeps after 15 minutes idle and the first request takes 30-60
+      seconds
 - [ ] `GET /health` returns the expected provider and `live_filing: false`
+- [ ] `GET /hotspots` is **not empty**. An empty map is the worst thing a viewer
+      can be shown, and it looks identical to clean air. If it is empty, either
+      the scan has not run or `DATABASE_URL` is unset and the store was wiped by
+      the last spin-down
+- [ ] `GET /forecast?lat=&lon=` returns 200 rather than a 429-degraded outlook
 - [ ] Credits or free-tier quota confirmed to have headroom
 - [ ] One full run completed today, since a stale deployment is the usual failure
 - [ ] Outbox reachable, so the filed complaint can actually be shown
+
+What is on the map on the day is whatever is actually burning that day, because
+the scan reads live FIRMS data. That is a stronger demonstration than seeded
+signals and it is not reproducible, so a good take is worth keeping.

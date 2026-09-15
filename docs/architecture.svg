@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1966" width="1080" height="1966"
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1668" width="1080" height="1668"
      font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-     role="img" aria-label="Vayudoot architecture: a citizen photograph is classified, corroborated by a three-way parallel agent graph, given a jurisdiction, drafted into a complaint informed by any cluster of earlier reports, held at a human confirmation gate, filed to a sandbox outbox, then tracked through acknowledgement, escalation, resolution or withdrawal, with a Right to Information application available once the statutory window lapses.">
+     role="img" aria-label="Vayudoot architecture: two layers meeting at a hotspot. On the left, a detection path in which satellite thermal detections and ground station readings are fetched by a periodic scan with no model and no human present, joined by citizen sensor readings, reduced to signals and grouped by centroid linkage into hotspots that are drawn as areas with a minimum radius and a confidence capped unless an independent source agrees; forecasting and federation come off the hotspot. On the right, a reporting path in which one citizen's photograph is classified by the evidence stage, held to a confidence floor, corroborated by a three-way parallel agent graph, then given a jurisdiction, drafted into a complaint, held at a human confirmation gate, filed to a sandbox outbox and tracked through acknowledgement, escalation, resolution or withdrawal, with a Right to Information application available once the statutory window lapses. A classified case also becomes a citizen report signal feeding the detection layer, and acting on a hotspot enters the reporting path at the jurisdiction stage.">
 
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
@@ -12,277 +12,370 @@
             markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"/>
     </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+    </marker>
   </defs>
 
-  <!-- ============================ title ============================ -->
-  <text x="40" y="36" font-size="17" font-weight="600" fill="#6b7280">Vayudoot — citizen photograph → filed, tracked complaint</text>
-  <text x="40" y="56" font-size="11.5" fill="#9ca3af">Strands Agents SDK · a pipeline with one genuine fan-out, and a case that outlives it</text>
+  <!-- ============================= title ============================= -->
+  <text x="40" y="36" font-size="17" font-weight="600" fill="#6b7280">Vayudoot — the unit of work is a hotspot, not a case</text>
+  <text x="40" y="56" font-size="11.5" fill="#9ca3af">Strands Agents SDK · a detection layer that needs no citizen, and a reporting pipeline that is one action available from a detection</text>
 
-  <text x="880" y="36" font-size="13" font-weight="600" fill="#6b7280">Case · store.py</text>
-  <text x="880" y="54" font-size="11" fill="#9ca3af">one JSON object, every stage</text>
+  <!-- ======================= column headings ======================= -->
+  <text x="40" y="100" font-size="15" font-weight="600" fill="#0d9488">Detection — nobody has to report anything</text>
+  <text x="40" y="120" font-size="11.5" fill="#9ca3af">instruments and a scan · a hotspot exists in districts nobody has submitted from</text>
 
-  <!-- ==================== Case state rail (right) ==================== -->
-  <rect x="880" y="68" width="180" height="1620" rx="12"
-        fill="#8a93a3" fill-opacity="0.05" stroke="#9ca3af" stroke-width="1.2" stroke-dasharray="5 5"/>
+  <text x="580" y="100" font-size="15" font-weight="600" fill="#3b82f6">Reporting — one citizen's photograph</text>
+  <text x="580" y="120" font-size="11.5" fill="#9ca3af">retained in full; repositioned as an action taken about a place</text>
 
-  <g stroke="#9ca3af" stroke-width="1" stroke-dasharray="2 4">
-    <line x1="712" y1="112"  x2="876" y2="112"/>
-    <line x1="712" y1="240"  x2="876" y2="240"/>
-    <line x1="862" y1="676"  x2="876" y2="676"/>
-    <line x1="712" y1="843"  x2="876" y2="843"/>
-    <line x1="712" y1="968"  x2="876" y2="968"/>
-    <line x1="712" y1="1220" x2="876" y2="1220"/>
-    <line x1="712" y1="1368" x2="876" y2="1368"/>
-  </g>
-  <g font-size="11" fill="#6b7280">
-    <text x="898" y="116">+ report</text>
-    <text x="898" y="244">+ evidence</text>
-    <text x="898" y="680">+ corroboration</text>
-    <text x="898" y="847">+ jurisdiction</text>
-    <text x="898" y="972">+ complaint · address</text>
-    <text x="898" y="1224">+ filed_at · status</text>
-    <text x="898" y="1372">+ cluster_id</text>
-    <text x="898" y="1430">+ acknowledged_at</text>
-    <text x="898" y="1458">+ resolved_at</text>
-    <text x="898" y="1486">+ withdrawn_at</text>
-    <text x="898" y="1600">+ rti · rti_drafted_at</text>
-    <text x="898" y="1640" fill="#9ca3af">+ append-only history</text>
-  </g>
+  <!-- ==================================================================
+       LEFT COLUMN — the detection layer
+       ================================================================== -->
 
-  <!-- ============================ citizen ============================ -->
-  <rect x="190" y="76" width="520" height="72" rx="10"
+  <!-- sources -->
+  <rect x="40" y="136" width="145" height="92" rx="9"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.5"/>
+  <text x="58" y="160" font-size="13" font-weight="600" fill="#0d9488">Satellite</text>
+  <text x="58" y="180" font-size="10.5" fill="#6b7280">NASA FIRMS VIIRS</text>
+  <text x="58" y="198" font-size="10" fill="#9ca3af">thermal anomalies</text>
+  <text x="58" y="216" font-size="10" fill="#0d9488">independent</text>
+
+  <rect x="197" y="136" width="145" height="92" rx="9"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.5"/>
+  <text x="215" y="160" font-size="13" font-weight="600" fill="#0d9488">Ground station</text>
+  <text x="215" y="180" font-size="10.5" fill="#6b7280">OpenAQ v3</text>
+  <text x="215" y="198" font-size="10" fill="#9ca3af">over the NAAQS</text>
+  <text x="215" y="216" font-size="10" fill="#0d9488">independent</text>
+
+  <rect x="355" y="136" width="145" height="92" rx="9"
         fill="none" stroke="#9ca3af" stroke-width="1.5"/>
-  <text x="212" y="104" font-size="14" font-weight="600" fill="#6b7280">Citizen report — geotagged photograph + note</text>
-  <text x="212" y="126" font-size="12" fill="#9ca3af">Web UI (FastAPI) · POST /reports · image, latitude, longitude</text>
+  <text x="373" y="160" font-size="13" font-weight="600" fill="#6b7280">Citizen sensor</text>
+  <text x="373" y="180" font-size="9.5" fill="#6b7280">POST /sensors/readings</text>
+  <text x="373" y="198" font-size="10" fill="#9ca3af">somebody's own device</text>
+  <text x="373" y="216" font-size="10" fill="#d97706">NOT independent</text>
 
-  <line x1="450" y1="148" x2="450" y2="176" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+  <line x1="112" y1="228" x2="112" y2="256" stroke="#8a93a3" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="269" y1="228" x2="269" y2="256" stroke="#8a93a3" stroke-width="1.6" marker-end="url(#arrow)"/>
 
-  <!-- ========================= 1. evidence ========================= -->
-  <rect x="190" y="176" width="520" height="97" rx="10"
-        fill="#3b82f6" fill-opacity="0.10" stroke="#3b82f6" stroke-width="1.6"/>
-  <text x="212" y="206" font-size="17" font-weight="600" fill="#3b82f6">1 · Evidence</text>
-  <rect x="610" y="188" width="78" height="22" rx="11"
-        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
-  <text x="649" y="203" font-size="11" fill="#3b82f6" text-anchor="middle">primary</text>
-  <text x="212" y="232" font-size="12" fill="#6b7280">one agent, no tools · up to 4 photographs as multimodal blocks, or a note alone</text>
-  <text x="212" y="253" font-size="12" fill="#6b7280">→ EvidencePacket: type, severity, calibrated confidence</text>
-
-  <line x1="450" y1="273" x2="450" y2="299" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
-
-  <!-- ==================== confidence floor decision ==================== -->
-  <polygon points="350,340 450,299 550,340 450,381"
-           fill="#f59e0b" fill-opacity="0.12" stroke="#f59e0b" stroke-width="1.8"/>
-  <text x="450" y="345" font-size="13" font-weight="600" fill="#d97706" text-anchor="middle">confidence ≥ 0.55 ?</text>
-
-  <line x1="350" y1="340" x2="296" y2="340" stroke="#f59e0b" stroke-width="1.7" marker-end="url(#arrowAmber)"/>
-  <text x="322" y="332" font-size="11" fill="#d97706" text-anchor="middle">no</text>
-
-  <rect x="40" y="306" width="252" height="68" rx="10"
-        fill="#f59e0b" fill-opacity="0.12" stroke="#f59e0b" stroke-width="1.6"/>
-  <text x="62" y="332" font-size="13" font-weight="600" fill="#d97706">Halt · status: rejected</text>
-  <text x="62" y="354" font-size="11" fill="#6b7280">flagged for human review</text>
-
-  <line x1="450" y1="381" x2="450" y2="409" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
-  <text x="462" y="399" font-size="11" fill="#6b7280">yes</text>
-
-  <!-- ======================= 2. corroboration ======================= -->
-  <rect x="40" y="409" width="820" height="329" rx="14"
-        fill="#8a93a3" fill-opacity="0.05" stroke="#9ca3af" stroke-width="1.3" stroke-dasharray="6 5"/>
-  <text x="62" y="439" font-size="17" font-weight="600" fill="#3b82f6">2 · Corroboration — a Strands GraphBuilder graph</text>
-  <text x="62" y="459" font-size="12" fill="#9ca3af">three independent entry nodes run in parallel; one synthesis node joins them</text>
-
-  <!-- satellite -->
-  <rect x="53" y="480" width="254" height="112" rx="9"
-        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.5"/>
-  <text x="71" y="506" font-size="14" font-weight="600" fill="#0d9488">satellite</text>
-  <rect x="237" y="490" width="52" height="20" rx="10"
+  <!-- scan -->
+  <rect x="40" y="258" width="302" height="100" rx="10"
+        fill="#8a93a3" fill-opacity="0.06" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="62" y="284" font-size="14" font-weight="600" fill="#6b7280">scan.py — periodic scan</text>
+  <rect x="246" y="266" width="80" height="20" rx="10"
         fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
-  <text x="263" y="504" font-size="10.5" fill="#0d9488" text-anchor="middle">fast</text>
-  <text x="71" y="528" font-size="11.5" fill="#6b7280">find_satellite_fire_detections()</text>
-  <text x="71" y="548" font-size="11.5" fill="#9ca3af">source · NASA FIRMS VIIRS</text>
-  <text x="71" y="568" font-size="11.5" fill="#9ca3af">thermal anomalies nearby</text>
+  <text x="286" y="280" font-size="10" fill="#0d9488" text-anchor="middle">no model</text>
+  <text x="62" y="306" font-size="11.5" fill="#6b7280">two HTTP calls per point and arithmetic</text>
+  <text x="62" y="326" font-size="11.5" fill="#6b7280">targets: case coordinates + corridor waypoints</text>
+  <text x="62" y="346" font-size="11.5" fill="#d97706">off by default — a person switches the loop on</text>
 
-  <!-- ground_station -->
-  <rect x="323" y="480" width="254" height="112" rx="9"
-        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.5"/>
-  <text x="341" y="506" font-size="14" font-weight="600" fill="#0d9488">ground_station</text>
-  <rect x="507" y="490" width="52" height="20" rx="10"
-        fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
-  <text x="533" y="504" font-size="10.5" fill="#0d9488" text-anchor="middle">fast</text>
-  <text x="341" y="528" font-size="11.5" fill="#6b7280">get_nearby_air_quality()</text>
-  <text x="341" y="548" font-size="11.5" fill="#9ca3af">source · OpenAQ v3</text>
-  <text x="341" y="568" font-size="11.5" fill="#9ca3af">PM2.5 / PM10 nearby monitors</text>
+  <line x1="191" y1="358" x2="191" y2="384" stroke="#8a93a3" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="427" y1="228" x2="427" y2="384" stroke="#8a93a3" stroke-width="1.6" marker-end="url(#arrow)"/>
 
-  <!-- meteorology -->
-  <rect x="593" y="480" width="254" height="112" rx="9"
-        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.5"/>
-  <text x="611" y="506" font-size="14" font-weight="600" fill="#0d9488">meteorology</text>
-  <rect x="777" y="490" width="52" height="20" rx="10"
-        fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
-  <text x="803" y="504" font-size="10.5" fill="#0d9488" text-anchor="middle">fast</text>
-  <text x="611" y="528" font-size="11.5" fill="#6b7280">get_wind_conditions()</text>
-  <text x="611" y="548" font-size="11.5" fill="#9ca3af">source · Open-Meteo</text>
-  <text x="611" y="568" font-size="11.5" fill="#9ca3af">back-traces the plume upwind</text>
+  <!-- signals -->
+  <rect x="40" y="386" width="460" height="78" rx="10"
+        fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.6"/>
+  <text x="62" y="412" font-size="14" font-weight="600" fill="#0d9488">Signal — one observation at a place and a time</text>
+  <text x="62" y="434" font-size="11.5" fill="#6b7280">strength = how believed · magnitude = how bad · never confused</text>
+  <text x="62" y="452" font-size="11.5" fill="#6b7280">stored and deduplicated on the observation, not the fetch</text>
 
-  <!-- fan-in -->
-  <g fill="none" stroke="#8a93a3" stroke-width="1.7">
-    <polyline points="180,592 180,612 330,612 330,632" marker-end="url(#arrow)"/>
-    <line x1="450" y1="592" x2="450" y2="632" marker-end="url(#arrow)"/>
-    <polyline points="720,592 720,612 570,612 570,632" marker-end="url(#arrow)"/>
-  </g>
+  <line x1="270" y1="464" x2="270" y2="492" stroke="#8a93a3" stroke-width="1.6" marker-end="url(#arrow)"/>
 
-  <!-- synthesis -->
-  <rect x="250" y="632" width="400" height="88" rx="9"
-        fill="#3b82f6" fill-opacity="0.10" stroke="#3b82f6" stroke-width="1.6"/>
-  <text x="272" y="658" font-size="14" font-weight="600" fill="#3b82f6">synthesis</text>
-  <rect x="552" y="642" width="78" height="20" rx="10"
-        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
-  <text x="591" y="656" font-size="10.5" fill="#3b82f6" text-anchor="middle">primary</text>
-  <text x="272" y="680" font-size="11.5" fill="#6b7280">no tools · joins the three streams</text>
-  <text x="272" y="700" font-size="11.5" fill="#6b7280">→ Corroboration (structured output)</text>
-
-  <line x1="450" y1="738" x2="450" y2="766" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
-
-  <!-- ======================== 3. jurisdiction ======================== -->
-  <rect x="190" y="766" width="520" height="118" rx="10"
+  <!-- hotspot detection -->
+  <rect x="40" y="494" width="460" height="112" rx="10"
         fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.6"/>
-  <text x="212" y="796" font-size="17" font-weight="600" fill="#0d9488">3 · Jurisdiction</text>
-  <rect x="632" y="778" width="56" height="20" rx="10"
+  <text x="62" y="520" font-size="15" font-weight="600" fill="#0d9488">hotspots.py — signals become places</text>
+  <text x="62" y="546" font-size="11.5" fill="#6b7280">grouping.py · centroid linkage, 2 km, a 14-day gap rather than an age</text>
+  <text x="62" y="566" font-size="11.5" fill="#6b7280">satellite and station signals are unclear — VIIRS sees heat, not fuel</text>
+  <text x="62" y="586" font-size="11.5" fill="#6b7280">a photograph upgrades a detection rather than sitting beside it</text>
+
+  <line x1="270" y1="606" x2="270" y2="638" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- the hotspot itself -->
+  <rect x="34" y="634" width="472" height="152" rx="16"
+        fill="none" stroke="#3b82f6" stroke-width="1.2" stroke-opacity="0.35"/>
+  <rect x="40" y="640" width="460" height="140" rx="12"
+        fill="#3b82f6" fill-opacity="0.14" stroke="#3b82f6" stroke-width="2.5"/>
+  <text x="62" y="670" font-size="17" font-weight="600" fill="#3b82f6">HOTSPOT — the unit of work</text>
+  <text x="62" y="698" font-size="12" fill="#6b7280">derived on every request · one signal is enough to publish</text>
+  <text x="62" y="720" font-size="12" fill="#d97706">an area, never a point — radius floored at 1 km, a neighbourhood</text>
+  <text x="62" y="742" font-size="12" fill="#d97706">confidence capped at 0.6 without an independent source, however</text>
+  <text x="62" y="764" font-size="12" fill="#d97706">many reports there are — corroboration gates publication</text>
+
+  <!-- fan to forecasting and federation -->
+  <g fill="none" stroke="#8a93a3" stroke-width="1.5">
+    <line x1="270" y1="780" x2="270" y2="796"/>
+    <line x1="151" y1="796" x2="389" y2="796"/>
+    <line x1="151" y1="796" x2="151" y2="814" marker-end="url(#arrow)"/>
+    <line x1="389" y1="796" x2="389" y2="814" marker-end="url(#arrow)"/>
+  </g>
+
+  <rect x="40" y="816" width="222" height="156" rx="10"
+        fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="60" y="842" font-size="14" font-weight="600" fill="#0d9488">Forecasting</text>
+  <rect x="196" y="824" width="48" height="19" rx="9"
         fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
-  <text x="660" y="792" font-size="10.5" fill="#0d9488" text-anchor="middle">fast</text>
-  <text x="212" y="822" font-size="12" fill="#6b7280">reverse_geocode() · Nominatim</text>
-  <text x="212" y="843" font-size="12" fill="#6b7280">lookup_authority() · JSON authority table — data, not code</text>
-  <text x="212" y="864" font-size="12" fill="#6b7280">→ Jurisdiction: authority, statute, response window, escalation tier</text>
+  <text x="220" y="838" font-size="10" fill="#0d9488" text-anchor="middle">fast</text>
+  <text x="60" y="864" font-size="10.5" fill="#6b7280">agents/forecast.py · corridors.py</text>
+  <text x="60" y="884" font-size="10.5" fill="#6b7280">Gemini reads Open-Meteo and the</text>
+  <text x="60" y="902" font-size="10.5" fill="#6b7280">hotspots within 400 km upwind</text>
+  <text x="60" y="924" font-size="10.5" fill="#d97706">not a trained predictor · never an</text>
+  <text x="60" y="942" font-size="10.5" fill="#d97706">official advisory · carries its basis</text>
+  <text x="60" y="960" font-size="10.5" fill="#d97706">and its disclaimer everywhere</text>
 
-  <line x1="450" y1="884" x2="450" y2="912" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+  <rect x="278" y="816" width="222" height="156" rx="10"
+        fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="298" y="842" font-size="14" font-weight="600" fill="#0d9488">Federation</text>
+  <text x="298" y="864" font-size="10.5" fill="#6b7280">federation.py · GET /feed</text>
+  <text x="298" y="884" font-size="10.5" fill="#6b7280">a node publishes what it found and</text>
+  <text x="298" y="902" font-size="10.5" fill="#6b7280">reads its neighbours' — Punjab's</text>
+  <text x="298" y="920" font-size="10.5" fill="#6b7280">burning reaches a Delhi forecast</text>
+  <text x="298" y="942" font-size="10.5" fill="#d97706">a detection layer, not trained weights</text>
+  <text x="298" y="960" font-size="10.5" fill="#d97706">a neighbour's is never republished</text>
 
-  <!-- ========================== 4. drafting ========================== -->
-  <rect x="190" y="912" width="520" height="97" rx="10"
+  <!-- ==================================================================
+       RIGHT COLUMN — the reporting pipeline
+       ================================================================== -->
+
+  <rect x="580" y="136" width="460" height="80" rx="10"
+        fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="602" y="164" font-size="14" font-weight="600" fill="#6b7280">Citizen report — geotagged photograph + note</text>
+  <text x="602" y="186" font-size="11.5" fill="#9ca3af">POST /reports · answers 202, the run is a background task</text>
+  <text x="602" y="206" font-size="11.5" fill="#9ca3af">images.py normalises first — format by bytes, never by suffix</text>
+
+  <line x1="810" y1="216" x2="810" y2="230" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- 1 evidence -->
+  <rect x="580" y="232" width="460" height="92" rx="10"
         fill="#3b82f6" fill-opacity="0.10" stroke="#3b82f6" stroke-width="1.6"/>
-  <text x="212" y="942" font-size="17" font-weight="600" fill="#3b82f6">4 · Drafting</text>
-  <rect x="610" y="924" width="78" height="20" rx="10"
+  <text x="602" y="262" font-size="17" font-weight="600" fill="#3b82f6">1 · Evidence</text>
+  <rect x="940" y="246" width="78" height="22" rx="11"
         fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
-  <text x="649" y="938" font-size="10.5" fill="#3b82f6" text-anchor="middle">primary</text>
-  <text x="212" y="968" font-size="12" fill="#6b7280">one agent · cites only the statute it was handed, names no party</text>
-  <text x="212" y="989" font-size="12" fill="#6b7280">→ Complaint: subject, body in English + local-language translation</text>
+  <text x="979" y="261" font-size="11" fill="#3b82f6" text-anchor="middle">primary</text>
+  <text x="602" y="288" font-size="11.5" fill="#6b7280">one agent, no tools · up to 4 photographs in one message, or a note alone</text>
+  <text x="602" y="310" font-size="11.5" fill="#6b7280">→ EvidencePacket: type, severity, calibrated confidence</text>
 
-  <line x1="450" y1="1009" x2="450" y2="1039" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+  <line x1="810" y1="324" x2="810" y2="356" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
 
-  <!-- ==================== human confirmation gate ==================== -->
-  <rect x="124" y="1033" width="652" height="109" rx="16"
-        fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-opacity="0.35"/>
-  <rect x="130" y="1039" width="640" height="97" rx="12"
-        fill="#f59e0b" fill-opacity="0.14" stroke="#f59e0b" stroke-width="2.5"/>
-  <text x="450" y="1071" font-size="15" font-weight="700" letter-spacing="1.5"
-        fill="#d97706" text-anchor="middle">HUMAN CONFIRMATION GATE</text>
-  <text x="450" y="1095" font-size="12.5" fill="#6b7280" text-anchor="middle">the pipeline stops here — status: AWAITING_CONFIRMATION</text>
-  <text x="450" y="1116" font-size="12.5" fill="#6b7280" text-anchor="middle">nothing is filed until a person calls POST /cases/{id}/confirm</text>
+  <!-- confidence floor -->
+  <polygon points="720,400 810,360 900,400 810,440"
+           fill="#f59e0b" fill-opacity="0.12" stroke="#f59e0b" stroke-width="1.8"/>
+  <text x="810" y="405" font-size="13" font-weight="600" fill="#d97706" text-anchor="middle">confidence ≥ 0.55 ?</text>
 
-  <line x1="450" y1="1136" x2="450" y2="1164" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+  <line x1="900" y1="400" x2="906" y2="400" stroke="#f59e0b" stroke-width="1.7" marker-end="url(#arrowAmber)"/>
 
-  <!-- =========================== 5. filing =========================== -->
-  <rect x="190" y="1164" width="520" height="118" rx="10"
-        fill="none" stroke="#9ca3af" stroke-width="1.5"/>
-  <text x="212" y="1194" font-size="17" font-weight="600" fill="#6b7280">5 · Filing</text>
-  <rect x="602" y="1176" width="86" height="20" rx="10"
-        fill="#f59e0b" fill-opacity="0.20" stroke="#f59e0b" stroke-width="1"/>
-  <text x="645" y="1190" font-size="10.5" fill="#d97706" text-anchor="middle">SANDBOX</text>
-  <text x="212" y="1220" font-size="12" fill="#6b7280">writes an .eml envelope to a local sandbox outbox · status: filed</text>
-  <text x="212" y="1241" font-size="12" fill="#d97706">live filing raises rather than sends — no delivery transport</text>
-  <text x="212" y="1262" font-size="12" fill="#d97706">is wired in, deliberately. Every authority address is .invalid</text>
+  <rect x="910" y="368" width="130" height="70" rx="9"
+        fill="#f59e0b" fill-opacity="0.12" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="926" y="392" font-size="11.5" font-weight="600" fill="#d97706">no · halt</text>
+  <text x="926" y="410" font-size="10" fill="#6b7280">status: rejected</text>
+  <text x="926" y="428" font-size="10" fill="#6b7280">human review</text>
 
-  <line x1="450" y1="1282" x2="450" y2="1312" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
-  <text x="462" y="1302" font-size="11" fill="#6b7280">timer · response window lapses</text>
+  <line x1="810" y1="440" x2="810" y2="470" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+  <text x="822" y="460" font-size="11" fill="#6b7280">yes</text>
 
-  <!-- ===================== 6. tracking the case ===================== -->
-  <rect x="190" y="1312" width="520" height="34" rx="8"
-        fill="#8a93a3" fill-opacity="0.06" stroke="#9ca3af" stroke-width="1.2"/>
-  <text x="450" y="1334" font-size="14" font-weight="600" fill="#6b7280" text-anchor="middle">6 · Tracking — the case outlives the run</text>
+  <!-- 2 corroboration -->
+  <rect x="580" y="472" width="460" height="240" rx="14"
+        fill="#8a93a3" fill-opacity="0.05" stroke="#9ca3af" stroke-width="1.3" stroke-dasharray="6 5"/>
+  <text x="592" y="500" font-size="15" font-weight="600" fill="#0d9488">2 · Corroboration — a GraphBuilder graph</text>
+  <text x="592" y="520" font-size="11.5" fill="#9ca3af">three independent entry nodes in parallel · all four on the fast tier</text>
 
-  <line x1="450" y1="1346" x2="450" y2="1374" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
-  <line x1="200" y1="1374" x2="700" y2="1374" stroke="#8a93a3" stroke-width="1.4"/>
-  <line x1="200" y1="1374" x2="200" y2="1398" stroke="#8a93a3" stroke-width="1.4" marker-end="url(#arrow)"/>
-  <line x1="450" y1="1374" x2="450" y2="1398" stroke="#8a93a3" stroke-width="1.4" marker-end="url(#arrow)"/>
-  <line x1="700" y1="1374" x2="700" y2="1398" stroke="#8a93a3" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <rect x="592" y="536" width="140" height="76" rx="9"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.4"/>
+  <text x="608" y="560" font-size="12" font-weight="600" fill="#0d9488">satellite</text>
+  <text x="608" y="580" font-size="10.5" fill="#6b7280">NASA FIRMS VIIRS</text>
+  <text x="608" y="598" font-size="10" fill="#9ca3af">thermal anomalies</text>
 
-  <rect x="86" y="1398" width="228" height="116" rx="10"
-        fill="#f59e0b" fill-opacity="0.10" stroke="#f59e0b" stroke-width="1.5"/>
-  <text x="108" y="1424" font-size="13" font-weight="600" fill="#d97706">Acknowledged</text>
-  <text x="108" y="1446" font-size="11" fill="#6b7280">the authority replied</text>
-  <text x="108" y="1466" font-size="11" fill="#d97706">the clock RESTARTS, it does</text>
-  <text x="108" y="1484" font-size="11" fill="#d97706">not stop — a receipt is not</text>
-  <text x="108" y="1502" font-size="11" fill="#d97706">a remedy</text>
+  <rect x="744" y="536" width="140" height="76" rx="9"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.4"/>
+  <text x="760" y="560" font-size="12" font-weight="600" fill="#0d9488">ground_station</text>
+  <text x="760" y="580" font-size="10.5" fill="#6b7280">OpenAQ v3</text>
+  <text x="760" y="598" font-size="10" fill="#9ca3af">PM2.5 / PM10 nearby</text>
 
-  <rect x="336" y="1398" width="228" height="116" rx="10"
-        fill="none" stroke="#9ca3af" stroke-width="1.5"/>
-  <text x="358" y="1424" font-size="13" font-weight="600" fill="#6b7280">Escalated</text>
-  <text x="358" y="1446" font-size="11" fill="#6b7280">window lapsed in silence</text>
-  <text x="358" y="1466" font-size="11" fill="#6b7280">re-filed one tier up · once</text>
-  <text x="358" y="1484" font-size="11" fill="#6b7280">only — the table has no</text>
-  <text x="358" y="1502" font-size="11" fill="#6b7280">third tier</text>
+  <rect x="896" y="536" width="140" height="76" rx="9"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.4"/>
+  <text x="912" y="560" font-size="12" font-weight="600" fill="#0d9488">meteorology</text>
+  <text x="912" y="580" font-size="10.5" fill="#6b7280">Open-Meteo</text>
+  <text x="912" y="598" font-size="10" fill="#9ca3af">back-traces the plume</text>
 
-  <rect x="586" y="1398" width="228" height="116" rx="10"
-        fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
-  <text x="608" y="1424" font-size="13" font-weight="600" fill="#0d9488">Resolved · Withdrawn</text>
-  <text x="608" y="1446" font-size="11" fill="#6b7280">terminal · nothing further</text>
-  <text x="608" y="1466" font-size="11" fill="#6b7280">is filed or chased</text>
-  <text x="608" y="1486" font-size="11" fill="#6b7280">a withdrawn case also</text>
-  <text x="608" y="1504" font-size="11" fill="#6b7280">leaves the public register</text>
+  <g fill="none" stroke="#8a93a3" stroke-width="1.5">
+    <polyline points="662,612 662,626 750,626 750,638" marker-end="url(#arrow)"/>
+    <line x1="814" y1="612" x2="814" y2="638" marker-end="url(#arrow)"/>
+    <polyline points="966,612 966,626 878,626 878,638" marker-end="url(#arrow)"/>
+  </g>
 
-  <polyline points="86,1456 48,1456 48,1230 186,1230"
-            fill="none" stroke="#8a93a3" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
-  <text x="36" y="1340" font-size="10.5" fill="#6b7280" text-anchor="middle"
-        transform="rotate(-90 36 1340)">a fresh window, then escalation is due again</text>
+  <rect x="660" y="640" width="300" height="60" rx="9"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.5"/>
+  <text x="678" y="664" font-size="13" font-weight="600" fill="#0d9488">synthesis</text>
+  <text x="678" y="686" font-size="10.5" fill="#6b7280">no tools · absent evidence is not disproof</text>
 
-  <!-- =========================== 7. RTI =========================== -->
-  <line x1="450" y1="1514" x2="450" y2="1548" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
-  <text x="462" y="1538" font-size="11" fill="#6b7280">a separate citizen action — never automatic</text>
+  <line x1="810" y1="712" x2="810" y2="762" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
 
-  <rect x="190" y="1548" width="520" height="118" rx="10"
-        fill="#3b82f6" fill-opacity="0.08" stroke="#3b82f6" stroke-width="1.6"/>
-  <text x="212" y="1578" font-size="17" font-weight="600" fill="#3b82f6">7 · Right to Information</text>
-  <rect x="610" y="1560" width="78" height="22" rx="11"
-        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
-  <text x="649" y="1575" font-size="11" fill="#3b82f6" text-anchor="middle">primary</text>
-  <text x="212" y="1604" font-size="12" fill="#6b7280">asks the authority's PIO what is on the file · RTI Act 2005</text>
-  <text x="212" y="1625" font-size="12" fill="#6b7280">a statutory 30-day duty to reply the complaint never carried</text>
-  <text x="212" y="1646" font-size="12" fill="#d97706">clock runs from filed_at · an acknowledgement does not restart it</text>
-
-  <!-- ============ clustering, feeding the drafting stage ============ -->
-  <rect x="40" y="898" width="132" height="112" rx="10"
-        fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
-  <text x="62" y="924" font-size="13" font-weight="600" fill="#0d9488">Clustering</text>
-  <text x="62" y="946" font-size="10.5" fill="#6b7280">every earlier case,</text>
-  <text x="62" y="964" font-size="10.5" fill="#6b7280">grouped by place,</text>
-  <text x="62" y="982" font-size="10.5" fill="#6b7280">type and time —</text>
-  <text x="62" y="1000" font-size="10.5" fill="#6b7280">a pattern, not one</text>
-  <line x1="172" y1="954" x2="186" y2="954" stroke="#10b981" stroke-width="1.6" marker-end="url(#arrow)"/>
-
-  <!-- ============================ legend ============================ -->
-  <rect x="40" y="1782" width="580" height="128" rx="10"
-        fill="none" stroke="#9ca3af" stroke-width="1.1" stroke-dasharray="4 4"/>
-
-  <rect x="62" y="1800" width="78" height="22" rx="11"
-        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
-  <text x="101" y="1815" font-size="11" fill="#3b82f6" text-anchor="middle">primary</text>
-  <text x="156" y="1815" font-size="12" fill="#6b7280">judgement — reading a photograph, drafting a complaint</text>
-
-  <rect x="62" y="1834" width="78" height="22" rx="11"
+  <!-- 3 jurisdiction -->
+  <rect x="580" y="764" width="460" height="110" rx="10"
+        fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1.6"/>
+  <text x="602" y="794" font-size="17" font-weight="600" fill="#0d9488">3 · Jurisdiction</text>
+  <rect x="962" y="778" width="56" height="20" rx="10"
         fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
-  <text x="101" y="1849" font-size="11" fill="#0d9488" text-anchor="middle">fast</text>
-  <text x="156" y="1849" font-size="12" fill="#6b7280">mechanical — call one tool, summarise what it returned</text>
+  <text x="990" y="792" font-size="10.5" fill="#0d9488" text-anchor="middle">fast</text>
+  <text x="602" y="820" font-size="11.5" fill="#6b7280">reverse_geocode() · lookup_authority() over a JSON table — data, not code</text>
+  <text x="602" y="840" font-size="11.5" fill="#6b7280">all 28 states and 8 union territories, plus a generic fallback</text>
+  <text x="602" y="860" font-size="11.5" fill="#6b7280">→ Jurisdiction: authority, statute, window, tier, and reported coverage</text>
 
-  <rect x="62" y="1868" width="78" height="22" rx="6"
+  <line x1="810" y1="874" x2="810" y2="900" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- 4 drafting -->
+  <rect x="580" y="902" width="460" height="92" rx="10"
+        fill="#3b82f6" fill-opacity="0.10" stroke="#3b82f6" stroke-width="1.6"/>
+  <text x="602" y="932" font-size="17" font-weight="600" fill="#3b82f6">4 · Drafting</text>
+  <rect x="940" y="916" width="78" height="20" rx="10"
+        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
+  <text x="979" y="930" font-size="10.5" fill="#3b82f6" text-anchor="middle">primary</text>
+  <text x="602" y="958" font-size="11.5" fill="#6b7280">cites only the statute it was handed · names no party · claims no certainty</text>
+  <text x="602" y="980" font-size="11.5" fill="#6b7280">→ Complaint: English body + a translation into the region's main language</text>
+
+  <line x1="810" y1="994" x2="810" y2="1022" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- human gate -->
+  <rect x="574" y="1018" width="472" height="108" rx="16"
+        fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-opacity="0.35"/>
+  <rect x="580" y="1024" width="460" height="96" rx="12"
+        fill="#f59e0b" fill-opacity="0.14" stroke="#f59e0b" stroke-width="2.5"/>
+  <text x="810" y="1056" font-size="15" font-weight="700" letter-spacing="1.5"
+        fill="#d97706" text-anchor="middle">HUMAN CONFIRMATION GATE</text>
+  <text x="810" y="1080" font-size="12.5" fill="#6b7280" text-anchor="middle">the pipeline stops here — status: AWAITING_CONFIRMATION</text>
+  <text x="810" y="1101" font-size="12.5" fill="#6b7280" text-anchor="middle">nothing is filed until a person calls POST /cases/{id}/confirm</text>
+
+  <line x1="810" y1="1120" x2="810" y2="1148" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+
+  <!-- 5 filing -->
+  <rect x="580" y="1150" width="460" height="110" rx="10"
+        fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="602" y="1180" font-size="17" font-weight="600" fill="#6b7280">5 · Filing</text>
+  <rect x="932" y="1164" width="86" height="20" rx="10"
+        fill="#f59e0b" fill-opacity="0.20" stroke="#f59e0b" stroke-width="1"/>
+  <text x="975" y="1178" font-size="10.5" fill="#d97706" text-anchor="middle">SANDBOX</text>
+  <text x="602" y="1206" font-size="11.5" fill="#6b7280">writes an envelope to a local sandbox outbox · status: filed</text>
+  <text x="602" y="1227" font-size="11.5" fill="#d97706">live filing raises rather than sends — no delivery transport is wired</text>
+  <text x="602" y="1248" font-size="11.5" fill="#d97706">in, deliberately. Every committed authority address is .invalid</text>
+
+  <line x1="810" y1="1260" x2="810" y2="1290" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+  <text x="822" y="1280" font-size="11" fill="#6b7280">timer · the response window lapses</text>
+
+  <!-- 6 tracking -->
+  <rect x="580" y="1292" width="460" height="34" rx="8"
+        fill="#8a93a3" fill-opacity="0.06" stroke="#9ca3af" stroke-width="1.2"/>
+  <text x="810" y="1314" font-size="14" font-weight="600" fill="#6b7280" text-anchor="middle">6 · Tracking — the case outlives the run</text>
+
+  <g fill="none" stroke="#8a93a3" stroke-width="1.4">
+    <line x1="810" y1="1326" x2="810" y2="1342"/>
+    <line x1="652" y1="1342" x2="966" y2="1342"/>
+    <line x1="652" y1="1342" x2="652" y2="1364" marker-end="url(#arrow)"/>
+    <line x1="810" y1="1342" x2="810" y2="1364" marker-end="url(#arrow)"/>
+    <line x1="966" y1="1342" x2="966" y2="1364" marker-end="url(#arrow)"/>
+  </g>
+
+  <rect x="580" y="1366" width="145" height="126" rx="10"
+        fill="#f59e0b" fill-opacity="0.10" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="598" y="1392" font-size="12.5" font-weight="600" fill="#d97706">Acknowledged</text>
+  <text x="598" y="1414" font-size="10" fill="#6b7280">the authority replied</text>
+  <text x="598" y="1434" font-size="10" fill="#d97706">the clock RESTARTS,</text>
+  <text x="598" y="1452" font-size="10" fill="#d97706">it does not stop — a</text>
+  <text x="598" y="1470" font-size="10" fill="#d97706">receipt is not a remedy</text>
+
+  <rect x="737" y="1366" width="145" height="126" rx="10"
+        fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="755" y="1392" font-size="12.5" font-weight="600" fill="#6b7280">Escalated</text>
+  <text x="755" y="1414" font-size="10" fill="#6b7280">the window lapsed in</text>
+  <text x="755" y="1432" font-size="10" fill="#6b7280">silence · re-filed one</text>
+  <text x="755" y="1450" font-size="10" fill="#6b7280">tier up, once only —</text>
+  <text x="755" y="1468" font-size="10" fill="#6b7280">there is no third tier</text>
+
+  <rect x="894" y="1366" width="145" height="126" rx="10"
+        fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="912" y="1392" font-size="12.5" font-weight="600" fill="#0d9488">Resolved ·</text>
+  <text x="912" y="1410" font-size="12.5" font-weight="600" fill="#0d9488">Withdrawn</text>
+  <text x="912" y="1432" font-size="10" fill="#6b7280">terminal · nothing is</text>
+  <text x="912" y="1450" font-size="10" fill="#6b7280">filed or chased, and a</text>
+  <text x="912" y="1468" font-size="10" fill="#6b7280">withdrawn case leaves</text>
+  <text x="912" y="1486" font-size="10" fill="#6b7280">the map and the register</text>
+
+  <polyline points="580,1428 556,1428 556,1219 576,1219"
+            fill="none" stroke="#8a93a3" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <text x="546" y="1324" font-size="10" fill="#6b7280" text-anchor="middle"
+        transform="rotate(-90 546 1324)">a fresh window, then escalation is due again</text>
+
+  <!-- 7 RTI -->
+  <line x1="810" y1="1492" x2="810" y2="1524" stroke="#8a93a3" stroke-width="1.7" marker-end="url(#arrow)"/>
+  <text x="822" y="1514" font-size="11" fill="#6b7280">a separate action, never automatic</text>
+
+  <rect x="580" y="1526" width="460" height="110" rx="10"
+        fill="#3b82f6" fill-opacity="0.08" stroke="#3b82f6" stroke-width="1.6"/>
+  <text x="602" y="1556" font-size="17" font-weight="600" fill="#3b82f6">7 · Right to Information</text>
+  <rect x="940" y="1540" width="78" height="22" rx="11"
+        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
+  <text x="979" y="1555" font-size="11" fill="#3b82f6" text-anchor="middle">primary</text>
+  <text x="602" y="1582" font-size="11.5" fill="#6b7280">asks the authority's PIO what is on the file · RTI Act 2005</text>
+  <text x="602" y="1603" font-size="11.5" fill="#6b7280">a statutory 30-day duty to reply that the complaint never carried</text>
+  <text x="602" y="1624" font-size="11.5" fill="#d97706">its clock runs from filed_at · an acknowledgement does not restart it</text>
+
+  <!-- ==================================================================
+       the two layers meeting
+       ================================================================== -->
+
+  <!-- a classified case becomes a signal -->
+  <polyline points="578,300 540,300 540,430 504,430"
+            fill="none" stroke="#10b981" stroke-width="1.6" stroke-dasharray="5 4"
+            marker-end="url(#arrowGreen)"/>
+  <text x="528" y="362" font-size="10" fill="#0d9488" text-anchor="middle"
+        transform="rotate(-90 528 362)">a classified case becomes a citizen_report signal</text>
+
+  <!-- acting on a hotspot enters the pipeline -->
+  <polyline points="502,730 700,730 700,760"
+            fill="none" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="5 4"
+            marker-end="url(#arrow)"/>
+  <text x="506" y="750" font-size="10.5" fill="#3b82f6">one action available from a detection</text>
+
+  <!-- ==================================================================
+       LEFT COLUMN, lower — legend and the rules
+       ================================================================== -->
+
+  <rect x="40" y="1020" width="460" height="168" rx="10"
+        fill="none" stroke="#9ca3af" stroke-width="1.1" stroke-dasharray="4 4"/>
+  <text x="62" y="1050" font-size="12.5" font-weight="600" fill="#6b7280">Where inference is spent</text>
+
+  <rect x="62" y="1066" width="78" height="22" rx="11"
+        fill="#3b82f6" fill-opacity="0.20" stroke="#3b82f6" stroke-width="1"/>
+  <text x="101" y="1081" font-size="11" fill="#3b82f6" text-anchor="middle">primary</text>
+  <text x="156" y="1081" font-size="11" fill="#6b7280">judgement — reading a photograph, drafting a complaint</text>
+
+  <rect x="62" y="1100" width="78" height="22" rx="11"
+        fill="#10b981" fill-opacity="0.20" stroke="#10b981" stroke-width="1"/>
+  <text x="101" y="1115" font-size="11" fill="#0d9488" text-anchor="middle">fast</text>
+  <text x="156" y="1115" font-size="11" fill="#6b7280">mechanical — call one tool, summarise what came back</text>
+
+  <rect x="62" y="1134" width="78" height="22" rx="6"
         fill="#f59e0b" fill-opacity="0.16" stroke="#f59e0b" stroke-width="1"/>
-  <text x="101" y="1883" font-size="11" fill="#d97706" text-anchor="middle">safety</text>
-  <text x="156" y="1883" font-size="12" fill="#6b7280">human control — the pipeline stops and a person decides</text>
+  <text x="101" y="1149" font-size="11" fill="#d97706" text-anchor="middle">safety</text>
+  <text x="156" y="1149" font-size="11" fill="#6b7280">human control — the pipeline stops and a person decides</text>
 
-  <!-- ====================== safety properties ====================== -->
-  <rect x="640" y="1782" width="420" height="152" rx="10"
+  <text x="62" y="1176" font-size="10.5" fill="#9ca3af">Both tiers ship on Gemini — flash and flash-lite. The scan spends nothing.</text>
+
+  <rect x="40" y="1212" width="460" height="196" rx="10"
         fill="none" stroke="#f59e0b" stroke-width="1.1" stroke-opacity="0.5" stroke-dasharray="4 4"/>
-  <text x="662" y="1814" font-size="12.5" font-weight="600" fill="#d97706">Safety properties</text>
-  <text x="662" y="1840" font-size="11" fill="#6b7280">· no delivery transport is wired in — by design</text>
-  <text x="662" y="1862" font-size="11" fill="#6b7280">· every authority address is on the reserved .invalid TLD</text>
-  <text x="662" y="1884" font-size="11" fill="#6b7280">· filing happens only after an explicit human confirm</text>
-  <text x="662" y="1906" font-size="11" fill="#6b7280">· the reporter's contact never leaves the process</text>
+  <text x="62" y="1242" font-size="12.5" font-weight="600" fill="#d97706">A hotspot is a public claim about a place</text>
+  <text x="62" y="1268" font-size="11" fill="#6b7280">· area granularity, never a point on a building — a 1 km floor</text>
+  <text x="62" y="1290" font-size="11" fill="#6b7280">· confidence is capped, not merely flagged, without an instrument</text>
+  <text x="62" y="1312" font-size="11" fill="#6b7280">· a citizen sensor is evidence, and is never corroboration</text>
+  <text x="62" y="1334" font-size="11" fill="#6b7280">· every forecast is labelled model-derived and shows its inputs</text>
+  <text x="62" y="1356" font-size="11" fill="#6b7280">· no responsible party is ever named, on the map or in a complaint</text>
+  <text x="62" y="1386" font-size="10.5" fill="#9ca3af">Hard constraint 7 · a map that can be aimed at an address is a weapon</text>
+
+  <rect x="40" y="1432" width="460" height="180" rx="10"
+        fill="none" stroke="#f59e0b" stroke-width="1.1" stroke-opacity="0.5" stroke-dasharray="4 4"/>
+  <text x="62" y="1462" font-size="12.5" font-weight="600" fill="#d97706">Nothing reaches a real regulator</text>
+  <text x="62" y="1488" font-size="11" fill="#6b7280">· no delivery transport is wired in — by design, not as a gap</text>
+  <text x="62" y="1510" font-size="11" fill="#6b7280">· every committed authority address is on the reserved .invalid TLD</text>
+  <text x="62" y="1532" font-size="11" fill="#6b7280">· filing happens only after an explicit human confirmation</text>
+  <text x="62" y="1554" font-size="11" fill="#6b7280">· the reporter's contact leaves on no route, and on no feed</text>
+  <text x="62" y="1576" font-size="11" fill="#6b7280">· the scan is on a timer; escalation and RTI never are</text>
 </svg>

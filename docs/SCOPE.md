@@ -1,3 +1,17 @@
+# Scope
+
+This file is cumulative and in version order. Each section records what that
+version was for, what it deliberately was not, and why — so a decision that was
+already made does not get relitigated or quietly undone.
+
+**The current section is [v0.3](#scope--v03-the-code-for-communities-pivot)**,
+where the unit of work becomes a hotspot rather than a complaint. Read that
+first if you want to know what the system is now. The v0.1 and v0.2 sections
+below are kept as written rather than revised: they are the record of what was
+believed at the time, and the v0.3 diagnosis is only legible against them.
+
+---
+
 # Scope — v0.1
 
 The point of this file is the non-goals. The build window is short, and the
