@@ -591,3 +591,17 @@
 @media (max-width: 899.98px) {
   .ops-map { height: 42vh; min-height: 260px; max-height: 340px; }
 }
+
+/* Why a hotspot has no pollution type yet, and what would give it one.
+ *
+ * Quiet on purpose. It sits under the corroboration band, which must stay the
+ * loudest thing on an uncorroborated card, and it is explanatory rather than a
+ * warning — an unidentified hotspot is a working instrument reporting a real
+ * limit, not a fault. */
+.hotspot-unidentified {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}

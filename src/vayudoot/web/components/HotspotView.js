@@ -22,6 +22,7 @@ import { useHotspot } from "../lib/store.js";
 import {
   words, onDate, atTime, plural, percent, radiusLabel, spanLabel,
   sourceBreakdown, sourceLabel, SOURCE_BLURB, corroborationOf,
+  kindLabel, isUnidentified, whyUnidentified,
 } from "../lib/format.js";
 import { HotspotsMap } from "./HotspotsMap.js";
 import { Figures, CorroborationBadge } from "./HotspotMarks.js";
@@ -48,7 +49,8 @@ function SignalRow({ signal }) {
             <span class="tnum">${percent(signal.strength)}</span></span>
           <span><span class="figure-label">Size</span>
             <span class="tnum">${percent(signal.magnitude)}</span></span>
-          <span class="signal-kind">${words(signal.pollution_type)}</span>
+          ${signal.pollution_type !== "unclear" &&
+            html`<span class="signal-kind">${words(signal.pollution_type)}</span>`}
         </span>
       </span>
     </li>`;
@@ -69,7 +71,7 @@ export function HotspotView({ hotspotId }) {
           <p class="hotspot-lead">
             <${HotspotIcon} />
             <span>
-              <strong>${words(hotspot.pollution_type)}</strong>, over an area
+              <strong>${kindLabel(hotspot)}</strong>, over an area
               ${" "}${radiusLabel(hotspot.radius_km)} across, built from
               ${" "}${plural(hotspot.signal_count, "signal")} across
               ${" "}${spanLabel(hotspot.span_days)}.

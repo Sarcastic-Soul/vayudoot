@@ -11,8 +11,10 @@
 
 import { html } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
-import { words, shortWhen, plural, radiusLabel, sourceBreakdown, sourceLabel }
-  from "../lib/format.js";
+import {
+  words, shortWhen, plural, radiusLabel, sourceBreakdown, sourceLabel,
+  kindLabel, isUnidentified, whyUnidentified,
+} from "../lib/format.js";
 import { Figures, CorroborationBadge } from "./HotspotMarks.js";
 import { SourceIcon } from "./Icons.js";
 
@@ -24,13 +26,16 @@ export function HotspotCard({ hotspot }) {
       <button type="button" class="hotspot-card"
               onClick=${() => navigate(hotspot.hotspot_id)}>
         <span class="hotspot-row">
-          <span class="hotspot-kind">${words(hotspot.pollution_type)}</span>
+          <span class="hotspot-kind">${kindLabel(hotspot)}</span>
           <span class="hotspot-id tnum">${hotspot.hotspot_id}</span>
         </span>
 
         <${Figures} hotspot=${hotspot} />
 
         <${CorroborationBadge} hotspot=${hotspot} />
+
+        ${isUnidentified(hotspot) &&
+          html`<span class="hotspot-unidentified">${whyUnidentified(hotspot)}</span>`}
 
         <span class="hotspot-sources">
           ${sources.map(({ source, count, independent }) => {

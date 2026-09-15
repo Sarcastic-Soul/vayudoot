@@ -267,6 +267,37 @@ export const SOURCE_BLURB = {
 
 export const sourceLabel = (source) => SOURCE_LABEL[source] || words(source);
 
+/* What to call a hotspot whose pollution type is still `unclear`.
+ *
+ * Every satellite and station signal is unclassified by design: VIIRS sees heat
+ * and not fuel, and a PM2.5 spike names no source at all. That is honest, but
+ * rendering the enum value puts the word "Unclear" in the largest type on the
+ * card, which reads as the system being confused rather than as the instrument
+ * having a known limit.
+ *
+ * So it is named for what it *is* — a detected event nobody has identified —
+ * and the card says what would resolve it. That is not decoration: a photograph
+ * is the only thing that classifies one of these, and the person reading the
+ * map is the person who could go and take it. */
+export const kindLabel = (hotspot) =>
+  hotspot.pollution_type === "unclear"
+    ? "Unidentified source"
+    : words(hotspot.pollution_type);
+
+export const isUnidentified = (hotspot) => hotspot.pollution_type === "unclear";
+
+/* One line saying why a hotspot has no type yet, and what would give it one. */
+export function whyUnidentified(hotspot) {
+  const counts = hotspot.source_counts || {};
+  const instruments =
+    (counts.satellite || 0) + (counts.ground_station || 0) + (counts.citizen_sensor || 0);
+  if (!instruments) return "";
+  return (
+    "Detected by instruments, which measure but cannot identify. " +
+    "A photograph from this location would classify it."
+  );
+}
+
 /* Signals per source, ordered so the independent ones are read first — they
  * are the half of the list that decides whether this is corroborated at all. */
 export function sourceBreakdown(counts) {
