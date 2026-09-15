@@ -222,6 +222,7 @@ accused party or claiming certainty the evidence does not support.
 | [`docs/architecture.md`](docs/architecture.md) | How the stages fit together and why |
 | [`docs/SCOPE.md`](docs/SCOPE.md) | What each version is, and what it deliberately is not |
 | [`docs/federation.md`](docs/federation.md) | The feed contract, and how a second state stands up a node |
+| [`docs/pitch/`](docs/pitch/) | Submission package: deck, video script, description |
 | [`docs/deployment.md`](docs/deployment.md) | Free-tier deployment and where the cost is |
 | [`evals/README.md`](evals/README.md) | The prompt evaluation harness: how to run it, how to add a case |
 | [`CLAUDE.md`](CLAUDE.md) | Working agreement and the constraints that must hold |

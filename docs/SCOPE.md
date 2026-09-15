@@ -369,10 +369,14 @@ left. Rubric weights are in `PROBLEM-STATEMENTS.md`.
       Union territories have Pollution Control Committees rather than Boards and
       the entries reflect that. All 159 committed addresses are on `.invalid`.
 
-- [ ] **Submission package.** Public repo (already), a 3–5 minute end-to-end
-      demo video, a 10–12 slide deck, a 2–3 line description, the deployed link.
-      Under these weights the deck is where Deployability and Impact are
-      actually argued. It needs days, not the last evening.
+- [x] **Submission package.** In `docs/pitch/`: a 12-slide deck as one
+      self-contained HTML file, a shot-by-shot video script with narration and
+      the commands to set the demo up, and the 2–3 line description. The repo is
+      public and the deployed link is live.
+
+      Outstanding, and the one thing that cannot be written: **recording the
+      video**. The script is timed to four minutes and says what to do if the
+      Gemini quota runs out mid-take.
 
 ## Under consideration, not committed
 

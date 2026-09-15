@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vayudoot — pitch deck</title>
+<style>
+  :root {
+    --ink: #0d1117;
+    --ink-soft: #4a5568;
+    --page: #ffffff;
+    --line: #dde3ea;
+    --accent: #0f766e;
+    --accent-soft: #e6f4f1;
+    --warn: #b45309;
+    --warn-soft: #fef6e7;
+    --bad: #b91c1c;
+    --measure: 34rem;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #eef1f5;
+    color: var(--ink);
+    font: 16px/1.55 "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .deck { padding: 2rem 1rem 4rem; }
+
+  .slide {
+    position: relative;
+    width: min(1120px, 100%);
+    min-height: 630px;
+    margin: 0 auto 1.5rem;
+    padding: 3.25rem 3.5rem 3.75rem;
+    background: var(--page);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(13, 17, 23, .07);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .num {
+    position: absolute;
+    right: 3.5rem;
+    bottom: 1.75rem;
+    font-size: .75rem;
+    letter-spacing: .08em;
+    color: #9aa5b1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .eyebrow {
+    font-size: .75rem;
+    font-weight: 650;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 .85rem;
+  }
+
+  h1 { font-size: 3.4rem; line-height: 1.04; margin: 0 0 1rem; letter-spacing: -.025em; }
+  h2 { font-size: 2.1rem; line-height: 1.12; margin: 0 0 1.35rem; letter-spacing: -.02em; }
+  h3 { font-size: 1rem; margin: 0 0 .4rem; }
+
+  p { margin: 0 0 1rem; max-width: var(--measure); }
+  .lede { font-size: 1.3rem; line-height: 1.45; color: var(--ink-soft); max-width: 46rem; }
+  .big { font-size: 1.55rem; line-height: 1.4; max-width: 44rem; font-weight: 500; }
+
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; }
+  .cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+  .grow { flex: 1; }
+
+  ul { margin: 0 0 1rem; padding-left: 1.1rem; max-width: var(--measure); }
+  li { margin-bottom: .5rem; }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 1.1rem 1.25rem;
+    background: #fbfcfd;
+  }
+  .card h3 { color: var(--accent); font-size: .8rem; letter-spacing: .07em; text-transform: uppercase; }
+  .card p { font-size: .95rem; margin: 0; color: var(--ink-soft); }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 1rem 1.25rem;
+    border-radius: 0 4px 4px 0;
+    max-width: 46rem;
+  }
+  .callout p { margin: 0; }
+  .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+
+  .stat { font-size: 3rem; font-weight: 700; line-height: 1; letter-spacing: -.03em; }
+  .stat-label { font-size: .9rem; color: var(--ink-soft); margin-top: .35rem; }
+
+  figure { margin: 0; }
+  figure img {
+    width: 100%;
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  figcaption { font-size: .82rem; color: var(--ink-soft); margin-top: .6rem; }
+
+  code {
+    font-family: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: .88em;
+    background: #f2f5f8;
+    padding: .1em .35em;
+    border-radius: 3px;
+  }
+
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 650; }
+  td.tick { color: var(--accent); font-weight: 650; white-space: nowrap; }
+
+  .flow { display: flex; gap: .65rem; align-items: stretch; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .flow .step {
+    flex: 1 1 8rem;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: .85rem .9rem;
+    background: #fbfcfd;
+    font-size: .88rem;
+  }
+  .flow .step b { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: .3rem; }
+
+  @media print {
+    body { background: #fff; }
+    .deck { padding: 0; }
+    .slide {
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      page-break-after: always;
+      min-height: 100vh;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 820px) {
+    .slide { padding: 2rem 1.5rem 3rem; min-height: 0; }
+    .cols, .cols-3 { grid-template-columns: 1fr; gap: 1.25rem; }
+    h1 { font-size: 2.1rem; }
+    h2 { font-size: 1.5rem; }
+    .lede { font-size: 1.05rem; }
+    .num { right: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- 1 ------------------------------------------------------------------ -->
+<section class="slide">
+  <p class="eyebrow">Build with AI: Code for Communities · Problem statement 02</p>
+  <h1>Vayudoot</h1>
+  <p class="lede" style="font-size:1.45rem;color:var(--ink);max-width:48rem">
+    A hyper-local pollution detection network in which citizen reports are
+    <em>one class of sensor</em>.
+  </p>
+  <p class="lede" style="margin-top:1.25rem">
+    It joins citizen photographs to satellite thermal detections, ground-station
+    readings and meteorology to find the pollution events that city-scale
+    monitoring misses — then forecasts what is coming, and hands the
+    responsible authority a corroborated case it can act on.
+  </p>
+  <div class="grow"></div>
+  <p style="color:var(--ink-soft);font-size:.95rem;margin:0">
+    Working prototype · <code>vayudoot.onrender.com</code> · 446 tests · free tier, no credit card
+  </p>
+  <span class="num">01</span>
+</section>
+
+<!-- 2 ------------------------------------------------------------------ -->
+<section class="slide">
+  <p class="eyebrow">The problem</p>
+  <h2>India measures air at city scale.<br>People breathe it at street scale.</h2>
+  <div class="cols">
+    <div>
+      <p>
+        A reference-grade station reports a number for a district. It cannot see
+        the waste fire behind one building, the stack venting at 2am, or the
+        field burning forty kilometres upwind of a city that will be breathing it
+        tomorrow.
+      </p>
+      <p><strong>Those hyper-local events are most of the exposure and almost none of the data.</strong></p>
+      <p>
+        And when somebody does notice, acting on it is hours of unglamorous work:
+        identify it, prove it is not a one-off, find which of several overlapping
+        authorities has jurisdiction at that exact spot, cite the right statute,
+        file, then chase for weeks.
+      </p>
+    </div>
+    <div>
+      <div class="callout">
+        <p>
+          Almost nobody does this. The pollution continues because the paperwork
+          defeats people, not because the law is missing.
+        </p>
+      </div>
+      <div style="margin-top:1.5rem">
+        <div class="stat">~1.6M</div>
+        <div class="stat-label">deaths a year in India attributed to air pollution<br><span style="font-size:.8em">Lancet Planetary Health / ICMR State-Level Disease Burden Initiative, 2019</span></div>
+      </div>
+      <div style="margin-top:1.25rem">
+        <div class="stat">2×/day</div>
+        <div class="stat-label">how often a VIIRS satellite already passes over every one of those places, unused</div>
+      </div>
+    </div>
+  </div>
+  <span class="num">02</span>
+</section>
+
+<!-- 3 ------------------------------------------------------------------ -->
+<section class="slide">
+  <p class="eyebrow">The insight the whole system turns on</p>
+  <h2>A hotspot must not need a citizen to exist.</h2>
+  <p class="big">
+    If only reports create hotspots, the map is empty everywhere nobody has used
+    the app — which is most of India. <strong>And an empty map is
+    indistinguishable from clean air.</strong>
+  </p>
+  <div class="cols" style="margin-top:2rem">
+    <div class="card">
+      <h3>So instruments detect</h3>
+      <p>
+        Satellite thermal detections and station exceedances raise hotspots on
+        their own. The map has national content before one citizen opens the
+        page. A satellite sees <em>heat</em>, though — not fuel — so it never
+        guesses what is burning.
+      </p>
+    </div>
+    <div class="card">
+      <h3>And citizens identify</h3>
+      <p>
+        A photograph does what only a photograph can: it <em>upgrades</em> a
+        hotspot, naming what is actually burning and turning a thermal anomaly
+        into a describable event a legal complaint can be written about.
+      </p>
+    </div>
+  </div>
+  <div class="grow"></div>
+  <div class="callout">
+    <p>
+      This is also what defeats brigading. Fifteen coordinated fake reports
+      cannot manufacture a hotspot when independent evidence has to agree.
+    </p>
+  </div>
+  <span class="num">03</span>
+</section>
+
+<!-- 4 ------------------------------------------------------------------ -->
+<section class="slide">
+  <p class="eyebrow">What it does</p>
+  <h2>Detect · Forecast · Alert · Share</h2>
+  <div class="flow">
+    <div class="step"><b>Signals</b>FIRMS thermal detections, OpenAQ exceedances against Indian NAAQS, citizen photographs, citizen sensors</div>
+    <div class="step"><b>Detect</b>Signals within 2 km and a fortnight become one hotspot, with a confidence and a severity</div>
+    <div class="step"><b>Forecast</b>Gemini reads wind + pollutant forecasts + upwind hotspots → a risk window per location and corridor</div>
+    <div class="step"><b>Alert</b>Jurisdiction resolved, complaint drafted in English and the local language, statute cited</div>
+    <div class="step"><b>Share</b>Hotspots published on an open feed neighbouring states read</div>
+  </div>
+  <figure>
+    <img src="shots/ops.png" alt="The Vayudoot operations view: a map of India with hotspot areas and a ranked list showing severity, confidence and corroboration state">
+    <figcaption>
+      The operations view. Five hotspots: three raised by satellite and station
+      evidence in Punjab with no citizen involved, two from citizen reports whose
+      confidence is capped at 60% because nothing independent has corroborated
+      them yet.
+    </figcaption>
+  </figure>
+  <span class="num">04</span>
+</section>
+
+<!-- 5 ------------------------------------------------------------------ -->
+<section class="slide">
+  <p class="eyebrow">Where Google AI does the work</p>
+  <h2>Gemini is doing judgement, not formatting.</h2>
+  <table>
+    <thead>
+      <tr><th>Stage</th><th>What the model actually does</th><th>Tier</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="tick">Evidence</td><td>Reads up to four photographs as one event — classifies the pollution type, estimates severity, names the visible indicators, returns a calibrated confidence. Multimodal, and the only stage that can say what is burning.</td><td>Flash</td></tr>
+      <tr><td class="tick">Corroboration</td><td>A three-agent parallel graph: satellite, ground station, meteorology, plus a synthesis node that back-traces the plume upwind.</td><td>Flash-Lite</td></tr>
+      <tr><td class="tick">Jurisdiction</td><td>Reverse geocodes and resolves the responsible authority, statute, statutory window and escalation path.</td><td>Flash-Lite</td></tr>
+      <tr><td class="tick">Drafting</td><td>Writes the formal complaint in the register the authority expects, in English <em>and</em> the region's language, citing only the statute supplied.</td><td>Flash</td></tr>
+      <tr><td class="tick">Forecast</td><td>Reads pollutant and wind forecasts against active upwind hotspots and produces a risk window with its reasoning and its inputs.</td><td>Flash-Lite</td></tr>
+      <tr><td class="tick">RTI</td><td>Drafts a Right to Information application when the statutory window lapses.</td><td>Flash-Lite</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:1.25rem;font-size:.95rem;color:var(--ink-soft);max-width:46rem">
+    Two tiers, by cost: only the two stages needing judgement use Flash. Every
+    stage returns a typed Pydantic model via structured output — stages hand each
+    other objects, never free text.
+  </p>
+  <span class="num">05</span>
+</section>
+
+<!-- 6 ------------------------------------------------------------------ -->
+<section class="slide">
+  <p class="eyebrow">The part we take most seriously</p>
+  <h2>A public pollution map is a public claim about a place.</h2>
+  <p class="lede">
+    Moving from private complaints to a public map creates harms that did not
+    exist before. Three rules are enforced in code, each with a test that says it
+    is holding a constraint rather than checking a function.
+  </p>
+  <div class="cols-3" style="margin-top:1.75rem">
+    <div class="card">
+      <h3>Areas, never addresses</h3>
+      <p>
+        Every hotspot has a minimum published radius of 1 km. A detection drawn
+        tightly around one building is an accusation against whoever occupies it,
+        with no name needed.
+      </p>
+    </div>
+    <div class="card">
+      <h3>Corroboration caps confidence</h3>
+      <p>
+        Uncorroborated hotspots are capped at 0.6 — no quantity of public
+        submissions climbs past it, because quantity is what a campaign can
+        manufacture. Shown, flagged, never hidden.
+      </p>
+    </div>
+    <div class="card">
+      <h3>A forecast is never an advisory</h3>
+      <p>
+        Every forecast carries its inputs and a disclaimer on the object itself,
+        not in a template. It is never presented as, or confusable with, a CPCB
+        or IMD forecast.
+      </p>
+    </div>
+  </div>
+  <div class="grow"></div>
+  <div class="callout warn">
+    <p>
+      <strong>Nothing reaches a real regulator.</strong> Every committed authority
+      address is on the reserved <code>.invalid</code> TLD and no delivery
+      transport is wired in, both asserted by tests. Filing happens only after a
+      human confirms. A prototype that can email a State Pollution Control Board
+      during a demo is a liability, not a feature.
+    </p>
+  </div>
+  <span class="num">06</span>
+</section>
+
+<!-- 7 ------------------------------------------------------------------ -->
+<section class="slide">
+  <p class="eyebrow">Evidence, not assertion</p>
+  <h2>Every hotspot can be taken apart.</h2>
+  <div class="cols">
+    <figure>
+      <img src="shots/detail.png" alt="A hotspot detail view showing the published area as a circle over Ludhiana, the corroboration state, and each underlying signal with its source, time, certainty and size">
+    </figure>
+    <div>
+      <p>
+        A number on a map is an assertion. This view exists so a reader can
+        decide for themselves whether the confidence above is earned.
+      </p>
+      <ul>
+        <li><strong>The circle is the published extent</strong> — not the location of anything inside it. Said in words, under the map.</li>
+        <li><strong>Every signal is listed</strong> with its source, its time, how sure we are it is real, and how large the observed thing is.</li>
+        <li><strong>Certainty and size are separate numbers.</strong> A model being sure of what it saw is not the same as what it saw being serious — conflating them once made a single clear photograph of a small fire report as <em>severe</em>.</li>
+        <li><strong>Signals are a list, never pins.</strong> Plotting them would undo the reason the hotspot is an area.</li>
+      </ul>
+    </div>
+  </div>
+  <span class="num">07</span>
+</section>
+
+<!-- 8 ------------------------------------------------------------------ -->
+<section class="slide">
+  <p class="eyebrow">Forecasting</p>
+  <h2>What is coming, and why — with the work shown.</h2>
+  <div class="cols">
+    <div>
+      <p>
+        Gemini reads an Open-Meteo pollutant forecast, an Open-Meteo wind
+        forecast, and every detected hotspot within 400 km upwind — the distance
+        air actually covers in the 72-hour horizon.
+      </p>
+      <p>
+        Reported per location and per <strong>economic corridor</strong>: six of
+        them, each a line of sampling points across several states — the NCR, the
+        Delhi–Mumbai Industrial Corridor, the Punjab–Haryana stubble belt,
+        Mumbai–Pune, Chennai–Bengaluru, Kolkata–Durgapur. A corridor takes the
+        <em>worst</em> risk any waypoint carries, never the average: it is a
+        population strip, and the segment in trouble is the thing to act on.
+      </p>
+      <p style="font-size:.95rem;color:var(--ink-soft)">
+        Not a trained predictor, and it says so on every object it produces.
+        Vertex AI would be the obvious tool and needs a billing account — so this
+        reasons over public data instead, and labels itself honestly.
+      </p>
+    </div>
+    <div class="card" style="background:#fff">
+      <h3>Real output, Delhi, live run</h3>
+      <p style="color:var(--ink);margin-bottom:.6rem"><strong>risk: elevated · confidence: 0.75</strong></p>
+      <p style="margin-bottom:.6rem">
+        “Stagnant meteorological conditions with a low mean wind speed of 1.27 m/s
+        and 49 stagnant hours over the 72-hour horizon.”
+      </p>
+      <p style="margin-bottom:.6rem">
+        “Modelled PM2.5 exceeding the Indian 24-hour standard for 24 hours with a
+        peak of 95.7 µg/m³.”
+      </p>
+      <p>
+        “Active hotspots are located to the north (208 km) and north-west (282 and
+        286 km), <strong>but wind is arriving from the south-south-west, so air is
+        not arriving from these northern hotspots.</strong>”
+      </p>
+      <p style="margin-top:.85rem;font-size:.85rem">
+        It was handed three severe hotspots and declined to blame them. That is
+        the harder answer and the correct one.
+      </p>
+    </div>
+  </div>
+  <span class="num">08</span>
+</section>
+
+<!-- 9 ------------------------------------------------------------------ -->
+<section class="slide">
+  <p class="eyebrow">Interoperability</p>
+  <h2>Punjab detects it. Delhi forecasts it. No shared model.</h2>
+  <p class="lede">
+    Stubble smoke from Punjab reaches Delhi about a day and a half later. It is
+    the best-documented pollution event in India and it crosses a state boundary
+    — which is exactly why no single-state system catches it.
+  </p>
+  <div class="cols" style="margin-top:1.5rem">
+    <div>
+      <h3 style="font-size:1rem;margin-bottom:.6rem">What a node shares</h3>
+      <ul>
+        <li>Its detected hotspots, on a versioned open feed at <code>GET /feed</code></li>
+        <li>An explicit allowlist — no signals, no case ids, nothing identifying a reporter</li>
+        <li>Uncorroborated hotspots too, carrying their flag: a neighbour deciding what to trust needs the weak signals as well</li>
+      </ul>
+      <h3 style="font-size:1rem;margin:1.25rem 0 .6rem">What it never does</h3>
+      <ul>
+        <li>Republish a neighbour's detection as its own — one bad node would contaminate the network and provenance would be unreadable</li>
+        <li>Accept a feed reporting its own node id — reading yourself back through a mirror looks exactly like independent agreement</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout">
+        <p>
+          <strong>Shared: a detection layer. Not shared: trained weights.</strong>
+          That is the honest reading of “share predictive models”. Federated
+          training could not be built in this window, and claiming it without
+          building it costs more than it earns.
+        </p>
+      </div>
+      <p style="margin-top:1.25rem">
+        Standing up a second state is configuration, not code: a node id, a
+        region, and a comma-separated list of neighbour feed URLs. No registry,
+        no central authority, no permission needed — reading a public feed is
+        reading a public feed.
+      </p>
+      <p style="font-size:.95rem;color:var(--ink-soft)">
+        <code>python scripts/federation_demo.py</code> runs two real nodes over
+        the real HTTP contract. Nothing is mocked.
+      </p>
+    </div>
+  </div>
+  <span class="num">09</span>
+</section>
+
+<!-- 10 ----------------------------------------------------------------- -->
+<section class="slide">
+  <p class="eyebrow">Depth and reach across India</p>
+  <h2>Built to be a second state's problem, not ours.</h2>
+  <div class="cols-3">
+    <div>
+      <div class="stat">36</div>
+      <div class="stat-label">states and union territories in the authority table — all 28 states, all 8 UTs, with Pollution Control Committees rather than Boards where that is correct, plus aliases for the pre-2020 names geocoders still return</div>
+    </div>
+    <div>
+      <div class="stat">6</div>
+      <div class="stat-label">economic corridors, spanning 12 states, as sampling lines rather than abstractions</div>
+    </div>
+    <div>
+      <div class="stat">0</div>
+      <div class="stat-label">lines of Python to add a state, a corridor, or an authority</div>
+    </div>
+  </div>
+  <div style="margin-top:2rem">
+    <h3 style="font-size:1rem">Everything region-specific is data, never code</h3>
+    <p>
+      Jurisdiction lives in <code>authorities.example.json</code>, keyed by
+      administrative region. Corridors live in <code>corridors.json</code>.
+      Adding Assam is a JSON edit. This is the property that decides whether a
+      prototype can become a national system or stays a Delhi demo — and it was
+      a constraint from the first commit, not a retrofit.
+    </p>
+    <h3 style="font-size:1rem;margin-top:1.25rem">And coverage is published, not claimed</h3>
+    <p>
+      Every jurisdiction match reports whether it was <code>exact</code>,
+      a <code>fallback</code> one tier up, or a <code>generic</code> placeholder —
+      and a case carrying a fallback says so on its own page. A system that
+      quietly substitutes an authority is worse than one that admits it does not
+      know.
+    </p>
+  </div>
+  <span class="num">10</span>
+</section>
+
+<!-- 11 ----------------------------------------------------------------- -->
+<section class="slide">
+  <p class="eyebrow">Deployability</p>
+  <h2>One container. Free tier. No credit card.</h2>
+  <div class="cols">
+    <div>
+      <table>
+        <tbody>
+          <tr><td class="tick">Inference</td><td>Gemini via Google AI Studio — no billing account, no card</td></tr>
+          <tr><td class="tick">Compute</td><td>Render free tier, one FastAPI process serving API and interface together</td></tr>
+          <tr><td class="tick">Storage</td><td>Neon Postgres free tier; JSON files when unset</td></tr>
+          <tr><td class="tick">Evidence</td><td>NASA FIRMS, OpenAQ, Open-Meteo, Nominatim — all free</td></tr>
+          <tr><td class="tick">Interface</td><td>Preact as native ES modules. No bundler, no build step, no Node</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:1.25rem;font-size:.95rem;color:var(--ink-soft)">
+        A state could also run it entirely on its own hardware: the model provider
+        is one environment variable, and Ollama is a supported, tested path.
+      </p>
+    </div>
+    <div>
+      <div class="callout warn">
+        <p>
+          <strong>Google Cloud proper is deliberately unused.</strong> Its free
+          tier — the $300 trial and Always Free alike — requires a billing
+          account and a card. We had none. So Vertex AI, Cloud Run and Maps
+          Platform are out, and nothing in the build pretends otherwise.
+        </p>
+      </div>
+      <p style="margin-top:1.25rem">
+        That constraint made the system more deployable, not less. A state
+        agency that can pilot this without raising a purchase order is a state
+        agency that can pilot it in weeks.
+      </p>
+      <div style="margin-top:1.5rem">
+        <div class="stat" style="font-size:2.2rem">446 tests</div>
+        <div class="stat-label">including tests whose docstrings state they are holding a safety constraint and must not be relaxed to pass</div>
+      </div>
+    </div>
+  </div>
+  <span class="num">11</span>
+</section>
+
+<!-- 12 ----------------------------------------------------------------- -->
+<section class="slide">
+  <p class="eyebrow">Impact, and what is honestly next</p>
+  <h2>From “nobody noticed” to “somebody has to answer”.</h2>
+  <div class="cols">
+    <div>
+      <h3 style="font-size:1rem">What exists today</h3>
+      <ul>
+        <li>National detection from instruments that already pass overhead twice a day</li>
+        <li>72-hour forecasts along six corridors spanning 12 states</li>
+        <li>Complaints drafted in English and the region's language, with the right statute and the statutory clock</li>
+        <li>RTI applications when that clock runs out — the lever that actually carries a legal duty to reply</li>
+        <li>A public register, so a complaint is a visible record rather than a private email</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:1rem">What we are not claiming</h3>
+      <ul>
+        <li><strong>Not federated learning.</strong> A shared detection layer, and we say so.</li>
+        <li><strong>Not a trained forecast model.</strong> A model reasoning over public data, labelled on every object.</li>
+        <li><strong>Not naming polluters.</strong> Unreliable from a photograph and seriously harmful when wrong. Permanently out of scope.</li>
+        <li><strong>Not filing automatically.</strong> A human confirms. Always.</li>
+      </ul>
+      <div class="callout" style="margin-top:1.25rem">
+        <p>
+          The next thing worth building is not a feature. It is one state running
+          one node for one burning season, and finding out how much of this
+          survives contact with a real Pollution Control Board.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="grow"></div>
+  <p style="margin:0;color:var(--ink-soft);font-size:.95rem">
+    <code>vayudoot.onrender.com</code> · source, tests and the reasoning behind
+    every constraint in the repository
+  </p>
+  <span class="num">12</span>
+</section>
+
+</div>
+</body>
+</html>
