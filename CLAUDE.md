@@ -73,10 +73,18 @@ and summarises. Those, the graph's synthesis node, and the jurisdiction agent ar
 on `fast` deliberately. Do not promote them to `primary` without a reason you can
 state.
 
-Only two agents are on `primary`: evidence, which reads the photograph, and
-drafting, which writes the complaint. The other eight calls a report makes are
-all `fast`. Adding a third primary agent raises the expensive count by half, so
-it needs a reason.
+Two agents are on `primary` inside a report run: evidence, which reads the
+photograph, and drafting, which writes the complaint. The other eight calls a
+report makes are all `fast`. Adding a third primary agent to that run raises the
+expensive count by half, so it needs a reason.
+
+RTI is the third agent on `primary`, and it is outside that count on purpose. It
+drafts a statutory application to a Public Information Officer — the same class
+of legal writing as the complaint, and wrong in the same way if it is sloppy —
+but it runs only when a citizen asks for one after a statutory window has
+lapsed, which is rare and never part of the ten calls a report spends. Forecast
+is on `fast` despite also running outside a report, because it summarises tool
+output rather than composing a document.
 
 **The two tiers can sit on different providers.** `VAYUDOOT_MODEL_PROVIDER_FAST`
 overrides the provider for the fast tier only, and `settings.provider_for(tier)`

@@ -1,6 +1,6 @@
 # Prompt evaluation
 
-The test suite replaces the four agent stages with fakes. That is the right
+The test suite replaces every agent with a fake. That is the right
 decision — it is what makes `pytest` fast, offline and deterministic — and it is
 also why the two corroboration bugs this project has shipped both passed it.
 Once the graph silently discarded its own structured output, so every live run
@@ -8,6 +8,14 @@ fell through to an empty fallback. Once the synthesis reported `corroborated:
 true` on no sensor evidence at all, having reasoned from a wind bearing that
 "industrial infrastructure is present" upwind, which no tool here can establish.
 A human found both, by reading one live run.
+
+The harness covers classification, refusal and corroboration. It does not cover
+forecasting, and that gap is worth naming rather than leaving to be discovered:
+a forecast is the one output people might act on, and its failures are the kind
+this harness exists to catch. Two have already been found by reading live runs
+instead — a peak window that had already passed, and a naive timestamp that
+crashed the comparison meant to catch the first one. Both are regression-tested
+now; neither would have needed a human if forecasting had fixtures.
 
 Prompts are edited regularly now. This harness is the thing that says whether an
 edit helped.
@@ -70,9 +78,10 @@ Free tiers meter by the minute as well as by the day — Gemini's caps
 `gemini-3.5-flash-lite` at 15 requests a minute — and one corroboration case is
 seven requests: each of the three tool-using agents makes two (choose the tool
 call, then summarise the result) and the synthesis node makes one. The runner
-therefore waits between cases, sized to the requests the previous one made. `--rpm 0` turns that off; `--rpm N` matches a
-different allowance. The first live run of this harness was written without it
-and returned one answer and six `429`s.
+therefore waits between cases, sized to the requests the previous one made.
+`--rpm 0` turns that off; `--rpm N` matches a different allowance. The first
+live run of this harness was written without it and returned one answer and six
+`429`s.
 
 ## What is scored, and why those things
 

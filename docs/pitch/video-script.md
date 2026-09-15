@@ -11,8 +11,22 @@ it is written to be spoken, not read.
 
 ## Before you record
 
-Run this once. It seeds a store so the map has content, and it is the same
-command used to produce the screenshots in the deck.
+**Two ways to get a map with content, and they trade off against each other.**
+
+*The live deployment* now runs the scan for real, so `vayudoot.onrender.com`
+carries hotspots built from whatever FIRMS actually detected that day. That is
+the stronger recording: nothing is seeded, and the narration about instruments
+raising hotspots with no citizen involved is demonstrably true on screen. The
+cost is that it is not reproducible — what is on the map is the weather, so a
+good take cannot be retaken later. Wake the instance a minute before you start;
+the free tier sleeps after 15 minutes idle and the first request takes 30 to 60
+seconds.
+
+*A local seeded store* is the reproducible option, and it is what produced the
+screenshots in the deck. Use it if you want to record shot 4 repeatedly, or if
+FIRMS is quiet.
+
+To seed locally, run this once.
 
 ```bash
 # from the repo root
@@ -82,24 +96,29 @@ finish drawing before you start talking.
 
 > This is Vayudoot. It is what a state air quality cell opens in the morning.
 >
-> Five hotspots. Each one is a place where pollution is happening, built from
-> every signal that agrees — a satellite thermal detection, a ground station
-> reading past the Indian standard, a citizen's photograph.
+> Every one of these is a place where pollution is happening, built from every
+> signal that agrees — a satellite thermal detection, a ground station reading
+> past the Indian standard, a citizen's photograph.
+
+*Say the count you can actually see, and say it from the heading rather than
+from this script. The number is whatever the store holds on the day, and on the
+live deployment it is whatever is genuinely burning.*
 
 **Action:** scroll the ranked list slowly so both kinds of card are visible.
 Point the cursor at the green *Independently corroborated* band on a Punjab
 card, then at an uncorroborated citizen one.
 
-> Here is the decision the whole system turns on. These three in Punjab were
-> raised by satellite and station evidence alone. **No citizen was involved at
-> all.**
+> Here is the decision the whole system turns on. The ones marked
+> *independently corroborated* were raised by satellite and station evidence
+> alone. **No citizen was involved at all.**
 >
 > That matters, because if only reports created hotspots, this map would be
 > empty everywhere nobody had used the app — which is most of India. And an
 > empty map looks exactly like clean air.
 >
-> These two came from citizen reports, and their confidence is capped at sixty
-> per cent until something independent agrees. However many reports arrive. That
+> The ones marked *citizen reports only* came from public submissions, and their
+> confidence is capped at sixty per cent until something independent agrees.
+> However many reports arrive. That
 > is what stops fifteen coordinated fake reports from manufacturing a hotspot —
 > and a public map that can be aimed at an address is a weapon, not a public
 > good.
@@ -216,7 +235,7 @@ narrate over a spinner.*
 > one container on Render, and public evidence APIs. A state agency can pilot
 > this without raising a purchase order.
 >
-> Four hundred and forty-six tests, including ones whose job is to fail if
+> Four hundred and fifty tests, including ones whose job is to fail if
 > somebody weakens a safety rule.
 >
 > It is live now, and the code and the reasoning behind every constraint are in
