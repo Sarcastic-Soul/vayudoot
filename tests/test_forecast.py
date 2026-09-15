@@ -472,3 +472,73 @@ async def test_no_peak_window_stays_absent():
     """Null is an acceptable answer and must not be filled in."""
     result = await forecast.forecast_location(*DELHI, agent=StubAgent(outlook()))
     assert result.peak_window_start is None
+
+
+class TestNaivePeakWindow:
+    """A model-supplied peak window may arrive without a timezone.
+
+    Production returned 502 "can't compare offset-naive and offset-aware
+    datetimes" on the first live Gemini forecast after deployment. The model
+    writes an ISO timestamp for the peak window and includes the UTC offset only
+    sometimes; `_sane_peak_window` compares it against `generated_at`, which is
+    always aware, and a naive value makes that comparison raise.
+
+    The whole fixture suite missed it because fixtures are written by hand and a
+    hand-written timestamp carries its offset. Only a real model produces the
+    naive form, so this test constructs it explicitly.
+    """
+
+    def test_naive_peak_window_is_read_as_utc(self):
+        outlook = AirQualityForecast(
+            latitude=28.6139,
+            longitude=77.2090,
+            risk="elevated",
+            confidence=0.6,
+            peak_window_start=datetime(2099, 1, 1, 18, 0),  # noqa: DTZ001 - naive is the thing under test
+            peak_window_end=datetime(2099, 1, 2, 6, 0),  # noqa: DTZ001 - naive is the thing under test
+        )
+
+        assert outlook.peak_window_start.tzinfo is UTC
+        assert outlook.peak_window_end.tzinfo is UTC
+
+    def test_naive_window_does_not_raise_when_sanity_checked(self):
+        """The exact production failure: naive window, aware generated_at."""
+        outlook = AirQualityForecast(
+            latitude=28.6139,
+            longitude=77.2090,
+            risk="elevated",
+            confidence=0.6,
+            peak_window_start=datetime(2099, 1, 1, 18, 0),  # noqa: DTZ001 - naive is the thing under test
+            peak_window_end=datetime(2099, 1, 2, 6, 0),  # noqa: DTZ001 - naive is the thing under test
+        )
+
+        assert forecast._sane_peak_window(outlook) == {}
+
+    def test_a_naive_window_wholly_in_the_past_is_still_dropped(self):
+        """Normalising must not cost the sanity check its job."""
+        outlook = AirQualityForecast(
+            latitude=28.6139,
+            longitude=77.2090,
+            risk="low",
+            confidence=0.5,
+            peak_window_start=datetime(2020, 1, 1, 0, 0),  # noqa: DTZ001 - naive is the thing under test
+            peak_window_end=datetime(2020, 1, 2, 0, 0),  # noqa: DTZ001 - naive is the thing under test
+        )
+
+        assert forecast._sane_peak_window(outlook) == {
+            "peak_window_start": None,
+            "peak_window_end": None,
+        }
+
+    def test_a_naive_generated_at_is_read_as_utc(self):
+        """`generated_at` is model-fillable too, and is the other side of every
+        comparison in this module."""
+        outlook = AirQualityForecast(
+            latitude=28.6139,
+            longitude=77.2090,
+            risk="low",
+            confidence=0.5,
+            generated_at=datetime(2026, 9, 15, 12, 0),  # noqa: DTZ001 - naive is the thing under test
+        )
+
+        assert outlook.generated_at.tzinfo is UTC

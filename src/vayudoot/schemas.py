@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, computed_field, model_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 
 class PollutionType(str, Enum):
@@ -438,6 +438,27 @@ FORECAST_DISCLAIMER = (
 )
 
 
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    """Attach UTC to a datetime that arrived without a timezone.
+
+    Found in production, not in the tests: a live forecast returned 502 with
+    "can't compare offset-naive and offset-aware datetimes". A model asked for a
+    peak window writes an ISO timestamp, and it writes the offset only sometimes.
+    Anything it produces naive is compared against `generated_at`, which is
+    always aware, and the comparison raises rather than returning a wrong answer.
+
+    UTC is the right assumption rather than a convenient one: the forecast prompt
+    states its times in UTC and the Open-Meteo series the model reads is in UTC,
+    so a naive timestamp here is a UTC timestamp missing its suffix. The fixture
+    suite never caught this because fixtures are written by hand, and a hand
+    written timestamp has the offset on it.
+    """
+    if value is None or value.tzinfo is not None:
+        return value
+    return value.replace(tzinfo=UTC)
+
+
 class AirQualityForecast(BaseModel):
     """Where air quality is about to degrade, and why the model thinks so.
 
@@ -468,6 +489,11 @@ class AirQualityForecast(BaseModel):
     reasoning: str = ""
     disclaimer: str = FORECAST_DISCLAIMER
 
+    @field_validator("generated_at", "peak_window_start", "peak_window_end")
+    @classmethod
+    def _tz_aware(cls, value: datetime | None) -> datetime | None:
+        return _as_utc(value)
+
 
 class CorridorForecast(BaseModel):
     """One corridor's outlook, summarised from its waypoints."""
@@ -481,6 +507,11 @@ class CorridorForecast(BaseModel):
     summary: str = ""
     waypoint_forecasts: list[AirQualityForecast] = Field(default_factory=list)
     disclaimer: str = FORECAST_DISCLAIMER
+
+    @field_validator("generated_at")
+    @classmethod
+    def _tz_aware(cls, value: datetime) -> datetime:
+        return _as_utc(value)
 
 
 class NodeIdentity(BaseModel):
