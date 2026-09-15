@@ -1,10 +1,20 @@
 # Architecture
 
-> **Scope note.** This document describes the pipeline that ships today,
-> whose unit of work is a case. v0.3 makes the unit of work a *hotspot* and
-> adds a detection, forecasting and federation layer above this pipeline;
-> everything described here is retained beneath it. See [`SCOPE.md`](SCOPE.md)
-> under v0.3. This file is updated as that layer lands, not before.
+> **Read this first.** The document below describes the **reporting pipeline**:
+> what happens to one citizen's photograph, from intake to a filed and escalated
+> complaint. All of it still runs and none of it changed.
+>
+> What changed is what sits above it. From v0.3 the unit of work is a
+> **hotspot**, not a case, and the pipeline is one of three things that feed it:
+>
+> | Layer | What it does | Where |
+> | --- | --- | --- |
+> | **Detection** | Signals from citizen cases, FIRMS detections and OpenAQ exceedances become hotspots. A hotspot needs no citizen to exist; corroboration caps confidence when it has none. | [`hotspots.py`](../src/vayudoot/hotspots.py), [`scan.py`](../src/vayudoot/scan.py), [`grouping.py`](../src/vayudoot/grouping.py) |
+> | **Forecasting** | Where air quality is heading, per location and per economic corridor, labelled as model-derived rather than official. | [`agents/forecast.py`](../src/vayudoot/agents/forecast.py), [`corridors.py`](../src/vayudoot/corridors.py) |
+> | **Federation** | A node publishes its hotspots and reads its neighbours'. A detection layer, not trained weights. | [`federation.py`](../src/vayudoot/federation.py), [`federation.md`](federation.md) |
+>
+> The reasoning for the reframe is in [`SCOPE.md`](SCOPE.md) under v0.3; the
+> rules it must obey are hard constraint 7 in [`CLAUDE.md`](../CLAUDE.md).
 
 ![Vayudoot architecture](architecture.svg)
 

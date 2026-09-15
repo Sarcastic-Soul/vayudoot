@@ -1,41 +1,75 @@
 # Vayudoot
 
-**An agent that takes a citizen's pollution report from a photograph to a filed,
-tracked, and escalated complaint.**
+**A hyper-local pollution detection network in which citizen reports are one
+class of sensor.**
+
+It joins citizen photographs to satellite thermal detections, ground-station
+readings and meteorology to find pollution events that macro-level monitoring
+misses, forecasts where air quality is about to degrade, and hands the
+responsible authority a corroborated case it can act on — drafted, jurisdiction
+resolved, and tracked if it is filed.
 
 Built on the [Strands Agents SDK](https://strandsagents.com/), with
-[Gemini](https://ai.google.dev/) doing the inference.
-
-> **This README describes what ships today, and the point of view is changing.**
-> Through v0.2 the unit of work was one citizen's case, and this document
-> reflects that. v0.3 makes the unit of work a *hotspot*: a corroborated
-> pollution event that satellite and station evidence can raise on their own,
-> which a citizen photograph then upgrades. Complaint drafting, filing and RTI —
-> everything below — are retained as actions taken from a detection rather than
-> as the purpose of the system. The reasoning is in
-> [`docs/SCOPE.md`](docs/SCOPE.md) under v0.3. Sections here are rewritten as
-> that work lands, rather than in advance of it.
+[Gemini](https://ai.google.dev/) doing the inference. Runs on free tiers with no
+credit card.
 
 ---
 
 ## The problem
 
-Someone sees open waste burning behind their building, an industrial stack venting
-at night, or a demolition site coating a street in dust. Acting on it is hours of
-unglamorous work: identify what you are actually looking at, show it is not a
+India's cities monitor air quality at city scale and miss what happens at street
+scale. A reference-grade station reports a number for a district; it cannot see
+the waste fire behind one building, the stack venting at night, or the field
+burning forty kilometres upwind of a city that will be breathing it tomorrow.
+Those hyper-local events are most of the exposure and almost none of the data.
+
+The second problem is what happens when somebody does notice. Acting on it is
+hours of unglamorous work: identify what you are looking at, show it is not a
 one-off, work out which of several overlapping authorities holds jurisdiction at
 that exact location, write the complaint in the register the authority expects,
-cite the right statute, file it, then chase it for weeks.
+cite the right statute, file it, then chase it for weeks. Almost nobody does
+this. The pollution continues because the paperwork defeats people, not because
+the law is missing.
 
-Almost nobody does this. The pollution continues because the paperwork defeats
-people, not because the law is missing.
+## The shape of the answer
 
-Vayudoot does the paperwork.
+**The unit of work is a hotspot, not a complaint.**
+
+A hotspot is a place where pollution is happening, built from every signal that
+agrees: a citizen's classified photograph, a VIIRS thermal detection, a station
+reading past its Indian standard. Two properties do most of the work.
+
+**A hotspot does not need a citizen report to exist.** If only reports created
+them, the map would be empty everywhere nobody had used the app — which is most
+of the country, and an empty map is indistinguishable from clean air. Satellite
+and station evidence raise hotspots on their own, so the map has content before
+anyone has opened the page. A photograph then does what only a photograph can:
+it *upgrades* a hotspot, naming what is actually burning. A satellite sees heat,
+not fuel.
+
+**Corroboration gates publication.** A hotspot resting only on public
+submissions has its confidence capped, however many submissions there are —
+because volume is exactly what a coordinated campaign can manufacture, and a map
+that can be aimed at an address is a weapon rather than a public good.
+
+Complaint drafting, filing and escalation are all still here, and they are still
+the most India-specific thing this does. They are now one of the actions
+available from a detection rather than the purpose of the system.
 
 ## What it does
 
-A citizen submits a geotagged photograph and an optional note. The agent then runs
-the case end to end.
+Two paths meet in the same store of signals.
+
+**Detection** runs without anybody present. `scan.py` fetches NASA FIRMS thermal
+detections and OpenAQ station readings for the places this instance knows about
+— the coordinates of stored cases and the waypoints of the economic corridors in
+[`corridors.json`](src/vayudoot/data/corridors.json) — and anything past its
+Indian standard becomes a signal. Signals within two kilometres and a fortnight
+of each other become a hotspot, ranked by confidence at
+[`GET /hotspots`](src/vayudoot/hotspots.py).
+
+**Reporting** is what a person does when they are standing in front of the
+problem, and it runs the case end to end.
 
 0. **Intake.** The photograph is decoded rather than taken at its word. Anything
    Pillow can read is accepted — around seventy formats, including HEIC from an
@@ -77,6 +111,29 @@ the case end to end.
    Information Officer, which carries a statutory thirty-day duty to reply that
    the complaint never had. The agent drafts one, with every field a human must
    supply marked in the document.
+
+7. **Forecasting.** Where air quality is about to degrade, and why. Gemini reads
+   an Open-Meteo pollutant forecast, an Open-Meteo wind forecast and the hotspots
+   currently within reach upwind, and produces a risk window with the conditions
+   driving it and the inputs it read. Reported per location and per **economic
+   corridor** — the NCR, the Delhi–Mumbai corridor, the Punjab–Haryana stubble
+   belt and three more, each a line of sampling points across several states.
+
+   This is a model reasoning over public data, not a trained predictor, and it
+   says so on every object it produces. Vertex AI would be the obvious tool and
+   needs a billing account; there is no card. See
+   [`agents/forecast.py`](src/vayudoot/agents/forecast.py).
+
+8. **Federation.** Each deployment is a node with a region. It publishes the
+   hotspots it detected on a versioned open feed and can read its neighbours',
+   which is how Punjab's burning reaches a Delhi forecast a day before the smoke
+   does. What is shared is a **detection layer, not trained weights** — that is
+   the honest reading of "share predictive models", and the dishonest one was
+   available. A neighbour's hotspots are forecasting context and are never
+   republished as ours: a node that laundered a neighbour's detection would let
+   one bad instance contaminate the network. See
+   [`docs/federation.md`](docs/federation.md), and
+   `python scripts/federation_demo.py` to watch two real nodes do it.
 
 ## The interface
 
@@ -163,7 +220,8 @@ accused party or claiming certainty the evidence does not support.
 | | |
 | --- | --- |
 | [`docs/architecture.md`](docs/architecture.md) | How the stages fit together and why |
-| [`docs/SCOPE.md`](docs/SCOPE.md) | What v0.1 is, and what it deliberately is not |
+| [`docs/SCOPE.md`](docs/SCOPE.md) | What each version is, and what it deliberately is not |
+| [`docs/federation.md`](docs/federation.md) | The feed contract, and how a second state stands up a node |
 | [`docs/deployment.md`](docs/deployment.md) | Free-tier deployment and where the cost is |
 | [`evals/README.md`](evals/README.md) | The prompt evaluation harness: how to run it, how to add a case |
 | [`CLAUDE.md`](CLAUDE.md) | Working agreement and the constraints that must hold |

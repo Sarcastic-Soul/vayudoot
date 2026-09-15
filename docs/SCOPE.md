@@ -295,7 +295,7 @@ left. Rubric weights are in `PROBLEM-STATEMENTS.md`.
 
 - [x] **Both tiers on Gemini.** Rule 1: no Google AI, no consideration. Done.
 
-- [~] **`Hotspot` as a first-class object, seeded from satellite and station
+- [x] **`Hotspot` as a first-class object, seeded from satellite and station
       data as well as citizen cases.** This is the pivot; everything below
       depends on it existing.
 
@@ -314,16 +314,18 @@ left. Rubric weights are in `PROBLEM-STATEMENTS.md`.
       reported one confident photograph of a small fire as `severe` — a model
       being sure of what it saw is not the same as what it saw being serious.
 
-      Outstanding: the periodic scan that actually fetches FIRMS and OpenAQ into
-      signals. Until it lands `hotspots.current()` reads the case store only, and
-      says so in its docstring rather than implying national coverage.
+      The scan landed with it: `scan.py` fetches FIRMS and OpenAQ into the
+      signal store for the coordinates of stored cases and the waypoints of
+      configured corridors, and `hotspots.current()` reads both halves. It runs
+      on a timer through the app lifespan, gated off by default.
 
-- [ ] **The operations view as the landing surface.** Map, ranked hotspot list,
-      drill-down to the evidence and the forecast. Reuses the existing shell,
-      map components and theming rather than starting a new interface — the
-      front door changes, the furniture does not.
+- [x] **The operations view as the landing surface.** Map, ranked hotspot list,
+      drill-down to every signal a hotspot rests on. Reuses the existing shell,
+      map components and theming. Hotspots render as areas at their true radius
+      and confidence never appears without its corroboration state, both of
+      which are constraint 7 rather than taste.
 
-- [ ] **Forecasting.** The brief names it and nothing in the system predicts.
+- [x] **Forecasting.** The brief names it and nothing in the system predicted.
       Vertex AI is the obvious tool and is excluded by the free-tier constraint,
       so: Open-Meteo's 72-hour forecast, recent OpenAQ history, and the hotspots
       currently active upwind, joined by a Gemini call with structured output
@@ -335,13 +337,13 @@ left. Rubric weights are in `PROBLEM-STATEMENTS.md`.
       the project is careful, and one who finds the overclaim learns the
       opposite.
 
-- [ ] **Economic corridors as data.** The brief says "across major economic
+- [x] **Economic corridors as data.** The brief says "across major economic
       corridors", so they are named objects, not an abstraction: NCR, the
       Delhi–Mumbai Industrial Corridor, the Punjab–Haryana stubble belt,
       Mumbai–Pune, Chennai–Bengaluru. A JSON file beside `authorities.example.json`,
       because jurisdiction data is data. Forecasts are reported per corridor.
 
-- [ ] **Federation, demonstrated rather than asserted.** Each deployment is a
+- [x] **Federation, demonstrated rather than asserted.** Each deployment is a
       **node** with a declared region. A node publishes its hotspots on an open,
       versioned feed and can subscribe to a neighbour's.
 
@@ -357,14 +359,15 @@ left. Rubric weights are in `PROBLEM-STATEMENTS.md`.
       days, and claiming it in a deck without building it costs more than it
       earns.
 
-- [ ] **Citizen sensor readings.** The brief's own sentence is "photos, local
+- [x] **Citizen sensor readings.** The brief's own sentence is "photos, local
       sensor readings", and only the first half exists. An endpoint accepting a
       reading from a low-cost PM sensor, feeding hotspot confidence the same way
       a station reading does. A schema and a route.
 
-- [ ] **Authority table to full national coverage.** 24 states present; 28 states
-      and 8 union territories exist. A JSON edit with no code change, and the
-      cheapest thing on this list that moves Depth & Reach Across India.
+- [x] **Authority table to full national coverage.** All 28 states and 8 union
+      territories, plus aliases for the pre-2020 names geocoders still return.
+      Union territories have Pollution Control Committees rather than Boards and
+      the entries reflect that. All 159 committed addresses are on `.invalid`.
 
 - [ ] **Submission package.** Public repo (already), a 3–5 minute end-to-end
       demo video, a 10–12 slide deck, a 2–3 line description, the deployed link.
