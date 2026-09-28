@@ -5,181 +5,231 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vayudoot — pitch deck</title>
 <style>
+  /* Every slide is a fixed 1280 × 720 canvas (16:9). The page scales each one
+     to fit the window, so it presents full-screen at any size and prints one
+     slide per page. Nothing is loaded from outside this file except the
+     screenshots in shots/. */
   :root {
     --ink: #0d1117;
     --ink-soft: #4a5568;
+    --ink-faint: #7b8794;
     --page: #ffffff;
     --line: #dde3ea;
     --accent: #0f766e;
+    --accent-deep: #0b3b36;
     --accent-soft: #e6f4f1;
     --warn: #b45309;
     --warn-soft: #fef6e7;
     --bad: #b91c1c;
-    --measure: 34rem;
+    --bad-soft: #fdeeee;
+    --fit: 1;
   }
 
   * { box-sizing: border-box; }
 
+  html { background: #e9edf2; }
   body {
     margin: 0;
-    background: #eef1f5;
     color: var(--ink);
-    font: 16px/1.55 "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: #e9edf2;
+    font: 16px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
-  .deck { padding: 2rem 1rem 4rem; }
+  .deck { padding: 24px 0 48px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
 
   .slide {
+    zoom: var(--fit);
     position: relative;
-    width: min(1120px, 100%);
-    min-height: 630px;
-    margin: 0 auto 1.5rem;
-    padding: 3.25rem 3.5rem 3.75rem;
+    width: 1280px;
+    height: 720px;
+    flex: none;
+    overflow: hidden;
+    padding: 46px 64px 54px;
     background: var(--page);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(13, 17, 23, .07);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(13, 17, 23, .06), 0 8px 28px rgba(13, 17, 23, .08);
     display: flex;
     flex-direction: column;
   }
 
   .num {
     position: absolute;
-    right: 3.5rem;
-    bottom: 1.75rem;
-    font-size: .75rem;
+    right: 64px;
+    bottom: 22px;
+    font-size: 12px;
     letter-spacing: .08em;
     color: #9aa5b1;
     font-variant-numeric: tabular-nums;
   }
-
-  .eyebrow {
-    font-size: .75rem;
-    font-weight: 650;
-    letter-spacing: .13em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin: 0 0 .85rem;
+  .brand {
+    position: absolute;
+    left: 64px;
+    bottom: 22px;
+    font-size: 12px;
+    letter-spacing: .08em;
+    color: #9aa5b1;
   }
 
-  h1 { font-size: 3.4rem; line-height: 1.04; margin: 0 0 1rem; letter-spacing: -.025em; }
-  h2 { font-size: 2.1rem; line-height: 1.12; margin: 0 0 1.35rem; letter-spacing: -.02em; }
-  h3 { font-size: 1rem; margin: 0 0 .4rem; }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 12px;
+  }
 
-  p { margin: 0 0 1rem; max-width: var(--measure); }
-  .lede { font-size: 1.3rem; line-height: 1.45; color: var(--ink-soft); max-width: 46rem; }
-  .big { font-size: 1.55rem; line-height: 1.4; max-width: 44rem; font-weight: 500; }
+  h1 { font-size: 64px; line-height: 1.02; margin: 0 0 18px; letter-spacing: -.03em; }
+  h2 { font-size: 36px; line-height: 1.1; margin: 0 0 22px; letter-spacing: -.022em; }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+
+  p { margin: 0 0 12px; }
+  .lede { font-size: 20px; line-height: 1.45; color: var(--ink-soft); max-width: 860px; }
+  .big { font-size: 24px; line-height: 1.38; max-width: 900px; font-weight: 500; }
+  .small { font-size: 14px; color: var(--ink-soft); }
 
   strong { font-weight: 650; }
-  em { font-style: italic; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; }
-  .cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .cols-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
   .grow { flex: 1; }
 
-  ul { margin: 0 0 1rem; padding-left: 1.1rem; max-width: var(--measure); }
-  li { margin-bottom: .5rem; }
+  ul { margin: 0 0 12px; padding-left: 18px; }
+  li { margin-bottom: 7px; }
 
   .card {
     border: 1px solid var(--line);
-    border-radius: 5px;
-    padding: 1.1rem 1.25rem;
+    border-radius: 6px;
+    padding: 16px 18px;
     background: #fbfcfd;
   }
-  .card h3 { color: var(--accent); font-size: .8rem; letter-spacing: .07em; text-transform: uppercase; }
-  .card p { font-size: .95rem; margin: 0; color: var(--ink-soft); }
+  .card h3 { color: var(--accent); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+  .card p { font-size: 14.5px; margin: 0; color: var(--ink-soft); line-height: 1.5; }
 
   .callout {
     border-left: 3px solid var(--accent);
     background: var(--accent-soft);
-    padding: 1rem 1.25rem;
-    border-radius: 0 4px 4px 0;
-    max-width: 46rem;
+    padding: 14px 18px;
+    border-radius: 0 5px 5px 0;
   }
-  .callout p { margin: 0; }
+  .callout p { margin: 0; font-size: 15.5px; }
   .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
 
-  .stat { font-size: 3rem; font-weight: 700; line-height: 1; letter-spacing: -.03em; }
-  .stat-label { font-size: .9rem; color: var(--ink-soft); margin-top: .35rem; }
+  /* A number and its source, always together. */
+  .stat { font-size: 46px; font-weight: 750; line-height: 1; letter-spacing: -.03em; color: var(--ink); }
+  .stat.red { color: var(--bad); }
+  .stat.teal { color: var(--accent); }
+  .stat-label { font-size: 14.5px; line-height: 1.4; color: var(--ink); margin-top: 8px; }
+  .cite { display: block; font-size: 11px; line-height: 1.35; color: var(--ink-faint); margin-top: 6px; }
+  .statbox { border-top: 3px solid var(--ink); padding-top: 14px; }
+  .statbox.red { border-top-color: var(--bad); }
+  .statbox.teal { border-top-color: var(--accent); }
+  .statbox.warn { border-top-color: var(--warn); }
 
   figure { margin: 0; }
-  figure img {
-    width: 100%;
+  .shot {
     display: block;
+    width: 100%;
     border: 1px solid var(--line);
-    border-radius: 4px;
+    border-radius: 6px;
+    box-shadow: 0 6px 22px rgba(13, 17, 23, .10);
+    background: #fff;
   }
-  figcaption { font-size: .82rem; color: var(--ink-soft); margin-top: .6rem; }
+  /* A tall screenshot shown as a window onto its top part, fading out. */
+  .crop { overflow: hidden; border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 22px rgba(13, 17, 23, .10); position: relative; background: #fff; }
+  .crop img { display: block; width: 100%; }
+  .crop.fade::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 60px; background: linear-gradient(rgba(255,255,255,0), #fff); }
+  figcaption { font-size: 12.5px; color: var(--ink-soft); margin-top: 8px; line-height: 1.4; }
 
   code {
     font-family: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
     font-size: .88em;
-    background: #f2f5f8;
+    background: #f0f3f6;
     padding: .1em .35em;
     border-radius: 3px;
   }
 
-  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
-  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 650; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 650; }
   td.tick { color: var(--accent); font-weight: 650; white-space: nowrap; }
+  .tier { display: inline-block; font-size: 11.5px; font-weight: 650; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .tier.p { background: #e8eefc; color: #1d4ed8; }
+  .tier.f { background: #eef2f5; color: #4a5568; }
 
-  .flow { display: flex; gap: .65rem; align-items: stretch; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .flow { display: flex; gap: 10px; align-items: stretch; margin-bottom: 0; }
   .flow .step {
-    flex: 1 1 8rem;
+    flex: 1 1 0;
     border: 1px solid var(--line);
-    border-radius: 5px;
-    padding: .85rem .9rem;
+    border-radius: 6px;
+    padding: 12px 13px;
     background: #fbfcfd;
-    font-size: .88rem;
+    font-size: 13.5px;
+    line-height: 1.42;
+    position: relative;
   }
-  .flow .step b { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: .3rem; }
+  .flow .step b { display: block; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; }
+
+  .pill { display: inline-block; font-size: 12px; font-weight: 650; padding: 3px 10px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); margin: 0 6px 6px 0; }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.grey { background: #eef2f5; color: var(--ink-soft); }
+
+  .todo { outline: 2px dashed var(--warn); outline-offset: 3px; }
+
+  /* Title and closing slides: dark. */
+  .slide.dark {
+    background:
+      radial-gradient(900px 500px at 88% 12%, rgba(45, 212, 191, .20), transparent 60%),
+      radial-gradient(700px 480px at 8% 100%, rgba(251, 146, 60, .16), transparent 60%),
+      var(--accent-deep);
+    color: #f1f5f4;
+  }
+  .slide.dark .eyebrow { color: #5eead4; }
+  .slide.dark .lede { color: #c9d8d5; }
+  .slide.dark code { background: rgba(255,255,255,.1); color: #e6f4f1; }
+  .slide.dark .num, .slide.dark .brand { color: rgba(255,255,255,.45); }
+  .slide.dark .cite { color: rgba(255,255,255,.55); }
+
+  .src { font-size: 11px; line-height: 1.4; color: var(--ink-faint); margin: 0; }
 
   @media print {
-    body { background: #fff; }
-    .deck { padding: 0; }
-    .slide {
-      margin: 0;
-      border: 0;
-      border-radius: 0;
-      box-shadow: none;
-      page-break-after: always;
-      min-height: 100vh;
-      width: 100%;
-    }
-  }
-
-  @media (max-width: 820px) {
-    .slide { padding: 2rem 1.5rem 3rem; min-height: 0; }
-    .cols, .cols-3 { grid-template-columns: 1fr; gap: 1.25rem; }
-    h1 { font-size: 2.1rem; }
-    h2 { font-size: 1.5rem; }
-    .lede { font-size: 1.05rem; }
-    .num { right: 1.5rem; }
+    @page { size: 1280px 720px; margin: 0; }
+    html, body { background: #fff; }
+    .deck { padding: 0; gap: 0; display: block; }
+    .slide { zoom: 1; margin: 0; border-radius: 0; box-shadow: none; break-after: page; }
+    .todo { outline: none; }
   }
 </style>
 </head>
 <body>
 <div class="deck">
-
 <!-- 1 ------------------------------------------------------------------ -->
-<section class="slide">
-  <p class="eyebrow">Build with AI: Code for Communities · Problem statement 02</p>
-  <h1>Vayudoot</h1>
-  <p class="lede" style="font-size:1.45rem;color:var(--ink);max-width:48rem">
+<section class="slide dark">
+  <p class="eyebrow">Build with AI: Code for Communities · BRICS edition · Track 2: Clean Air &amp; Climate Resilience</p>
+  <div class="grow" style="max-height:60px"></div>
+  <h1 style="font-size:88px">Vayudoot</h1>
+  <p class="lede" style="font-size:28px;color:#f1f5f4;max-width:900px;line-height:1.3;margin-bottom:18px">
     A hyper-local pollution detection network in which citizen reports are
     <em>one class of sensor</em>.
   </p>
-  <p class="lede" style="margin-top:1.25rem">
-    It joins citizen photographs to satellite thermal detections, ground-station
-    readings and meteorology to find the pollution events that city-scale
-    monitoring misses — then forecasts what is coming, and hands the
-    responsible authority a corroborated case it can act on.
+  <p class="lede" style="max-width:880px">
+    It joins satellite fire detections, ground stations, weather and citizen
+    photographs to find the pollution events city-scale monitoring misses —
+    then forecasts what is coming along economic corridors, across borders, and
+    hands the right authority a corroborated alert once a person confirms it.
   </p>
   <div class="grow"></div>
-  <p style="color:var(--ink-soft);font-size:.95rem;margin:0">
-    Working prototype · <code>vayudoot.onrender.com</code> · 450 tests · free tier, no credit card
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+    <span class="pill" style="background:rgba(94,234,212,.14);color:#99f6e4">Gemini Flash + Flash-Lite</span>
+    <span class="pill" style="background:rgba(94,234,212,.14);color:#99f6e4">NASA FIRMS · GIBS</span>
+    <span class="pill" style="background:rgba(94,234,212,.14);color:#99f6e4">OpenAQ · Open-Meteo</span>
+    <span class="pill" style="background:rgba(94,234,212,.14);color:#99f6e4">Open feed + GeoJSON</span>
+    <span class="pill" style="background:rgba(251,146,60,.16);color:#fed7aa">Sandboxed: nothing reaches a real regulator</span>
+  </div>
+  <p style="color:#c9d8d5;font-size:15px;margin:0">
+    Working prototype · <code>vayudoot.onrender.com</code> · 500+ tests · free tier, no credit card
   </p>
   <span class="num">01</span>
 </section>
@@ -187,246 +237,271 @@
 <!-- 2 ------------------------------------------------------------------ -->
 <section class="slide">
   <p class="eyebrow">The problem</p>
-  <h2>India measures air at city scale.<br>People breathe it at street scale.</h2>
-  <div class="cols">
+  <h2>Air is measured at city scale.<br>People breathe it at street scale.</h2>
+  <div style="display:grid;grid-template-columns:380px 1fr;gap:44px;align-items:start">
     <div>
-      <p>
-        A reference-grade station reports a number for a district. It cannot see
-        the waste fire behind one building, the stack venting at 2am, or the
-        field burning forty kilometres upwind of a city that will be breathing it
-        tomorrow.
+      <p style="font-size:17px">
+        A reference station reports one number for a district. It cannot see
+        the waste fire behind one building, or the field burning upwind of a
+        city that will breathe it tomorrow. Most towns have no station at all.
       </p>
-      <p><strong>Those hyper-local events are most of the exposure and almost none of the data.</strong></p>
-      <p>
-        And when somebody does notice, acting on it is hours of unglamorous work:
-        identify it, prove it is not a one-off, find which of several overlapping
-        authorities has jurisdiction at that exact spot, cite the right statute,
-        file, then chase for weeks.
+      <p style="font-size:17px">
+        <strong>Averages hide events.</strong> The smoke that matters is short,
+        local, and moves across state and national lines.
       </p>
+      <div class="callout" style="margin-top:16px">
+        <p style="font-size:15px">And when somebody does notice, acting on it means finding which of
+        several authorities covers that exact spot, citing the right law, and
+        chasing it for weeks. The paperwork defeats people, not the law.</p>
+      </div>
     </div>
-    <div>
-      <div class="callout">
-        <p>
-          Almost nobody does this. The pollution continues because the paperwork
-          defeats people, not because the law is missing.
-        </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px 30px">
+      <div class="statbox red">
+        <div class="stat red">2.01M+</div>
+        <div class="stat-label">deaths from air pollution in India in 2023 — nearly 20% of all deaths</div>
+        <span class="cite">State of Global Air 2025 (HEI / IHME), India country profile</span>
       </div>
-      <div style="margin-top:1.5rem">
-        <div class="stat">~1.6M</div>
-        <div class="stat-label">deaths a year in India attributed to air pollution<br><span style="font-size:.8em">Lancet Planetary Health / ICMR State-Level Disease Burden Initiative, 2019</span></div>
+      <div class="statbox">
+        <div class="stat">47%</div>
+        <div class="stat-label">of India's people live beyond the reach of the monitoring grid; only 12% of census cities and towns have a station</div>
+        <span class="cite">CSE analysis of CPCB data to Dec 2022, published Jul 2023</span>
       </div>
-      <div style="margin-top:1.25rem">
-        <div class="stat">2×/day</div>
-        <div class="stat-label">how often a VIIRS satellite already passes over every one of those places, unused</div>
+      <div class="statbox">
+        <div class="stat">1,646 <span style="font-size:24px;color:var(--ink-soft);font-weight:600">vs ~4,000</span></div>
+        <div class="stat-label">stations in the national network, manual and real-time, against one peer-reviewed estimate of the need</div>
+        <span class="cite">PIB, network as of March 2026 · Brauer et al., Atmospheric Environment, 2019</span>
+      </div>
+      <div class="statbox warn">
+        <div class="stat" style="color:var(--warn)">37% <span style="font-size:24px;color:var(--ink-soft);font-weight:600">vs 7.3%</span></div>
+        <div class="stat-label">stubble smoke's share of Delhi's PM2.5 on the worst day in early November, against its season average</div>
+        <span class="cite">IITM Decision Support System, Govardhan et al., Geosci. Model Dev., 2024 (2021 season)</span>
       </div>
     </div>
   </div>
+  <div class="grow"></div>
+  <p class="src">Every figure, with its exact wording and link: <code>docs/pitch/sources.md</code></p>
   <span class="num">02</span>
 </section>
 
 <!-- 3 ------------------------------------------------------------------ -->
 <section class="slide">
-  <p class="eyebrow">The insight the whole system turns on</p>
-  <h2>A hotspot must not need a citizen to exist.</h2>
-  <p class="big">
-    If only reports create hotspots, the map is empty everywhere nobody has used
-    the app — which is most of India. <strong>And an empty map is
-    indistinguishable from clean air.</strong>
-  </p>
-  <div class="cols" style="margin-top:2rem">
-    <div class="card">
-      <h3>So instruments detect</h3>
-      <p>
-        Satellite thermal detections and station exceedances raise hotspots on
-        their own. The map has national content before one citizen opens the
-        page. A satellite sees <em>heat</em>, though — not fuel — so it never
-        guesses what is burning.
-      </p>
+  <p class="eyebrow">Across borders · across BRICS</p>
+  <h2>Smoke does not stop at a border. Nor does the gap.</h2>
+  <div class="cols-4" style="gap:18px">
+    <div class="card" style="background:#fff">
+      <h3>India · Pakistan</h3>
+      <div class="stat" style="font-size:40px">30%</div>
+      <p style="margin-top:8px;color:var(--ink)">of the air pollution in India's Punjab comes from Pakistan's Punjab under the prevailing north-west wind. At times it flows the other way.</p>
+      <span class="cite">World Bank, <em>Striving for Clean Air</em>, Dec 2022</span>
     </div>
-    <div class="card">
-      <h3>And citizens identify</h3>
-      <p>
-        A photograph does what only a photograph can: it <em>upgrades</em> a
-        hotspot, naming what is actually burning and turning a thermal anomaly
-        into a describable event a legal complaint can be written about.
-      </p>
+    <div class="card" style="background:#fff">
+      <h3>South Africa</h3>
+      <div class="stat" style="font-size:40px">12</div>
+      <p style="margin-top:8px;color:var(--ink)">Eskom coal power stations in the Highveld Priority Area. A court declared its air a breach of residents' constitutional rights in 2022, upheld on appeal in 2025.</p>
+      <span class="cite">Supreme Court of Appeal, Minister v groundWork, 11 Apr 2025, para 3 and the 2022 order</span>
+    </div>
+    <div class="card" style="background:#fff">
+      <h3>Brazil</h3>
+      <div class="stat" style="font-size:40px">140,346</div>
+      <p style="margin-top:8px;color:var(--ink)">fire hotspots in the Amazon in 2024, the most since 2007. Fire smoke caused an estimated 4,966 early deaths in Brazil in the 2019 season.</p>
+      <span class="cite">INPE Programa Queimadas · Nawaz &amp; Henze, GeoHealth, 2020</span>
+    </div>
+    <div class="card" style="background:#fff">
+      <h3>BRICS together</h3>
+      <div class="stat red" style="font-size:40px">2.955M</div>
+      <p style="margin-top:8px;color:var(--ink)">deaths from outdoor PM2.5 in the five original BRICS countries in 2023 — 59% of the world total.</p>
+      <span class="cite">Si et al., BMJ Global Health, 2026 (GBD 2023)</span>
+    </div>
+  </div>
+  <!-- [TODO pending: South Africa and Brazil nodes] When those nodes run, add a
+       line under the South Africa and Brazil cards: "Vayudoot node configured
+       for ..." — only once it runs, and never as if an agency runs it. -->
+  <div class="cols" style="margin-top:22px;gap:26px">
+    <div class="callout warn">
+      <p style="font-size:14.5px"><strong>One sensor is not enough.</strong> More than 90% of large farm
+      fires in Punjab in 2024 and 2025 were lit after 3 pm, after the midday
+      satellite passes. Fire counts suggest a fall of over 95%; burnt area shows 25–35%.</p>
+      <span class="cite" style="color:#8a5a1f">iFOREST, Stubble Burning Status Report 2025 · NASA Earth Observatory, Dec 2025</span>
+    </div>
+    <div class="callout">
+      <p style="font-size:14.5px"><strong>Monitoring gaps are global.</strong> Nearly one billion people
+      live in 71 countries with no sign of government air monitoring. On
+      average, people live 220 km from the nearest PM2.5 monitor.</p>
+      <span class="cite">OpenAQ, Global Landscape 2024 · Martin et al., Atmos. Environ. X, 2019 (2010–16 data)</span>
     </div>
   </div>
   <div class="grow"></div>
-  <div class="callout">
-    <p>
-      This is also what defeats brigading. Fifteen coordinated fake reports
-      cannot manufacture a hotspot when independent evidence has to agree.
-    </p>
-  </div>
+  <p class="src">Full citations and the figures we chose not to use: <code>docs/pitch/sources.md</code></p>
   <span class="num">03</span>
 </section>
 
 <!-- 4 ------------------------------------------------------------------ -->
 <section class="slide">
-  <p class="eyebrow">What it does</p>
-  <h2>Detect · Forecast · Alert · Share</h2>
-  <div class="flow">
-    <div class="step"><b>Signals</b>FIRMS thermal detections, OpenAQ exceedances against Indian NAAQS, citizen photographs, citizen sensors</div>
-    <div class="step"><b>Detect</b>Signals within 2 km and a fortnight become one hotspot, with a confidence and a severity</div>
-    <div class="step"><b>Forecast</b>Gemini reads wind + pollutant forecasts + upwind hotspots → a risk window per location and corridor</div>
-    <div class="step"><b>Alert</b>Jurisdiction resolved, complaint drafted in English and the local language, statute cited</div>
-    <div class="step"><b>Share</b>Hotspots published on an open feed neighbouring states read</div>
+  <p class="eyebrow">The insight the whole system turns on</p>
+  <h2>A hotspot must not need a citizen to exist.</h2>
+  <div style="display:grid;grid-template-columns:1fr 560px;gap:36px;align-items:start">
+    <div>
+      <p class="big" style="font-size:20px">
+        If only reports create hotspots, the map is empty wherever nobody has
+        the app — most of the country. <strong>And an empty map looks exactly
+        like clean air.</strong>
+      </p>
+      <div class="card" style="margin-top:16px">
+        <h3>So instruments detect</h3>
+        <p>NASA FIRMS fire detections and ground stations past the Indian
+        standard raise hotspots on their own. A satellite sees <em>heat</em>,
+        not fuel, so an instrument-only hotspot is labelled an
+        <em>unidentified source</em>.</p>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3>And citizens identify</h3>
+        <p>A photograph <em>upgrades</em> a hotspot by naming what is burning.
+        <!-- [TODO pending: voice reports] add "or a spoken report" here once voice intake is merged and working. -->
+        Citizen-only hotspots are capped at 60% confidence, however many
+        reports arrive — so fifteen coordinated fake reports cannot make one.</p>
+      </div>
+    </div>
+    <figure>
+      <img class="shot" src="shots/ops-satellite.png" alt="The operations view with NASA GIBS true colour, aerosol and fire layers on, three corroborated hotspots in Punjab and a ranked list showing severity, confidence, sources and people within 10 km">
+      <figcaption>NASA GIBS true-colour, aerosol and fire layers on. Three Punjab hotspots, each raised by 2 satellite detections and 1 station reading, no citizen involved. Seeded demo signals, real map layers.</figcaption>
+    </figure>
   </div>
-  <figure>
-    <img src="shots/ops.png" alt="The Vayudoot operations view: a map of India with hotspot areas and a ranked list showing severity, confidence and corroboration state">
-    <figcaption>
-      The operations view. Five hotspots: three raised by satellite and station
-      evidence in Punjab with no citizen involved, two from citizen reports whose
-      confidence is capped at 60% because nothing independent has corroborated
-      them yet.
-    </figcaption>
-  </figure>
   <span class="num">04</span>
 </section>
 
 <!-- 5 ------------------------------------------------------------------ -->
 <section class="slide">
-  <p class="eyebrow">Where Google AI does the work</p>
-  <h2>Gemini is doing judgement, not formatting.</h2>
+  <p class="eyebrow">What it does · where Google AI does the work</p>
+  <h2>Detect · take apart · alert · forecast · share</h2>
+  <div class="flow" style="margin-bottom:22px">
+    <div class="step"><b>Detect</b>FIRMS fire pixels, OpenAQ stations past the Indian NAAQS, citizen photos and sensors. Signals within 2 km and 14 days become one hotspot.</div>
+    <div class="step"><b>Take apart</b>Every signal listed. People within 10 km. Gemini reads the NASA GIBS satellite picture of the spot.</div>
+    <div class="step"><b>Alert</b>A corroborated hotspot becomes a brief to the board that covers it. A person confirms. Sandbox only.</div>
+    <div class="step"><b>Forecast</b>72-hour risk per corridor from wind, pollutant forecasts and hotspots up to 500 km upwind.</div>
+    <div class="step"><b>Share</b>An open feed and a GeoJSON feed that neighbouring nodes — and any GIS tool — read.</div>
+  </div>
   <table>
-    <thead>
-      <tr><th>Stage</th><th>What the model actually does</th><th>Tier</th></tr>
-    </thead>
+    <thead><tr><th style="width:150px">Gemini stage</th><th>What the model actually does</th><th style="width:96px">Tier</th></tr></thead>
     <tbody>
-      <tr><td class="tick">Evidence</td><td>Reads up to four photographs as one event — classifies the pollution type, estimates severity, names the visible indicators, returns a calibrated confidence. Multimodal, and the only stage that can say what is burning.</td><td>Flash</td></tr>
-      <tr><td class="tick">Corroboration</td><td>A three-agent parallel graph: satellite, ground station, meteorology, plus a synthesis node that back-traces the plume upwind.</td><td>Flash-Lite</td></tr>
-      <tr><td class="tick">Jurisdiction</td><td>Reverse geocodes and resolves the responsible authority, statute, statutory window and escalation path.</td><td>Flash-Lite</td></tr>
-      <tr><td class="tick">Drafting</td><td>Writes the formal complaint in the register the authority expects, in English <em>and</em> the region's language, citing only the statute supplied.</td><td>Flash</td></tr>
-      <tr><td class="tick">Forecast</td><td>Reads pollutant and wind forecasts against active upwind hotspots and produces a risk window with its reasoning and its inputs.</td><td>Flash-Lite</td></tr>
-      <tr><td class="tick">RTI</td><td>Drafts a Right to Information application when the statutory window lapses.</td><td>Flash-Lite</td></tr>
+      <tr><td class="tick">Evidence</td><td>Reads up to four photographs as one event: pollution type, severity, visible signs, a calibrated confidence. Below 0.55 it stops for a human.</td><td><span class="tier p">Flash</span></td></tr>
+      <tr><td class="tick">Satellite reading</td><td>Reads a VIIRS true-colour picture of the hotspot: is a plume visible, is cloud in the way. Cached per image date. Never counts as corroboration.</td><td><span class="tier p">Flash</span></td></tr>
+      <tr><td class="tick">Drafting · RTI</td><td>Writes the complaint in English and the region's language, citing only the statute supplied; a Right to Information application when the deadline lapses.</td><td><span class="tier p">Flash</span></td></tr>
+      <tr><td class="tick">Corroboration</td><td>Three agents in parallel — satellite, station, wind — and a synthesis node that back-traces the plume upwind.</td><td><span class="tier f">Flash-Lite</span></td></tr>
+      <tr><td class="tick">Alert · Forecast · Jurisdiction</td><td>Summarises a facts block built in Python; reasons over forecasts and upwind hotspots; resolves the authority, statute and deadline.</td><td><span class="tier f">Flash-Lite</span></td></tr>
     </tbody>
   </table>
-  <p style="margin-top:1.25rem;font-size:.95rem;color:var(--ink-soft);max-width:46rem">
-    Two tiers, by cost: only the two stages needing judgement use Flash. Every
-    stage returns a typed Pydantic model via structured output — stages hand each
-    other objects, never free text.
-  </p>
+  <div class="grow"></div>
+  <p class="small" style="margin:0">Every stage returns a typed Pydantic model — stages hand each other objects, never free text. Built on the Strands Agents SDK.</p>
   <span class="num">05</span>
 </section>
 
 <!-- 6 ------------------------------------------------------------------ -->
 <section class="slide">
-  <p class="eyebrow">The part we take most seriously</p>
-  <h2>A public pollution map is a public claim about a place.</h2>
-  <p class="lede">
-    Moving from private complaints to a public map creates harms that did not
-    exist before. Three rules are enforced in code, each with a test that says it
-    is holding a constraint rather than checking a function.
-  </p>
-  <div class="cols-3" style="margin-top:1.75rem">
-    <div class="card">
-      <h3>Areas, never addresses</h3>
-      <p>
-        Every hotspot has a minimum published radius of 1 km. A detection drawn
-        tightly around one building is an accusation against whoever occupies it,
-        with no name needed.
-      </p>
+  <p class="eyebrow">Evidence, not assertion</p>
+  <h2>Every hotspot can be taken apart.</h2>
+  <div style="display:grid;grid-template-columns:1fr 300px 250px;gap:26px;align-items:start">
+    <div>
+      <p style="font-size:16px">A public pollution map is a public claim about a place. So every
+      claim shows what it rests on, and three rules are enforced in code, each
+      held by a test.</p>
+      <div class="card" style="margin-bottom:10px">
+        <h3>Areas, never addresses</h3>
+        <p>A hotspot is a circle with a 1 km minimum radius. A tight circle
+        around one building is an accusation. No polluter is ever named.</p>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <h3>Corroboration caps confidence</h3>
+        <p>Citizen-only hotspots stop at 60%. Only a satellite or a ground
+        station can lift them — volume is what a campaign can fake.</p>
+      </div>
+      <div class="card">
+        <h3>The model's reading is not evidence</h3>
+        <p>Gemini's reading of the satellite picture is shown as an annotation.
+        It never moves the confidence: a 375 m pixel read by a model is not
+        independent proof.</p>
+      </div>
     </div>
-    <div class="card">
-      <h3>Corroboration caps confidence</h3>
-      <p>
-        Uncorroborated hotspots are capped at 0.6 — no quantity of public
-        submissions climbs past it, because quantity is what a campaign can
-        manufacture. Shown, flagged, never hidden.
-      </p>
-    </div>
-    <div class="card">
-      <h3>A forecast is never an advisory</h3>
-      <p>
-        Every forecast carries its inputs and a disclaimer on the object itself,
-        not in a template. It is never presented as, or confusable with, a CPCB
-        or IMD forecast.
-      </p>
-    </div>
-  </div>
-  <div class="grow"></div>
-  <div class="callout warn">
-    <p>
-      <strong>Nothing reaches a real regulator.</strong> Every committed authority
-      address is on the reserved <code>.invalid</code> TLD and no delivery
-      transport is wired in, both asserted by tests. Filing happens only after a
-      human confirms. A prototype that can email a State Pollution Control Board
-      during a demo is a liability, not a feature.
-    </p>
+    <figure>
+      <div class="crop fade" style="height:440px"><img src="shots/imagery.png" alt="Satellite imagery panel: a VIIRS true-colour picture around the hotspot with its 1 km area marked, and the model's reading — smoke plume not visible, cloud over the centre, 88% confidence — with a note that not visible is not no smoke"></div>
+      <figcaption>A real Gemini reading of a real VIIRS pass. Cloud over the centre, so "not visible" is not "no smoke".</figcaption>
+    </figure>
+    <figure>
+      <img class="shot" src="shots/exposure.png" alt="Who is in reach: about 1.6 million people within 10 km, a coarse estimate from the GeoNames gazetteer">
+      <figcaption style="margin-bottom:16px">People within 10 km, from the GeoNames gazetteer. Labelled as coarse, because it is. Kept off the public feed.</figcaption>
+      <div class="callout" style="padding:12px 14px">
+        <p style="font-size:13.5px">Certainty and size are separate numbers on every signal. Conflating
+        them once made one clear photo of a small fire read as <em>severe</em>.</p>
+      </div>
+    </figure>
   </div>
   <span class="num">06</span>
 </section>
 
 <!-- 7 ------------------------------------------------------------------ -->
 <section class="slide">
-  <p class="eyebrow">Evidence, not assertion</p>
-  <h2>Every hotspot can be taken apart.</h2>
-  <div class="cols">
-    <figure>
-      <img src="shots/detail.png" alt="A hotspot detail view showing the published area as a circle over Ludhiana, the corroboration state, and each underlying signal with its source, time, certainty and size">
-    </figure>
+  <p class="eyebrow">Alert relevant authorities · rapid intervention</p>
+  <h2>From a hotspot straight to the board — once a person says so.</h2>
+  <div style="display:grid;grid-template-columns:1fr 350px 350px;gap:26px;align-items:start">
     <div>
-      <p>
-        A number on a map is an assertion. This view exists so a reader can
-        decide for themselves whether the confidence above is earned.
-      </p>
-      <ul>
-        <li><strong>The circle is the published extent</strong> — not the location of anything inside it. Said in words, under the map.</li>
-        <li><strong>Every signal is listed</strong> with its source, its time, how sure we are it is real, and how large the observed thing is.</li>
-        <li><strong>Certainty and size are separate numbers.</strong> A model being sure of what it saw is not the same as what it saw being serious — conflating them once made a single clear photograph of a small fire report as <em>severe</em>.</li>
-        <li><strong>Signals are a list, never pins.</strong> Plotting them would undo the reason the hotspot is an area.</li>
+      <p style="font-size:16px">Before this, a fire that a satellite and a station agreed on — with no
+      citizen near it — reached nobody. Now a corroborated hotspot becomes an
+      <strong>alert brief</strong> for the pollution control board that covers
+      it: what was detected, the evidence, the people nearby, and checks an
+      inspector could make.</p>
+      <ul style="font-size:15px">
+        <li><strong>The facts are code.</strong> Only the short summary is the model's, and it is marked that way.</li>
+        <li><strong>English and the region's language.</strong> Punjabi, for Punjab.</li>
+        <li><strong>Only corroborated hotspots.</strong> Citizen reports alone cannot put a place in front of a regulator.</li>
       </ul>
+      <div class="callout warn" style="margin-top:14px">
+        <p style="font-size:14.5px"><strong>Nothing reaches a real regulator.</strong> Every authority
+        address is on the reserved <code>.invalid</code> domain, the envelope is
+        written to a sandbox outbox, and no delivery transport exists. Tests fail
+        if that changes.</p>
+      </div>
     </div>
+    <figure>
+      <div class="crop fade" style="height:500px"><img src="shots/alert-review.png" alt="An alert drafted for review, addressed to Punjab Pollution Control Board at a .invalid sandbox address, under the Air Act 1981, section 31A, with a model-written summary marked as such"></div>
+      <figcaption>1 · Drafted for review. Real Flash-Lite output.</figcaption>
+    </figure>
+    <figure>
+      <img class="shot" src="shots/alert-decision.png" alt="The decision block: Confirm and send this alert, which writes to the local sandbox outbox and contacts no authority">
+      <figcaption style="margin-bottom:14px">2 · The human gate. Nothing moves until this is pressed.</figcaption>
+      <div class="crop fade" style="height:225px"><img src="shots/alert-sent.png" alt="Alert sent to the sandbox outbox: the envelope as written, to ppcb@example.invalid, marked X-Vayudoot-Mode SANDBOX"></div>
+      <figcaption>3 · The envelope, exactly as written to the sandbox outbox.</figcaption>
+    </figure>
   </div>
   <span class="num">07</span>
 </section>
 
 <!-- 8 ------------------------------------------------------------------ -->
 <section class="slide">
-  <p class="eyebrow">Forecasting</p>
+  <p class="eyebrow">Forecast air quality spikes across economic corridors</p>
   <h2>What is coming, and why — with the work shown.</h2>
-  <div class="cols">
+  <div style="display:grid;grid-template-columns:550px 1fr;gap:34px;align-items:start">
+    <figure>
+      <img class="shot" src="shots/corridor.png" alt="The forecast view for the Lahore-Delhi trans-boundary smoke corridor: a map of six sampling points from Lahore to Delhi, a model-derived outlook of high risk, 85% confidence, and a note that 1 of 6 sampling points answered and 5 failed">
+      <figcaption>A real free-tier run. One sampling point answered and five failed while Gemini was busy, and the view says so instead of filling the gaps.</figcaption>
+    </figure>
     <div>
-      <p>
-        Gemini reads an Open-Meteo pollutant forecast, an Open-Meteo wind
-        forecast, and every detected hotspot within 400 km upwind — the distance
-        air actually covers in the 72-hour horizon.
-      </p>
-      <p>
-        Reported per location and per <strong>economic corridor</strong>: six of
-        them, each a line of sampling points across several states — the NCR, the
-        Delhi–Mumbai Industrial Corridor, the Punjab–Haryana stubble belt,
-        Mumbai–Pune, Chennai–Bengaluru, Kolkata–Durgapur. A corridor takes the
-        <em>worst</em> risk any waypoint carries, never the average: it is a
-        population strip, and the segment in trouble is the thing to act on.
-      </p>
-      <p style="font-size:.95rem;color:var(--ink-soft)">
-        Not a trained predictor, and it says so on every object it produces.
-        Vertex AI would be the obvious tool and needs a billing account — so this
-        reasons over public data instead, and labels itself honestly.
-      </p>
-    </div>
-    <div class="card" style="background:#fff">
-      <h3>Real output, Delhi, live run</h3>
-      <p style="color:var(--ink);margin-bottom:.6rem"><strong>risk: elevated · confidence: 0.75</strong></p>
-      <p style="margin-bottom:.6rem">
-        “Stagnant meteorological conditions with a low mean wind speed of 1.27 m/s
-        and 49 stagnant hours over the 72-hour horizon.”
-      </p>
-      <p style="margin-bottom:.6rem">
-        “Modelled PM2.5 exceeding the Indian 24-hour standard for 24 hours with a
-        peak of 95.7 µg/m³.”
-      </p>
-      <p>
-        “Active hotspots are located to the north (208 km) and north-west (282 and
-        286 km), <strong>but wind is arriving from the south-south-west, so air is
-        not arriving from these northern hotspots.</strong>”
-      </p>
-      <p style="margin-top:.85rem;font-size:.85rem">
-        It was handed three severe hotspots and declined to blame them. That is
-        the harder answer and the correct one.
-      </p>
+      <p style="font-size:15.5px">Gemini reads the Open-Meteo pollutant and wind forecasts and every
+      hotspot within <strong>500 km upwind</strong> — this node's and its
+      neighbours'. Seven corridors, 46 sampling points; a corridor takes the
+      <em>worst</em> point, not the average.</p>
+      <div class="card" style="background:#fff;padding:14px 16px">
+        <h3>Real output, Delhi, earlier live run</h3>
+        <p style="color:var(--ink);margin-bottom:6px"><strong>risk: elevated · confidence: 0.75</strong></p>
+        <p style="font-size:13.5px;margin-bottom:6px">“Modelled PM2.5 exceeding the Indian 24-hour standard for 24 hours with a peak of 95.7 µg/m³.”</p>
+        <p style="font-size:13.5px">“Active hotspots are located to the north … <strong>but wind is arriving from the south-south-west, so air is not arriving from these northern hotspots.</strong>”</p>
+        <p style="font-size:12.5px;margin-top:8px">Handed three severe hotspots, it declined to blame them. The harder answer, and the right one.</p>
+      </div>
+      <div class="callout warn" style="margin-top:14px">
+        <p style="font-size:13.5px"><strong>A model's reasoning, never an official forecast.</strong> Every outlook
+        carries its inputs and a disclaimer on the object itself, and is never
+        presented as a CPCB or IMD advisory.</p>
+      </div>
+      <!-- [TODO pending: forecast accuracy measurement] When it lands, add one line here:
+           how outlooks are scored against what stations later measured, and the score. -->
     </div>
   </div>
   <span class="num">08</span>
@@ -434,46 +509,36 @@
 
 <!-- 9 ------------------------------------------------------------------ -->
 <section class="slide">
-  <p class="eyebrow">Interoperability</p>
-  <h2>Punjab detects it. Delhi forecasts it. No shared model.</h2>
-  <p class="lede">
-    Stubble smoke from Punjab reaches Delhi about a day and a half later. It is
-    the best-documented pollution event in India and it crosses a state boundary
-    — which is exactly why no single-state system catches it.
-  </p>
-  <div class="cols" style="margin-top:1.5rem">
+  <p class="eyebrow">Interoperability · cross-border</p>
+  <h2>Pakistan's Punjab detects it. Delhi forecasts it. No shared weights.</h2>
+  <div style="display:grid;grid-template-columns:600px 1fr;gap:34px;align-items:start">
+    <figure>
+      <img class="shot" src="shots/network.png" alt="The network panel on a Delhi node: it publishes nothing of its own and reads two reachable neighbours, a Punjab node in India and a Pakistan Punjab node, each with 3 hotspots, plus the /feed and /feed.geojson endpoints">
+      <figcaption>A Delhi node that detected nothing itself, reading two neighbours over real HTTP: a Punjab node (IN) and a node configured for Pakistan's Punjab (PK). All three run on one machine in the demo.</figcaption>
+    </figure>
     <div>
-      <h3 style="font-size:1rem;margin-bottom:.6rem">What a node shares</h3>
-      <ul>
-        <li>Its detected hotspots, on a versioned open feed at <code>GET /feed</code></li>
-        <li>An explicit allowlist — no signals, no case ids, nothing identifying a reporter</li>
-        <li>Uncorroborated hotspots too, carrying their flag: a neighbour deciding what to trust needs the weak signals as well</li>
+      <h3 style="font-size:15px;margin-bottom:6px">What a node shares</h3>
+      <ul style="font-size:14.5px">
+        <li>Its hotspots on a versioned feed, <code>GET /feed</code></li>
+        <li>The same as RFC 7946 GeoJSON, <code>GET /feed.geojson</code> — areas as polygons, never points — so QGIS or any agency dashboard reads a node without our code</li>
+        <li>No signals, no case ids, nothing that identifies a reporter</li>
       </ul>
-      <h3 style="font-size:1rem;margin:1.25rem 0 .6rem">What it never does</h3>
-      <ul>
-        <li>Republish a neighbour's detection as its own — one bad node would contaminate the network and provenance would be unreadable</li>
-        <li>Accept a feed reporting its own node id — reading yourself back through a mirror looks exactly like independent agreement</li>
+      <h3 style="font-size:15px;margin:10px 0 6px">What it never does</h3>
+      <ul style="font-size:14.5px">
+        <li>Republish a neighbour's hotspot as its own</li>
+        <li>Accept a feed that reports its own node id back</li>
       </ul>
-    </div>
-    <div>
-      <div class="callout">
-        <p>
-          <strong>Shared: a detection layer. Not shared: trained weights.</strong>
-          That is the honest reading of “share predictive models”. Federated
-          training could not be built in this window, and claiming it without
-          building it costs more than it earns.
-        </p>
+      <div class="callout" style="margin-top:12px">
+        <p style="font-size:14px"><strong>Shared: a detection layer. Not shared: trained weights.</strong>
+        That is our honest reading of “share predictive models”. No government runs
+        a node; the PK node is this software started with <code>PK</code> in its
+        config, to show the contract crosses a border.</p>
       </div>
-      <p style="margin-top:1.25rem">
-        Standing up a second state is configuration, not code: a node id, a
-        region, and a comma-separated list of neighbour feed URLs. No registry,
-        no central authority, no permission needed — reading a public feed is
-        reading a public feed.
-      </p>
-      <p style="font-size:.95rem;color:var(--ink-soft)">
-        <code>python scripts/federation_demo.py</code> runs two real nodes over
-        the real HTTP contract. Nothing is mocked.
-      </p>
+      <!-- [TODO pending: South Africa and Brazil nodes] Once they run, add them to the
+           caption and to this list, e.g. "Nodes configured for Gauteng (ZA) and
+           Sao Paulo (BR) read the same contract." Do not claim before they run. -->
+      <!-- [TODO pending: sharing the forecaster between nodes] If it lands, say
+           exactly what is shared (not weights), in one line. -->
     </div>
   </div>
   <span class="num">09</span>
@@ -481,39 +546,50 @@
 
 <!-- 10 ----------------------------------------------------------------- -->
 <section class="slide">
-  <p class="eyebrow">Depth and reach across India</p>
-  <h2>Built to be a second state's problem, not ours.</h2>
-  <div class="cols-3">
-    <div>
-      <div class="stat">36</div>
-      <div class="stat-label">states and union territories in the authority table — all 28 states, all 8 UTs, with Pollution Control Committees rather than Boards where that is correct, plus aliases for the pre-2020 names geocoders still return</div>
+  <p class="eyebrow">Depth and reach</p>
+  <h2>Built to be a second region's problem, not ours.</h2>
+  <div class="cols-4">
+    <div class="statbox teal">
+      <div class="stat teal">36</div>
+      <div class="stat-label">Indian states and union territories in the authority table: all 28 states and all 8 UTs, with statute, deadline and escalation path</div>
     </div>
-    <div>
-      <div class="stat">6</div>
-      <div class="stat-label">economic corridors, spanning 12 states, as sampling lines rather than abstractions</div>
+    <div class="statbox teal">
+      <div class="stat teal">7</div>
+      <div class="stat-label">economic corridors, 46 sampling points, across 11 Indian states and UTs and Pakistan's Punjab</div>
     </div>
-    <div>
-      <div class="stat">0</div>
-      <div class="stat-label">lines of Python to add a state, a corridor, or an authority</div>
+    <div class="statbox teal">
+      <div class="stat teal">2</div>
+      <div class="stat-label">countries in one corridor: Lahore–Delhi, crossing at Attari–Wagah</div>
+    </div>
+    <div class="statbox teal">
+      <div class="stat teal">0</div>
+      <div class="stat-label">lines of Python to add a state, an authority, a corridor or a node's country</div>
     </div>
   </div>
-  <div style="margin-top:2rem">
-    <h3 style="font-size:1rem">Everything region-specific is data, never code</h3>
-    <p>
-      Jurisdiction lives in <code>authorities.example.json</code>, keyed by
-      administrative region. Corridors live in <code>corridors.json</code>.
-      Adding Assam is a JSON edit. This is the property that decides whether a
-      prototype can become a national system or stays a Delhi demo — and it was
-      a constraint from the first commit, not a retrofit.
-    </p>
-    <h3 style="font-size:1rem;margin-top:1.25rem">And coverage is published, not claimed</h3>
-    <p>
-      Every jurisdiction match reports whether it was <code>exact</code>,
-      a <code>fallback</code> one tier up, or a <code>generic</code> placeholder —
-      and a case carrying a fallback says so on its own page. A system that
-      quietly substitutes an authority is worse than one that admits it does not
-      know.
-    </p>
+  <div class="cols" style="margin-top:28px;gap:36px">
+    <div>
+      <h3 style="font-size:16px">Everything region-specific is data</h3>
+      <p style="font-size:15px">Authorities live in <code>authorities.example.json</code>, keyed by
+      region. Corridors live in <code>corridors.json</code> and record the
+      countries they cross. A node declares its own country. Adding Assam — or
+      a corridor into Nepal — is a JSON edit.</p>
+      <h3 style="font-size:16px;margin-top:14px">Coverage is published, not claimed</h3>
+      <p style="font-size:15px">Every authority match says whether it was <code>exact</code>, a
+      <code>fallback</code> one tier up, or a <code>generic</code> placeholder,
+      and a case with a fallback says so on its own page.</p>
+    </div>
+    <div>
+      <h3 style="font-size:16px">What reaches beyond India today, and what does not</h3>
+      <ul style="font-size:15px">
+        <li>The feed, the GeoJSON, the node identity and the forecast are country-neutral. A PK node runs today.</li>
+        <li>FIRMS, GIBS, Open-Meteo, OpenAQ and GeoNames are global, so detection and forecasting work anywhere.</li>
+        <li>The authority table and the exceedance thresholds are Indian. Another country needs its own table and its own standard.</li>
+      </ul>
+      <!-- [TODO pending: South Africa and Brazil nodes] If they land, add a line:
+           "Nodes configured for South Africa's Highveld and Brazil run on the same
+           contract" and change the "2 countries" stat above only if a corridor
+           or node really crosses into them. -->
+    </div>
   </div>
   <span class="num">10</span>
 </section>
@@ -527,34 +603,29 @@
       <table>
         <tbody>
           <tr><td class="tick">Inference</td><td>Gemini via Google AI Studio — no billing account, no card</td></tr>
-          <tr><td class="tick">Compute</td><td>Render free tier, one FastAPI process serving API and interface together</td></tr>
+          <tr><td class="tick">Fallback</td><td>AI Studio meters each model separately, so each tier walks a chain of free Gemini models on 429, 503 or 404 — about fifty reports a day instead of ten</td></tr>
+          <tr><td class="tick">Compute</td><td>Render free tier, one FastAPI process for API and interface</td></tr>
           <tr><td class="tick">Storage</td><td>Neon Postgres free tier; JSON files when unset</td></tr>
-          <tr><td class="tick">Evidence</td><td>NASA FIRMS, OpenAQ, Open-Meteo, Nominatim — all free</td></tr>
+          <tr><td class="tick">Evidence</td><td>NASA FIRMS, NASA GIBS, OpenAQ, Open-Meteo, Nominatim, GeoNames — all free</td></tr>
           <tr><td class="tick">Interface</td><td>Preact as native ES modules. No bundler, no build step, no Node</td></tr>
         </tbody>
       </table>
-      <p style="margin-top:1.25rem;font-size:.95rem;color:var(--ink-soft)">
-        A state could also run it entirely on its own hardware: the model provider
-        is one environment variable, and Ollama is a supported, tested path.
-      </p>
+      <!-- [TODO pending: BigQuery export] If it lands, add a row:
+           "Analytics | BigQuery sandbox export — free, no card" -->
     </div>
     <div>
       <div class="callout warn">
-        <p>
-          <strong>Google Cloud proper is deliberately unused.</strong> Its free
-          tier — the $300 trial and Always Free alike — requires a billing
-          account and a card. We had none. So Vertex AI, Cloud Run and Maps
-          Platform are out, and nothing in the build pretends otherwise.
-        </p>
+        <p><strong>Google Cloud proper is deliberately unused.</strong> Its free
+        tier needs a billing account and a card. So Vertex AI, Cloud Run and
+        Maps Platform are out, and nothing in the build pretends otherwise.</p>
       </div>
-      <p style="margin-top:1.25rem">
-        That constraint made the system more deployable, not less. A state
-        agency that can pilot this without raising a purchase order is a state
-        agency that can pilot it in weeks.
-      </p>
-      <div style="margin-top:1.5rem">
-        <div class="stat" style="font-size:2.2rem">450 tests</div>
-        <div class="stat-label">including tests whose docstrings state they are holding a safety constraint and must not be relaxed to pass</div>
+      <p style="margin-top:16px;font-size:15.5px">That made it more deployable, not less. An agency that can pilot this
+      without a purchase order can pilot it in weeks. And a state can run it on
+      its own hardware: the model provider is one environment variable, and
+      Ollama is a tested path.</p>
+      <div style="margin-top:18px" class="statbox teal">
+        <div class="stat teal" style="font-size:40px">500+ tests</div>
+        <div class="stat-label">including tests whose docstrings say they hold a safety rule and must not be relaxed to pass</div>
       </div>
     </div>
   </div>
@@ -562,45 +633,54 @@
 </section>
 
 <!-- 12 ----------------------------------------------------------------- -->
-<section class="slide">
+<section class="slide dark">
   <p class="eyebrow">Impact, and what is honestly next</p>
   <h2>From “nobody noticed” to “somebody has to answer”.</h2>
   <div class="cols">
     <div>
-      <h3 style="font-size:1rem">What exists today</h3>
-      <ul>
-        <li>National detection from instruments that already pass overhead twice a day</li>
-        <li>72-hour forecasts along six corridors spanning 12 states</li>
-        <li>Complaints drafted in English and the region's language, with the right statute and the statutory clock</li>
-        <li>RTI applications when that clock runs out — the lever that actually carries a legal duty to reply</li>
-        <li>A public register, so a complaint is a visible record rather than a private email</li>
+      <h3 style="font-size:16px;color:#5eead4">What exists today</h3>
+      <ul style="font-size:15px">
+        <li>Detection from satellites that already pass overhead, with no citizen needed</li>
+        <li>A hotspot-to-authority alert with a human gate, sandboxed</li>
+        <li>Gemini reading the satellite picture of a hotspot, labelled as an annotation</li>
+        <li>72-hour outlooks on seven corridors, one of them across the India–Pakistan border</li>
+        <li>An open feed and GeoJSON that a node in another country can read</li>
+        <li>Complaints and RTI applications drafted with the right statute and deadline</li>
       </ul>
     </div>
     <div>
-      <h3 style="font-size:1rem">What we are not claiming</h3>
-      <ul>
-        <li><strong>Not federated learning.</strong> A shared detection layer, and we say so.</li>
-        <li><strong>Not a trained forecast model.</strong> A model reasoning over public data, labelled on every object.</li>
-        <li><strong>Not naming polluters.</strong> Unreliable from a photograph and seriously harmful when wrong. Permanently out of scope.</li>
-        <li><strong>Not filing automatically.</strong> A human confirms. Always.</li>
+      <h3 style="font-size:16px;color:#5eead4">What we are not claiming</h3>
+      <ul style="font-size:15px">
+        <li><strong>Not federated learning.</strong> A shared detection layer.</li>
+        <li><strong>Not a trained forecast model</strong>, and never an official forecast.</li>
+        <li><strong>Not naming polluters.</strong> Permanently out of scope.</li>
+        <li><strong>Not sending anything real.</strong> A person confirms, and the envelope goes to a sandbox.</li>
+        <li><strong>Not run by any government.</strong> The PK node is our software, configured.</li>
       </ul>
-      <div class="callout" style="margin-top:1.25rem">
-        <p>
-          The next thing worth building is not a feature. It is one state running
-          one node for one burning season, and finding out how much of this
-          survives contact with a real Pollution Control Board.
-        </p>
+      <div class="callout" style="margin-top:14px;background:rgba(94,234,212,.12);border-left-color:#5eead4">
+        <p style="color:#e6f4f1">The next step is not a feature. It is one state running one node
+        through one burning season, and learning what survives contact with a
+        real Pollution Control Board.</p>
       </div>
     </div>
   </div>
   <div class="grow"></div>
-  <p style="margin:0;color:var(--ink-soft);font-size:.95rem">
-    <code>vayudoot.onrender.com</code> · source, tests and the reasoning behind
-    every constraint in the repository
-  </p>
+  <p style="margin:0;color:#c9d8d5;font-size:15px"><code>vayudoot.onrender.com</code> · source, tests and the reason for every rule are in the repository</p>
   <span class="num">12</span>
 </section>
 
 </div>
+<script>
+  /* Fit each 1280 × 720 slide to the window. Scrolling moves one slide per
+     screen; printing ignores this and uses the page size above. */
+  (function () {
+    function fit() {
+      var s = Math.min((window.innerWidth - 32) / 1280, (window.innerHeight - 48) / 720);
+      document.documentElement.style.setProperty("--fit", Math.max(0.2, s).toFixed(4));
+    }
+    fit();
+    window.addEventListener("resize", fit);
+  })();
+</script>
 </body>
 </html>
