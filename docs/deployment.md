@@ -200,6 +200,19 @@ its free tier with no card, but Supabase's free Postgres works exactly the
 same way. Either one pauses after a stretch of inactivity, so wake it before a
 demo alongside the compute host.
 
+### Analytics (optional): BigQuery sandbox
+
+`scripts/export_bigquery.py` writes signals, hotspots (as area polygons),
+neighbours' hotspots, alert statuses and the corridors as newline-delimited
+JSON with BigQuery schemas, and loads them into a BigQuery **sandbox** project
+when `google-cloud-bigquery` (the `[bigquery]` extra), application default
+credentials and a project id are all present. The sandbox needs no billing
+account and no card: 10 GiB of storage, 1 TiB of queries a month, and every
+table is deleted after 60 days. It does not allow streaming inserts or DML, so
+the export uses load jobs only and appends snapshots that views deduplicate.
+Nothing in the server depends on it. Setup, tables and queries:
+`docs/bigquery.md`.
+
 ### Evidence APIs
 
 | Source | Terms |
@@ -243,3 +256,23 @@ cache it.
 What is on the map on the day is whatever is actually burning that day, because
 the scan reads live FIRMS data. That is a stronger demonstration than seeded
 signals and it is not reproducible, so a good take is worth keeping.
+
+### Warming the model calls
+
+The Gemini free tier answers 503 for long stretches, so every model call the
+demo shows should be made before recording. `scripts/demo_prep.py` does it
+against a running node: it seeds the demo hotspots if they are missing, reads
+the demo hotspot's satellite image, drafts its alert, and warms the Delhi and
+corridor forecasts, retrying 503s with backoff. It asks the free read first
+every time, so running it twice spends nothing twice, and it can only POST the
+imagery read and the alert draft — it never confirms or files anything.
+
+    # server started with VAYUDOOT_FORECAST_CACHE_MINUTES=240, DATABASE_URL= and
+    # VAYUDOOT_SCAN_ENABLED=false, then:
+    .venv/bin/python scripts/demo_prep.py --dry-run
+    .venv/bin/python scripts/demo_prep.py
+
+Forecasts live in the server's memory, so a restart after prep empties them.
+Seeding writes into the JSON store, so it works on a local node, not one on
+Postgres. The checklist it prints ends with the exact command for each item
+still cold.
