@@ -169,6 +169,23 @@ export function useHotspots() {
   return state;
 }
 
+/* Every hotspot alert, newest first — only so the ranked list can mark a
+ * hotspot that already has one pending or sent. Asked once per visit rather
+ * than polled: an alert only changes when a person on the hotspot page acts,
+ * and coming back to the list asks again. A failure shows no marks rather than
+ * an error, because the list is complete without them. */
+export function useAlerts() {
+  const [alerts, setAlerts] = useState([]);
+  useEffect(() => {
+    let live = true;
+    api("/alerts")
+      .then((data) => { if (live && Array.isArray(data)) setAlerts(data); })
+      .catch(() => { /* marks are a convenience */ });
+    return () => { live = false; };
+  }, []);
+  return alerts;
+}
+
 /* One hotspot, asked for by id.
  *
  * `GET /hotspots/{id}` exists, unlike `/clusters/{id}`, so this asks for the
@@ -234,7 +251,13 @@ function askForecast(corridorId) {
     startedAt: Date.now(),
     promise: api(`/corridors/${encodeURIComponent(corridorId)}/forecast`)
       .then((data) => {
-        forecastDone.set(corridorId, { data, at: Date.now() });
+        // A partial corridor — some waypoints did not answer — is not kept, for
+        // the server's reason: it does not cache one either, so asking again
+        // can fill the gaps rather than replaying them for half an hour.
+        const corridor = (corridorCache || []).find((c) => c.corridor_id === corridorId);
+        const partial = corridor
+          && (data.waypoint_forecasts || []).length < corridor.waypoints.length;
+        if (!partial) forecastDone.set(corridorId, { data, at: Date.now() });
         return data;
       })
       .finally(() => forecastFlight.delete(corridorId)),

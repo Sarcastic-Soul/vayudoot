@@ -434,6 +434,7 @@ async def draft_hotspot_alert(hotspot_id: str, redraft: bool = False) -> Hotspot
     except Exception as exc:
         if (busy := _model_busy(exc, tier="fast")) is None:
             raise
+        log.warning("Alert draft for hotspot %s found no model: %r", hotspot_id, exc)
         raise busy from exc
 
 
@@ -453,10 +454,12 @@ async def read_imagery(hotspot_id: str, reread: bool = False) -> ImageryReading:
     try:
         return await read_hotspot_imagery(hotspot, reread=reread)
     except ImageryUnavailable as exc:
+        log.warning("Imagery unavailable for hotspot %s: %s", hotspot_id, exc)
         raise HTTPException(502, str(exc)) from exc
     except Exception as exc:
         if (busy := _model_busy(exc, tier="primary")) is None:
             raise
+        log.warning("Imagery read for hotspot %s found no model: %r", hotspot_id, exc)
         raise busy from exc
 
 

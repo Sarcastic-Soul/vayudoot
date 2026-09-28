@@ -85,7 +85,7 @@ export function OutlookPending({ corridor, startedAt }) {
         ${corridor.waypoints.map(([lat, lon], i) => html`
           <li key=${i}>
             <span class="wp-num">${i + 1}</span>
-            <span class="tnum">${coordLabel(lat, lon)}</span>
+            <span class="tnum">${corridor.waypoint_names?.[i] || coordLabel(lat, lon)}</span>
             <span class="skeleton"></span>
           </li>`)}
       </ol>
@@ -98,6 +98,7 @@ export function OutlookPending({ corridor, startedAt }) {
 
 export function OutlookFailed({ error, status, onRetry }) {
   const quota = status === 429 || /quota|rate|exhaust|limit/i.test(error || "");
+  const overloaded = status === 503 || /overloaded|503|unavailable/i.test(error || "");
   return html`
     <div class="outlook-failed" role="alert">
       <${FailedIcon} />
@@ -108,7 +109,11 @@ export function OutlookFailed({ error, status, onRetry }) {
           ${quota
             ? "The free-tier model quota looks spent for now. It refills on its own; nothing is "
               + "cached after a failure, so retrying asks again."
-            : "Nothing is cached after a failure, so retrying asks the model again."}
+            : overloaded
+              ? "The model is overloaded right now. This is not a reading of calm air — no "
+                + "waypoint answered. Trying again in a minute usually works."
+              : "No waypoint answered, so there is no outlook — not a low one. Nothing is "
+                + "cached after a failure, so retrying asks the model again."}
         </p>
         <button type="button" class="secondary" onClick=${onRetry}>
           <${RetryIcon} /> Try again
@@ -135,7 +140,8 @@ function Ribbon({ corridor, byIndex, focus, onFocus }) {
             <li key=${i}>
               <button type="button" class=${`ribbon-cell${focus === i ? " is-focus" : ""}`}
                       data-risk=${f?.risk || "none"}
-                      aria-label=${`Waypoint ${i + 1}: ${f ? `${f.risk} risk` : "no answer"}`}
+                      aria-label=${`${i + 1}, ${waypointName(f, corridor, i)}: `
+                        + `${f ? `${f.risk} risk` : "no answer"}`}
                       onClick=${() => onFocus(i)}>
                 <span class="tnum">${i + 1}</span>
               </button>
@@ -143,8 +149,8 @@ function Ribbon({ corridor, byIndex, focus, onFocus }) {
         })}
       </ol>
       <div class="ribbon-ends">
-        <span>${first ? waypointName(first, corridor, 0) : "Waypoint 1"}</span>
-        <span>${last ? waypointName(last, corridor, n - 1) : `Waypoint ${n}`}</span>
+        <span>${waypointName(first, corridor, 0)}</span>
+        <span>${waypointName(last, corridor, n - 1)}</span>
       </div>
     </div>`;
 }

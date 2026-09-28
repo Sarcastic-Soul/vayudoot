@@ -14,6 +14,11 @@
  * would hand back the address the radius was there to withhold. Hard constraint
  * 7. Contributing cases are linked instead, which is where a reader with
  * standing to see the detail already goes.
+ *
+ * Under the map sit the three things an operator does next, in the order a
+ * phone reads them: who is in reach, the alert to the authority, and a look at
+ * the satellite picture. On a wide screen the alert takes the larger column,
+ * because it is the one that ends in a decision.
  */
 
 import { html, Fragment } from "../lib/html.js";
@@ -27,6 +32,9 @@ import {
 import { HotspotsMap } from "./HotspotsMap.js";
 import { Figures, CorroborationBadge } from "./HotspotMarks.js";
 import { CaseListSkeleton } from "./Skeletons.js";
+import { ExposurePanel } from "./Exposure.js";
+import { HotspotAlert } from "./HotspotAlert.js";
+import { ImageryCheck } from "./ImageryCheck.js";
 import { BackIcon, HotspotIcon, SourceIcon } from "./Icons.js";
 
 function SignalRow({ signal }) {
@@ -109,6 +117,12 @@ export function HotspotView({ hotspotId }) {
             it. Hotspots are drawn as areas and never as points, so that a detection cannot be
             read as an accusation against one address.
           </p>
+
+          <div class="hotspot-act">
+            <div class="act-exposure"><${ExposurePanel} exposure=${hotspot.exposure} /></div>
+            <div class="act-alert"><${HotspotAlert} hotspot=${hotspot} /></div>
+            <div class="act-imagery"><${ImageryCheck} hotspot=${hotspot} /></div>
+          </div>
 
           <div class="cluster-grid">
             <div class="case-col">

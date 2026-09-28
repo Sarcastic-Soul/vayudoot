@@ -22,8 +22,8 @@
 
 import { html, Fragment } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
-import { useHotspots } from "../lib/store.js";
-import { plural, SOURCE_LABEL, SOURCE_BLURB } from "../lib/format.js";
+import { useHotspots, useAlerts } from "../lib/store.js";
+import { plural, SOURCE_LABEL, SOURCE_BLURB, latestAlertByHotspot } from "../lib/format.js";
 import { HotspotsMap, MapLegend } from "./HotspotsMap.js";
 import { HotspotCard } from "./HotspotCard.js";
 import { HotspotListSkeleton } from "./Skeletons.js";
@@ -79,6 +79,7 @@ function NoHotspots() {
 
 export function OpsView() {
   const { data, error } = useHotspots();
+  const alerts = latestAlertByHotspot(useAlerts());
   const hotspots = data || [];
   const uncorroborated = hotspots.filter((h) => !h.corroborated).length;
 
@@ -137,7 +138,8 @@ export function OpsView() {
           ${data && hotspots.length > 0 && html`
             <ul class="hotspot-list" aria-labelledby="ops-list-label">
               ${hotspots.map((hotspot) => html`
-                <${HotspotCard} key=${hotspot.hotspot_id} hotspot=${hotspot} />`)}
+                <${HotspotCard} key=${hotspot.hotspot_id} hotspot=${hotspot}
+                                alert=${alerts[hotspot.hotspot_id]} />`)}
             </ul>`}
 
           ${data && hotspots.length === 0 && html`<${NoHotspots} />`}

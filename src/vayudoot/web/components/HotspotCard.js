@@ -7,18 +7,24 @@
  * is the loudest thing on the card by design: the confidence above it is
  * capped, and a capped number shown without its cap is the presentation hard
  * constraint 7 exists to forbid.
+ *
+ * Two quieter lines follow when there is something to say: roughly how many
+ * people live within reach (a coarse gazetteer figure, never a headcount), and
+ * whether an alert about this place is waiting on a person or has been sent —
+ * so an operator scanning the list does not draft a second one.
  */
 
 import { html } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
 import {
   words, shortWhen, plural, radiusLabel, sourceBreakdown, sourceLabel,
-  kindLabel, isUnidentified, whyUnidentified,
+  kindLabel, isUnidentified, whyUnidentified, ALERT_STATUS_LABEL,
 } from "../lib/format.js";
 import { Figures, CorroborationBadge } from "./HotspotMarks.js";
-import { SourceIcon } from "./Icons.js";
+import { ExposureChip } from "./Exposure.js";
+import { SourceIcon, AlertMailIcon } from "./Icons.js";
 
-export function HotspotCard({ hotspot }) {
+export function HotspotCard({ hotspot, alert }) {
   const sources = sourceBreakdown(hotspot.source_counts);
 
   return html`
@@ -49,6 +55,15 @@ export function HotspotCard({ hotspot }) {
               </span>`;
           })}
         </span>
+
+        ${(hotspot.exposure || alert) && html`
+          <span class="hotspot-extra">
+            <${ExposureChip} exposure=${hotspot.exposure} />
+            ${alert && html`
+              <span class="alert-chip" data-status=${alert.status}>
+                <${AlertMailIcon} />${ALERT_STATUS_LABEL[alert.status] || alert.status}
+              </span>`}
+          </span>`}
 
         <span class="hotspot-foot">
           <span>${radiusLabel(hotspot.radius_km)} across · ${plural(hotspot.signal_count,

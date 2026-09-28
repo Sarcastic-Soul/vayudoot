@@ -133,9 +133,9 @@ def exposure_for(latitude: float, longitude: float, radius_km: float) -> Exposur
         basis=(
             f"Sum of the populations of {count} place{'s' if count != 1 else ''} whose "
             f"centre lies within {radius:g} km of the hotspot's centre, from the GeoNames "
-            "gazetteer of places over 15,000 people (CC BY 4.0, geonames.org). A lower "
-            "bound for the countryside, since villages under 15,000 people are not "
-            "counted; a city is counted whole when its centre is in reach. Not a "
-            "headcount."
+            "gazetteer of places over 15,000 people (CC BY 4.0, geonames.org). A coarse "
+            "figure, not a headcount: it reads low in the countryside, since villages "
+            "under 15,000 people are not counted, and a city is counted whole when its "
+            "centre is in reach."
         ),
     )

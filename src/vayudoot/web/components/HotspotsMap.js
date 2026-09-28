@@ -17,13 +17,22 @@
  * The hexes are literals rather than tokens for `ClusterView`'s reason: they
  * sit on OpenStreetMap tiles, which are the same light tiles in both themes,
  * so a colour that followed the theme would be wrong half the time.
+ *
+ * **Satellite layers go under the circles, never over them.** The operator can
+ * swap the street map for yesterday's VIIRS pass and lay aerosol and fires on
+ * top (`SatelliteControl`, `lib/gibs.js`), and every tile layer lives in
+ * Leaflet's tile pane while the circles live in the overlay pane above it. Each
+ * ring is drawn over a white halo of the same shape, so a dark-red ring stays
+ * legible on dark farmland and a dashed ring stays visibly dashed.
  */
 
 import { useEffect, useRef } from "../vendor/hooks.mjs";
 import { html } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
 import { INDIA_CENTRE, TILES, useLeafletMap } from "../lib/maps.js";
+import { buildGibsLayers, useImagery } from "../lib/gibs.js";
 import { MapPane } from "./MapPane.js";
+import { SatelliteControl, SatelliteStamp } from "./SatelliteControl.js";
 
 /* Four bands, separated by lightness as well as by hue so the ramp survives
    being printed, screenshotted, or looked at by someone who does not separate
@@ -34,6 +43,21 @@ export const SEVERITY_COLOUR = {
   high: "#c9541c",
   severe: "#9c2118",
 };
+
+/* The halo under a ring: the same outline, white and wider, so the ring reads
+   on dark imagery as well as on light tiles. Not interactive — the ring above
+   it takes the click. */
+function haloStyle(hotspot) {
+  return {
+    color: "#ffffff",
+    weight: hotspot.corroborated ? 5.5 : 4.5,
+    opacity: 0.85,
+    dashArray: hotspot.corroborated ? null : "6 5",
+    lineCap: "butt",
+    fill: false,
+    interactive: false,
+  };
+}
 
 function ringStyle(hotspot) {
   const colour = SEVERITY_COLOUR[hotspot.severity] || SEVERITY_COLOUR.moderate;
@@ -64,15 +88,49 @@ function popupFor(hotspot) {
   return box;
 }
 
+function show(map, layer, on) {
+  if (on && !map.hasLayer(layer)) layer.addTo(map);
+  if (!on && map.hasLayer(layer)) map.removeLayer(layer);
+}
+
 export function HotspotsMap({ hotspots, paneClass = "ops-map", fitMaxZoom = 12 }) {
   const layer = useRef(null);
+  const street = useRef(null);
+  const gibs = useRef(null);
+  const drawnDate = useRef(null);
+  const imagery = useImagery();
 
   const [container, map] = useLeafletMap((node) => {
     const created = window.L.map(node).setView(INDIA_CENTRE, 4);
-    window.L.tileLayer(TILES.url, TILES.options).addTo(created);
+    street.current = window.L.tileLayer(TILES.url, { ...TILES.options, zIndex: 1 });
+    gibs.current = buildGibsLayers(imagery.date);
+    drawnDate.current = imagery.date;
+    gibs.current.trueColour.setZIndex(1);
+    gibs.current.aerosol.setZIndex(3);
+    gibs.current.fires.setZIndex(4);
+    gibs.current.reference.setZIndex(5);
     layer.current = window.L.layerGroup().addTo(created);
     return created;
   });
+
+  /* Which layers are on, and for which day. Runs after the map exists, and
+     again whenever the shared choice changes in any map's control. */
+  useEffect(() => {
+    const m = map.current;
+    const g = gibs.current;
+    if (!m || !g) return;
+    const satellite = imagery.base === "satellite";
+    if (drawnDate.current !== imagery.date) {
+      g.setDate(imagery.date);
+      drawnDate.current = imagery.date;
+    }
+    show(m, street.current, !satellite);
+    show(m, g.trueColour, satellite);
+    show(m, g.reference, satellite);
+    show(m, g.aerosol, imagery.aerosol);
+    show(m, g.fires, imagery.fires);
+    m.getContainer().classList.toggle("is-satellite", satellite);
+  }, [imagery]);
 
   useEffect(() => {
     if (!map.current || !layer.current) return undefined;
@@ -81,6 +139,8 @@ export function HotspotsMap({ hotspots, paneClass = "ops-map", fitMaxZoom = 12 }
     const drawn = [];
     for (const hotspot of hotspots || []) {
       const centre = [hotspot.centre_latitude, hotspot.centre_longitude];
+      window.L.circle(centre, { ...haloStyle(hotspot), radius: hotspot.radius_km * 1000 })
+        .addTo(layer.current);
       const ring = window.L.circle(centre, {
         ...ringStyle(hotspot),
         radius: hotspot.radius_km * 1000,
@@ -109,7 +169,11 @@ export function HotspotsMap({ hotspots, paneClass = "ops-map", fitMaxZoom = 12 }
     return () => clearTimeout(timer);
   }, [hotspots]);
 
-  return html`<${MapPane} paneClass=${paneClass} containerRef=${container} />`;
+  return html`
+    <${MapPane} paneClass=${paneClass} containerRef=${container}>
+      <${SatelliteControl} />
+      <${SatelliteStamp} />
+    <//>`;
 }
 
 /* What the colours and the broken line mean, said on the page rather than

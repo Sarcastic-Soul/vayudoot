@@ -3,14 +3,18 @@
  * A 300px map is enough to confirm a pin and not enough to find one, so every
  * map can go full screen. The Leaflet instance is untouched by that: only the
  * size of its container changes, which is why the pin does not move and
- * nothing is re-created. */
+ * nothing is re-created.
+ *
+ * `children` are controls that float over the map — the satellite switch on
+ * the hotspot maps. They are siblings of the Leaflet container, never inside
+ * it, because Leaflet owns that node's DOM and Preact must not render there. */
 
 import { useEffect, useState } from "../vendor/hooks.mjs";
 import { html } from "../lib/html.js";
 import { resizeMaps } from "../lib/maps.js";
 import { ExpandIcon } from "./Icons.js";
 
-export function MapPane({ paneClass, containerRef }) {
+export function MapPane({ paneClass, containerRef, children }) {
   const [full, setFull] = useState(false);
 
   useEffect(() => {
@@ -33,5 +37,6 @@ export function MapPane({ paneClass, containerRef }) {
               onClick=${() => setFull((was) => !was)}>
         <${ExpandIcon} />
       </button>
+      ${children}
     </div>`;
 }

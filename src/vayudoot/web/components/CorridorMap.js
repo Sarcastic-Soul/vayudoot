@@ -154,7 +154,8 @@ export function CorridorMap({ corridors, selectedId, forecast, pending, highligh
               + `${focusIndex === i ? " is-focus" : ""}`,
             html: disc, iconSize: [size, size],
           }),
-          title: `Waypoint ${i + 1}${band ? `: ${band} risk` : ""}`,
+          title: `${selected.waypoint_names?.[i] || `Waypoint ${i + 1}`}`
+            + `${band ? `: ${band} risk` : ""}`,
           keyboard: Boolean(onPick),
         }).addTo(layer.current);
         if (onPick) dot.on("click", () => onPick(i));

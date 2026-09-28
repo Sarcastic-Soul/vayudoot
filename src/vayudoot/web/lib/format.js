@@ -411,10 +411,22 @@ export function waypointIndex(corridor, forecast) {
 }
 
 /* The waypoint's own name when the server gave it one, otherwise its number.
-   The server labels a corridor waypoint "<corridor name> waypoint N", and the
-   corridor name is already the heading above it, so only the tail is kept. */
+   `corridor.waypoint_names` wins when the corridor carries it — a list in the
+   same order as `waypoints`, so `index` is the waypoint's position on the
+   corridor, not in the forecast list. Without it, the forecast's own label is
+   used: "<place> (<corridor name>)", or "<corridor name> waypoint N" where the
+   data names no place. The corridor name is already the heading above it, so
+   only the place is kept. */
 export function waypointName(forecast, corridor, index) {
-  const raw = (forecast.location_name || "").trim();
+  const names = corridor && Array.isArray(corridor.waypoint_names) ? corridor.waypoint_names : [];
+  const named = index >= 0 && typeof names[index] === "string" ? names[index].trim() : "";
+  if (named) return named;
+  const raw = ((forecast && forecast.location_name) || "").trim();
+  // "Panipat (National Capital Region)": the place, then the corridor it is on.
+  const bracketed = corridor && raw.endsWith(`(${corridor.name})`)
+    ? raw.slice(0, raw.length - corridor.name.length - 2).trim() : "";
+  if (bracketed) return bracketed;
+  // "National Capital Region waypoint 3": the older label, when no place is named.
   const tail = corridor && raw.startsWith(corridor.name) ? raw.slice(corridor.name.length).trim()
     : raw;
   if (tail && !/^waypoint \d+$/i.test(tail)) return tail;
@@ -475,8 +487,8 @@ export function flagOf(code) {
 }
 
 /* Whether a corridor crosses a national border, read from the data rather than
-   from a list of ids. An explicit `countries` list of ISO codes wins when the
-   server sends one (the data file carries it ahead of the schema). Otherwise a
+   from a list of ids. `corridor.countries` (ISO codes, from the schema) is the
+   answer whenever the server sends it. Only for an older server without it: a
    state written with its country in brackets —
    "Punjab (Pakistan)" — names a second country; a description that says the
    corridor crosses a border says so in words. Returns the countries named, in
@@ -485,7 +497,10 @@ const BORDER_WORDS = new RegExp("\\b(cross[- ]border|trans[- ]?boundary|transnat
   + "|international border|crosses the border)\\b", "i");
 
 export function borderCrossing(corridor, home = "India") {
-  if (Array.isArray(corridor.countries) && corridor.countries.length > 1) {
+  // The server's list is the answer whenever it is there, one country included:
+  // a corridor that says it is all in India is not second-guessed from its text.
+  if (Array.isArray(corridor.countries) && corridor.countries.length > 0) {
+    if (corridor.countries.length < 2) return null;
     return corridor.countries.map((code) => {
       const flag = flagOf(code);
       return flag ? `${flag} ${code.toUpperCase()}` : code;
@@ -500,4 +515,39 @@ export function borderCrossing(corridor, home = "India") {
   if (countries.length > 1) return countries;
   if (BORDER_WORDS.test(corridor.description || "")) return countries.length ? countries : [];
   return null;
+}
+
+/* ── exposure ────────────────────────────────────────────────────────────
+ *
+ * `hotspot.exposure` is a gazetteer count: the populations of places over a
+ * size floor whose centre falls inside a radius. A coarse figure: low in the
+ * countryside and a whole city counted when its centre is in reach — so it is
+ * always written as approximate ("~1.6M"), never to the unit, and always with
+ * its radius. A null exposure means the gazetteer has nothing in reach, which
+ * is not the same as nobody living there. */
+export function peopleShort(n) {
+  if (!Number.isFinite(n)) return "";
+  if (n >= 1e6) return `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M`;
+  if (n >= 1e4) return `${Math.round(n / 1e3)}k`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}k`;
+  return String(n);
+}
+
+export const exposureLine = (e) =>
+  e ? `~${peopleShort(e.population)} people within ${Math.round(e.radius_km)} km` : "";
+
+/* ── alerts ───────────────────────────────────────────────────────────── */
+
+/* The alert's two live states in words, for the card chip and the view. */
+export const ALERT_STATUS_LABEL = {
+  draft: "Drafting",
+  awaiting_confirmation: "Alert awaiting confirmation",
+  sent: "Alert sent",
+};
+
+/* The newest alert per hotspot, from a newest-first list. */
+export function latestAlertByHotspot(alerts) {
+  const out = {};
+  for (const alert of alerts || []) if (!out[alert.hotspot_id]) out[alert.hotspot_id] = alert;
+  return out;
 }

@@ -115,7 +115,7 @@ def test_the_basis_says_what_was_counted_and_whose_data_it_is(table):
     assert "GeoNames" in found.basis
     assert "CC BY 4.0" in found.basis
     assert "15,000" in found.basis
-    assert "lower bound" in found.basis.lower()
+    assert "coarse figure" in found.basis.lower()
 
 
 def test_a_missing_table_is_no_exposure_rather_than_a_crash(tmp_path, monkeypatch):

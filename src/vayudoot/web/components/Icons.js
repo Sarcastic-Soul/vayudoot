@@ -215,3 +215,32 @@ export const RetryIcon = icon(html`
 export const OutIcon = icon(html`
   <path d="M14 4.5h5.5V10M19.5 4.5 11 13" />
   <path d="M18 14v5a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 5 19V7a.5.5 0 0 1 .5-.5H10" />`);
+
+/* ── the hotspot's actions ──────────────────────────────────────────── */
+
+/* Map layers: three sheets stacked. The satellite control on every hotspot
+   map, so the glyph is the familiar one rather than a clever one. */
+export const LayersIcon = icon(html`
+  <path d="M12 4 3.5 8.5 12 13l8.5-4.5z" />
+  <path d="m3.5 12.5 8.5 4.5 8.5-4.5" />
+  <path d="m3.5 16.5 8.5 4.5 8.5-4.5" />`);
+
+/* People within reach: two heads, one behind the other. A count of people,
+   never a face, so the glyph is deliberately generic. */
+export const PeopleIcon = icon(html`
+  <circle cx="9" cy="8.5" r="3" />
+  <path d="M3.5 19.5c.6-3.4 2.7-5.2 5.5-5.2s4.9 1.8 5.5 5.2" />
+  <path d="M15.2 5.8a3 3 0 0 1 0 5.4M17 14.6c1.9.6 3.1 2.2 3.5 4.9" />`);
+
+/* An alert to an authority: an envelope with a mark on it. A letter, not a
+   siren — this tells an office something, it does not sound an alarm. */
+export const AlertMailIcon = icon(html`
+  <rect x="3.5" y="6" width="17" height="12.5" rx="1.5" />
+  <path d="m4 7 8 6 8-6" />
+  <circle cx="19" cy="5.5" r="2.6" />`);
+
+/* Looking at a picture: an eye. For the imagery reading, which is someone —
+   a model — looking, not something measuring. */
+export const EyeIcon = icon(html`
+  <path d="M2.8 12S6.2 5.8 12 5.8 21.2 12 21.2 12 17.8 18.2 12 18.2 2.8 12 2.8 12z" />
+  <circle cx="12" cy="12" r="2.8" />`);
