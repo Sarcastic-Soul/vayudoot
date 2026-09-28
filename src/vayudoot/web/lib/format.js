@@ -49,8 +49,9 @@ export function escalatableAt(c) {
   return started + c.jurisdiction.response_window_days * 86400000;
 }
 
-/* Escalation is only offered once the statutory window has actually lapsed;
- * the server refuses it before that, so the button should not be there. */
+/* Escalation is only offered once the response window — statutory or, where
+ * no law sets one, this system's follow-up interval — has actually lapsed; the
+ * server refuses it before that, so the button should not be there. */
 export function escalationDue(c) {
   const due = escalatableAt(c);
   return due !== null && Date.now() >= due;
@@ -68,6 +69,9 @@ export const canResolve = (c) =>
 export const canWithdraw = (c) => !isTerminal(c);
 
 export const words = (value) => String(value).replace(/_/g, " ");
+
+/* A phrase made to start a sentence. */
+export const capital = (text) => String(text).charAt(0).toUpperCase() + String(text).slice(1);
 
 /* When a case was opened, in the shortest form that is still unambiguous.
  * Recent cases are the ones a citizen is looking for, so those get a relative
@@ -551,3 +555,64 @@ export function latestAlertByHotspot(alerts) {
   for (const alert of alerts || []) if (!out[alert.hotspot_id]) out[alert.hotspot_id] = alert;
   return out;
 }
+
+/* ── countries and the response window ───────────────────────────────────
+ *
+ * A case carries the country whose authority table resolved it. An empty
+ * country is a case from before tables were per country, which means India —
+ * `Jurisdiction.country`'s own rule. */
+export const caseCountry = (j) => String((j && j.country) || "IN").toUpperCase();
+
+/* Names for the codes this interface meets. A code with no entry here is shown
+   as itself, which is always correct and merely less friendly. The authority
+   table's own `country_name` wins wherever it is to hand. */
+const COUNTRY_NAMES = {
+  IN: "India", ZA: "South Africa", BR: "Brazil", PK: "Pakistan", BD: "Bangladesh",
+  NP: "Nepal", CN: "China", RU: "Russia", KE: "Kenya",
+};
+
+export const countryName = (code) => {
+  const iso = String(code || "").toUpperCase();
+  return COUNTRY_NAMES[iso] || iso;
+};
+
+/* Whether a law actually sets the response window. `false` means no statute
+   sets a deadline for this authority to answer, and the number is this
+   system's own follow-up interval. Calling that a legal deadline would be a
+   false legal claim, so every sentence about the window goes through here.
+   Absent means true: every case from before the flag existed was filed under
+   an Indian rule that sets one. */
+export const isStatutory = (j) => !j || j.response_window_statutory !== false;
+
+/* The window as a noun phrase: "the 15-day statutory response window" or
+   "the 30-day follow-up interval (not statutory)". */
+export function windowPhrase(j, { article = true } = {}) {
+  const days = j && j.response_window_days;
+  const lead = days ? `${days}-day ` : "";
+  const noun = isStatutory(j) ? `${lead}statutory response window`
+    : `${lead}follow-up interval (not statutory)`;
+  return article ? `the ${noun}` : noun;
+}
+
+/* The same, short, for a label or a table cell. */
+export const windowLabel = (j) =>
+  (isStatutory(j) ? "Statutory response window" : "Follow-up interval (not statutory)");
+
+/* The Right to Information Act is an Indian statute. A case whose authority is
+   in another country has no RTI route — `filing.rti_supported`. */
+export const rtiSupported = (c) => caseCountry(c && c.jurisdiction) === "IN";
+
+/* ── the forecast ledger ─────────────────────────────────────────────────
+ *
+ * Below this many scored forecasts every rate is anecdote — `SMALL_SAMPLE` in
+ * ledger.py. The interface uses it only to decide how loudly to say so; the
+ * server's caveat is the words. */
+export const SMALL_SAMPLE = 30;
+
+/* A rate the ledger may not have. Null is "nothing to score yet", never 0%. */
+export const rateText = (rate) =>
+  (typeof rate === "number" && Number.isFinite(rate) ? `${Math.round(rate * 100)}%` : "—");
+
+/* The first twelve characters of a SHA-256: enough to tell two prompts apart
+   by eye, and obviously not the prompt. */
+export const shortHash = (hex) => String(hex || "").slice(0, 12);

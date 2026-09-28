@@ -32,6 +32,7 @@ import { html, Fragment } from "../lib/html.js";
 import { api, postJSON } from "../lib/api.js";
 import {
   canAcknowledge, canResolve, canWithdraw, escalationDue, isTerminal, onDate, todayISO,
+  isStatutory, windowPhrase, capital,
 } from "../lib/format.js";
 import {
   SendIcon, EscalateIcon, LockIcon, ReplyIcon, ResolvedIcon, WithdrawIcon,
@@ -136,6 +137,9 @@ export function CaseActions({ record, onUpdate }) {
 
   const authority = record.jurisdiction && record.jurisdiction.authority_name;
   const days = record.jurisdiction && record.jurisdiction.response_window_days;
+  /* Where no law sets a deadline, the number is this system's follow-up
+     interval, and no sentence here may call it a legal window. */
+  const statutory = isStatutory(record.jurisdiction);
   const futureDated = Boolean(day) && day > today;
   const working = Boolean(busy);
 
@@ -176,10 +180,12 @@ export function CaseActions({ record, onUpdate }) {
               <p class="decision">
                 ${record.status === "acknowledged"
                   ? `${authority || "The authority"} acknowledged this on `
-                    + `${onDate(record.acknowledged_at)}, and the ${days}-day window since `
+                    + `${onDate(record.acknowledged_at)}, and the ${days}-day `
+                    + `${statutory ? "window" : "follow-up interval (not statutory)"} since `
                     + "that reply has passed with no remedial action. An acknowledgement is "
                     + "a receipt, not a remedy. "
-                  : `The ${days}-day response window has lapsed with no acknowledgement. `}
+                  : `${capital(windowPhrase(record.jurisdiction))} has `
+                    + `${statutory ? "lapsed" : "passed"} with no acknowledgement. `}
                 Escalating raises the case a tier.
               </p>
               <button type="button" class="primary" disabled=${working}
@@ -223,9 +229,9 @@ export function CaseActions({ record, onUpdate }) {
             <div class="update-panel" id="panel-acknowledge">
               <p class="decision">
                 Recording a reply does not close the case. It restarts the
-                ${days ? ` ${days}-day` : ""} clock from the day the response arrived, so an
-                authority that answers and then does nothing is still escalated a full window
-                later.
+                ${days ? ` ${days}-day` : ""}${statutory ? " clock" : " follow-up interval"}${" "}
+                from the day the response arrived, so an authority that answers and then does
+                nothing is still escalated a full ${statutory ? "window" : "interval"} later.
               </p>
               <div class="field">
                 <label for="ack-day">When did the response arrive?</label>

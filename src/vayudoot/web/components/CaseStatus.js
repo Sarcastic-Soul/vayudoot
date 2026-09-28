@@ -19,7 +19,9 @@
  *   merely quiet. */
 
 import { html } from "../lib/html.js";
-import { words, onDate, inDays, escalatableAt, isTerminal } from "../lib/format.js";
+import {
+  words, onDate, inDays, escalatableAt, isTerminal, isStatutory, windowPhrase, capital,
+} from "../lib/format.js";
 import {
   HandIcon, FiledIcon, EscalateIcon, HeldIcon, FailedIcon,
   ReplyIcon, ResolvedIcon, WithdrawIcon,
@@ -30,16 +32,30 @@ import {
 function clockNote(record) {
   const due = escalatableAt(record);
   if (due === null) return "";
-  if (Date.now() >= due) return "That window has lapsed, so you can escalate from here now.";
+  if (Date.now() >= due) {
+    return isStatutory(record.jurisdiction)
+      ? "That window has lapsed, so you can escalate from here now."
+      : "That interval has passed, so you can escalate from here now.";
+  }
   return `You can escalate from ${onDate(due)}, ${inDays(due)}.`;
 }
 
 /* The window a filed complaint has, phrased as a sentence rather than as a
- * field. Falls back quietly when the jurisdiction stage never ran. */
+ * field. Falls back quietly when the jurisdiction stage never ran.
+ *
+ * Where no law sets a deadline (`response_window_statutory` false), the number
+ * is this system's own follow-up interval and must never be written as a duty
+ * the authority owes. Saying "the authority has 30 days" there would be a false
+ * legal claim. */
 function windowNote(record) {
-  const days = record.jurisdiction && record.jurisdiction.response_window_days;
+  const j = record.jurisdiction;
+  const days = j && j.response_window_days;
   if (!days) return "The complaint is in the sandbox outbox.";
-  return `The authority has ${days} days to respond. ${clockNote(record)}`.trim();
+  const lead = isStatutory(j)
+    ? `The authority has ${days} days to respond.`
+    : `No law sets a deadline for this authority to answer; ${days} days is this system's `
+      + "suggested follow-up interval, not a statutory one.";
+  return `${lead} ${clockNote(record)}`.trim();
 }
 
 /* A note the citizen or the authority left on a transition, shown as what it
@@ -63,6 +79,21 @@ export function describeStatus(record) {
       closed,
       headline: "The run did not finish.",
       note: record.error || "The pipeline stopped before it could draft a complaint.",
+    };
+  }
+
+  /* Rejected with a reason is the case the run refused before any model was
+     paid for — a report from a country this node holds no authority table
+     for. The reason is the whole story, so it is the note, not a footnote. */
+  if (record.status === "rejected" && record.error) {
+    return {
+      tone: "attention",
+      Icon: HeldIcon,
+      label: "not taken up",
+      closed,
+      headline: "Not taken up. Nothing was drafted, and nothing will be sent.",
+      note: record.error,
+      reason: true,
     };
   }
 
@@ -117,8 +148,8 @@ export function describeStatus(record) {
       note: wasAcknowledged
         ? `${authority || "The authority"} acknowledged this complaint but nothing followed `
           + "within the window after that reply, so the case was raised a tier."
-        : "The response window lapsed without an acknowledgement, so the case was "
-          + "raised a tier.",
+        : `${capital(windowPhrase(record.jurisdiction))} lapsed without an acknowledgement, `
+          + "so the case was raised a tier.",
       quote: said("What the first authority said", record.response_note),
     };
   }
@@ -169,14 +200,19 @@ export function describeStatus(record) {
 }
 
 export function StatusBanner({ record }) {
-  const { tone, Icon, headline, note, quote, closed } = describeStatus(record);
+  const { tone, Icon, headline, note, quote, closed, reason } = describeStatus(record);
   return html`
     <div class="status-banner" data-tone=${tone} data-closed=${closed ? "true" : null}
          aria-live="polite">
       <${Icon} />
       <div class="status-body">
         <p class="status-headline">${headline}</p>
-        ${note && html`<p class="status-note">${note}</p>`}
+        ${note && !reason && html`<p class="status-note">${note}</p>`}
+        ${note && reason && html`
+          <div class="status-reason">
+            <p class="eyebrow">The reason recorded on the case</p>
+            <p>${note}</p>
+          </div>`}
         ${quote && html`
           <blockquote class="status-quote">
             <p class="eyebrow">${quote.label}</p>

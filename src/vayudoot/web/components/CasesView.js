@@ -10,9 +10,10 @@ import { useEffect, useRef } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
 import { useCases, useClusters } from "../lib/store.js";
-import { words, whereOf, shortWhen } from "../lib/format.js";
+import { words, whereOf, shortWhen, isTerminal } from "../lib/format.js";
 import { TILES, useLeafletMap } from "../lib/maps.js";
 import { ClusterCard } from "./ClusterCard.js";
+import { Flag } from "./Flag.js";
 import { MapPane } from "./MapPane.js";
 import { CameraIcon, InboxIcon, PinIcon } from "./Icons.js";
 import { CaseListSkeleton } from "./Skeletons.js";
@@ -118,7 +119,11 @@ export function CasesView() {
             <span class="where"><${PinIcon} /><span>${whereOf(c)}</span></span>
             <span class="case-list-foot">
               <span class=${`kind${c.evidence ? "" : " is-waiting"}`}>
-                ${c.evidence ? words(c.evidence.pollution_type) : "Still classifying…"}
+                ${c.jurisdiction && c.jurisdiction.country && html`
+                  <${Flag} code=${c.jurisdiction.country} />${" "}`}
+                ${c.evidence ? words(c.evidence.pollution_type)
+                  : c.status === "rejected" ? "Not taken up"
+                    : isTerminal(c) ? "Stopped before classification" : "Still classifying…"}
               </span>
               <span class="when">${shortWhen(c.created_at)}</span>
             </span>

@@ -244,3 +244,27 @@ export const AlertMailIcon = icon(html`
 export const EyeIcon = icon(html`
   <path d="M2.8 12S6.2 5.8 12 5.8 21.2 12 21.2 12 17.8 18.2 12 18.2 2.8 12 2.8 12z" />
   <circle cx="12" cy="12" r="2.8" />`);
+
+/* ── jurisdiction and the forecast ledger ───────────────────────────── */
+
+/* A clock face: the window a case waits on. */
+export const ClockIcon = icon(html`
+  <circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" />`);
+
+/* Two speech marks, one lettered: the language a complaint is written in. */
+export const LanguageIcon = icon(html`
+  <path d="M4 5h9v7H8l-3 2.5V12H4z" /><path d="M13 9h7v7h-1v2.5L16 16h-5v-3" />`);
+
+/* A target: the ledger scoring what was called against what happened. */
+export const TargetIcon = icon(html`
+  <circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" />
+  <circle cx="12" cy="12" r="0.8" />`);
+
+/* A fork: two nodes, one forecaster or two. */
+export const ForkIcon = icon(html`
+  <circle cx="6" cy="5" r="2" /><circle cx="18" cy="5" r="2" /><circle cx="12" cy="19" r="2" />
+  <path d="M6 7v2a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V7M12 12v5" />`);
+
+/* An hourglass: a forecast whose window is still open. */
+export const PendingIcon = icon(html`
+  <path d="M7 3.5h10M7 20.5h10M8 3.5c0 4.5 8 4.5 8 8.5s-8 4-8 8.5M16 3.5c0 4.5-8 4.5-8 8.5s8 4 8 8.5" />`);

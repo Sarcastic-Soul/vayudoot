@@ -16,6 +16,7 @@ import { whereOf } from "../lib/format.js";
 import { BackIcon, PinIcon } from "./Icons.js";
 import { CaseActions } from "./CaseActions.js";
 import { CaseHistory } from "./CaseHistory.js";
+import { CaseJurisdiction } from "./CaseJurisdiction.js";
 import { CaseStatusSkeleton } from "./Skeletons.js";
 import { ClusterBadge } from "./ClusterBadge.js";
 import { Complaint } from "./Complaint.js";
@@ -62,6 +63,8 @@ export function CaseView({ caseId }) {
     <${StatusBanner} record=${record} />
 
     ${record && html`<${CoverageWarning} jurisdiction=${record.jurisdiction} />`}
+
+    ${record && html`<${CaseJurisdiction} record=${record} />`}
 
     ${record && html`<${ClusterBadge} cluster=${cluster} caseId=${caseId} />`}
 

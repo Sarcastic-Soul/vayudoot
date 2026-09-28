@@ -314,6 +314,131 @@
 .show-addresses .addr { display: inline; }
 .show-addresses .region-cities li .addr { flex-basis: 100%; }
 
+/* ── countries ───────────────────────────────────────────────────────── */
+
+/* One tab per country the node carries a table for. Each is a small card —
+   flag, name, counts — because the choice is between places, and a place
+   reads faster as a flag than as a code. The chosen one takes the ink border
+   the rest of the app uses for "selected". */
+.served-line {
+  max-width: var(--measure);
+  margin: 0 0 var(--s4);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.served-line strong { color: var(--ink); font-weight: var(--w-semi); }
+
+.country-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s2);
+  margin: 0 0 var(--s5);
+}
+
+.country-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
+  padding: var(--s3) var(--s4);
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.country-tab:hover { border-color: var(--line-strong); }
+
+.country-tab.is-chosen {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink), var(--shadow-1);
+}
+
+.country-tab:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+
+.country-flag { flex: none; display: inline-flex; }
+.country-flag .flag-emoji { font-size: 1.6rem; line-height: 1; }
+
+.country-text { display: grid; gap: 2px; min-width: 0; }
+
+.country-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--w-semi);
+}
+
+.country-counts { font-size: var(--t-meta); color: var(--ink-soft); }
+
+.own-tag {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: 0.02em;
+  color: var(--info);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-radius: var(--radius-pill);
+}
+
+.country-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0 0 var(--s4);
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+}
+
+/* No statute sets a deadline: the pill turns to the info hue and its dot to
+   a hollow ring, and the table's own note follows in plain text. It must not
+   look like a shorter or missing number of days. */
+.rule-window.is-none {
+  color: var(--info);
+  background: var(--info-tint);
+  border-color: var(--info-line);
+}
+
+.rule-window.is-none::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+.rule-window-note {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.region-lang {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: var(--s2) 0 0;
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.region-lang svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 @media (min-width: 560px) {
   .stats {
     grid-template-columns: repeat(3, 1fr);

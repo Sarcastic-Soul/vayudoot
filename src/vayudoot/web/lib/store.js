@@ -309,7 +309,7 @@ export function useCorridorForecast(corridorId) {
  * visit rather than cached here. */
 export function useNetwork() {
   const [state, setState] = useState({ node: null, neighbours: null, feed: null,
-    errors: {} });
+    forecaster: null, errors: {} });
 
   useEffect(() => {
     let live = true;
@@ -324,8 +324,33 @@ export function useNetwork() {
     read("node", "/node");
     read("neighbours", "/neighbours");
     read("feed", "/feed");
+    read("forecaster", "/forecaster");
     return () => { live = false; };
   }, []);
 
+  return state;
+}
+
+/* The forecast ledger and its scores: how good the forecasts have been.
+ *
+ * Both reads are cheap — no model is called, the server only counts records
+ * it already holds — so they are asked on every visit rather than cached. */
+
+export function useForecastSkill() {
+  const [state, setState] = useState({ skill: null, ledger: null, errors: {} });
+  useEffect(() => {
+    let live = true;
+    const read = (key, path) => api(path)
+      .then((data) => { if (live) setState((was) => ({ ...was, [key]: data })); })
+      .catch((e) => {
+        if (live) {
+          setState((was) => ({ ...was, [key]: false,
+            errors: { ...was.errors, [key]: e.message } }));
+        }
+      });
+    read("skill", "/forecasts/skill");
+    read("ledger", "/forecasts/ledger?limit=8");
+    return () => { live = false; };
+  }, []);
   return state;
 }

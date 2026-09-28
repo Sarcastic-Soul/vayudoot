@@ -36,7 +36,10 @@
 import { useEffect, useState } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
 import { api } from "../lib/api.js";
-import { onDate, inDays, rtiAvailable, rtiAvailableAt } from "../lib/format.js";
+import {
+  onDate, inDays, rtiAvailable, rtiAvailableAt, rtiSupported, caseCountry, countryName, RTI_FROM,
+} from "../lib/format.js";
+import { useCoverage } from "../lib/store.js";
 import { AskIcon, CopyIcon, CheckIcon, LockIcon } from "./Icons.js";
 
 /* A bracketed gap a human has to close. Capped in length so the draft's own
@@ -85,6 +88,7 @@ export function RTIPanel({ record, onUpdate }) {
   const [text, setText] = useState("");
   const [copied, setCopied] = useState("");
   const [asking, setAsking] = useState(false);
+  const { data: coverage } = useCoverage();
 
   const drafted = record.rti;
   const draftedAt = record.rti_drafted_at || "";
@@ -140,6 +144,31 @@ export function RTIPanel({ record, onUpdate }) {
     }
   }
 
+  /* The RTI Act is Indian law. A complaint with an authority in another
+     country has no RTI route, and the panel says so once rather than simply
+     not being there — a citizen who has read about this lever should learn
+     why it is absent, not wonder whether the page failed to load. Shown only
+     where the panel would otherwise be: a complaint that was actually filed. */
+  if (!rtiSupported(record)) {
+    if (!RTI_FROM.includes(record.status) || !record.filed_at) return null;
+    const code = caseCountry(record.jurisdiction);
+    const table = coverage && coverage.countries && coverage.countries[code];
+    const name = (table && table.country_name) || countryName(code);
+    const law = table && table.access_to_information;
+    return html`
+      <aside class="rti-absent">
+        <${AskIcon} />
+        <p>
+          <strong>No Right to Information application for this case.</strong>
+          The Right to Information Act, 2005 is Indian law, and this complaint is with an
+          authority in ${name}. ${law
+            ? `The route there is the ${law}, which this system does not draft.`
+            : "That country has its own access-to-information law, which this system does "
+              + "not draft."}
+        </p>
+      </aside>`;
+  }
+
   const available = rtiAvailable(record);
   const due = rtiAvailableAt(record);
   if (!drafted && !available && due === null) return null;
@@ -168,7 +197,7 @@ export function RTIPanel({ record, onUpdate }) {
           them thirty days to reply.
         </p>
         <p class="rti-when">
-          Available from <strong>${onDate(due)}</strong>, ${inDays(due)} — once the
+          Available from <strong>${onDate(due)}</strong>, ${inDays(due)} — once the${" "}
           ${days ? `${days}-day ` : ""}window since filing has actually lapsed.
         </p>
       </section>`;

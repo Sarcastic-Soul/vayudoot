@@ -14,7 +14,8 @@
 import { html } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
 import { knownForecast } from "../lib/store.js";
-import { plural, borderCrossing, waypointIndex } from "../lib/format.js";
+import { plural, borderCrossing, waypointIndex, countryName } from "../lib/format.js";
+import { Flag, FlagMark } from "./Flag.js";
 import { RISK_COLOUR } from "./CorridorMap.js";
 import { BorderIcon, ModelIcon, ChevronIcon } from "./Icons.js";
 
@@ -52,14 +53,50 @@ export function RouteGlyph({ corridor, forecast, size = 56 }) {
     </svg>`;
 }
 
+/* The countries a cross-border corridor runs through, drawn as flags with
+   their codes. `countries` is the server's ISO list; an older server without it
+   hands over whatever `borderCrossing` could read from the text, which is shown
+   as words. */
 export function BorderBadge({ countries }) {
-  const route = countries && countries.length > 1 ? countries.join(" → ") : null;
+  const list = countries || [];
+  const codes = list.every((c) => /^[A-Za-z]{2}$/.test(c));
+  const route = list.length > 1
+    ? (codes ? list.map((c) => countryName(c) || c) : list).join(" → ") : null;
   return html`
     <span class="border-badge" title=${route ? `Crosses a national border: ${route}`
       : "Crosses a national border"}>
-      <${BorderIcon} />Cross-border${route && html`<span class="border-route">${route}</span>`}
+      <${BorderIcon} />Cross-border${list.length > 1 && html`
+        <span class="border-route">
+          ${codes
+            ? list.map((c, i) => html`${i > 0 && html`<span class="border-arrow"
+                aria-hidden="true">→</span>`}<${Flag} key=${c} code=${c} size=${16} />`)
+            : route}
+        </span>`}
     </span>`;
 }
+
+/* A waypoint's place name without its trailing region: "Lahore, Punjab
+   (Pakistan)" reads as "Lahore" in a one-line route. */
+const placeOf = (name) => String(name || "").split(",")[0].trim();
+
+/* First stop to last, and how many between: the route in one line. */
+export function RouteLine({ corridor }) {
+  const names = (corridor.waypoint_names || []).filter(Boolean);
+  if (names.length < 2) return null;
+  const between = names.length - 2;
+  return html`
+    <span class="corridor-route">
+      <span>${placeOf(names[0])}</span>
+      <span class="route-arrow" aria-hidden="true">→</span>
+      <span>${placeOf(names[names.length - 1])}</span>
+      ${between > 0 && html`<span class="route-via">via ${plural(between, "stop")}</span>`}
+    </span>`;
+}
+
+/* The badge wants the server's codes when there are any. */
+export const crossingCodes = (corridor, crossing) =>
+  (Array.isArray(corridor.countries) && corridor.countries.length > 1
+    ? corridor.countries : crossing);
 
 export function CorridorCard({ corridor, onHover }) {
   const forecast = knownForecast(corridor.corridor_id);
@@ -80,9 +117,15 @@ export function CorridorCard({ corridor, onHover }) {
         <span class="corridor-main">
           <span class="corridor-title">
             <span class="corridor-name">${corridor.name}</span>
-            ${crossing && html`<${BorderBadge} countries=${crossing} />`}
+            ${crossing && html`<${BorderBadge} countries=${crossingCodes(corridor, crossing)} />`}
           </span>
-          <span class="corridor-states">${corridor.states.join(" · ")}</span>
+          <${RouteLine} corridor=${corridor} />
+          <span class="corridor-states">
+            ${!crossing && (corridor.countries || []).length === 1 && html`
+              <span class="corridor-country" title=${countryName(corridor.countries[0])}>
+                <${FlagMark} code=${corridor.countries[0]} size=${16} /></span>`}
+            ${corridor.states.join(" · ")}
+          </span>
           ${corridor.description && html`
             <span class="corridor-desc">${corridor.description}</span>`}
           <span class="corridor-foot">

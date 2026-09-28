@@ -21,16 +21,26 @@
 import { useEffect, useState } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
-import { useCorridors, useCorridorForecast } from "../lib/store.js";
-import { plural, borderCrossing } from "../lib/format.js";
+import { useCorridors, useCorridorForecast, useCoverage } from "../lib/store.js";
+import { plural, borderCrossing, countryName } from "../lib/format.js";
 import { CorridorMap, CorridorLegend } from "./CorridorMap.js";
-import { CorridorCard, BorderBadge } from "./CorridorCard.js";
+import { CorridorCard, BorderBadge, crossingCodes } from "./CorridorCard.js";
+import { Flag } from "./Flag.js";
 import { OutlookPending, OutlookFailed, OutlookResult, ModelMark } from "./CorridorOutlook.js";
 import { NetworkPanel } from "./NetworkPanel.js";
+import { ForecastSkill } from "./ForecastSkill.js";
 import { BackIcon } from "./Icons.js";
+
+/* The node's own country, from the authority table's `node_country`. The
+   server lists only the corridors that run through it, so the list says so. */
+function useNodeCountry() {
+  const { data } = useCoverage();
+  return data ? String(data.node_country || data.country || "").toUpperCase() : "";
+}
 
 function Overview({ corridors, error, onHover }) {
   const crossing = (corridors || []).filter((c) => borderCrossing(c)).length;
+  const home = useNodeCountry();
   return html`
     <${Fragment}>
       <div class="timeline-head">
@@ -39,6 +49,12 @@ function Overview({ corridors, error, onHover }) {
           <p class="timeline-progress tnum">${plural(corridors.length, "corridor")}${crossing
             ? ` · ${crossing} cross-border` : ""}</p>`}
       </div>
+      ${home && html`
+        <p class="corridor-scope">
+          <${Flag} code=${home} size=${16} />
+          <span>Corridors through ${countryName(home)}, this node's country. A corridor
+            elsewhere is forecast by the node that serves it.</span>
+        </p>`}
       ${error && html`<p class="note is-bad">Could not read the corridors: ${error}</p>`}
       ${!corridors && html`
         <p class="visually-hidden" role="status">Loading the corridors.</p>
@@ -68,10 +84,17 @@ function DetailHead({ corridor }) {
       </button>
       <h2>${corridor.name}</h2>
       <p class="corridor-sub">
-        ${crossing && html`<${BorderBadge} countries=${crossing} />`}
+        ${crossing
+          ? html`<${BorderBadge} countries=${crossingCodes(corridor, crossing)} />`
+          : (corridor.countries || []).length === 1 && html`
+            <${Flag} code=${corridor.countries[0]} size=${16} name=${true} />`}
         <span>${corridor.states.join(" · ")}</span>
         <span class="tnum">${plural(corridor.waypoints.length, "sampling point")}</span>
       </p>
+      ${(corridor.waypoint_names || []).length > 1 && html`
+        <p class="corridor-stops">${corridor.waypoint_names.map((name, i) => html`
+          ${i > 0 && html`<span class="route-arrow" aria-hidden="true">→</span>`}
+          <span key=${i}>${name.split(",")[0]}</span>`)}</p>`}
       ${corridor.description && html`
         <p class=${`corridor-lead${open ? "" : " is-clamped"}`} id="corridor-lead">
           ${corridor.description}</p>
@@ -94,6 +117,7 @@ function Detail({ corridor, state, retry, focus, onFocus }) {
 
 export function ForecastView({ corridorId }) {
   const { data: corridors, error } = useCorridors();
+  const home = useNodeCountry();
   const [hover, setHover] = useState(null);
   const [focus, setFocus] = useState(null);
   const corridor = corridorId && corridors
@@ -123,7 +147,9 @@ export function ForecastView({ corridorId }) {
 
       ${unknown && html`
         <div class="note is-bad">
-          <p>There is no corridor called <code>${corridorId}</code> on this instance.</p>
+          <p>There is no corridor called <code>${corridorId}</code> on this node.${home
+            ? ` It lists only corridors that run through ${countryName(home)}; one elsewhere
+              is forecast by the node that serves that country.` : ""}</p>
           <button type="button" class="link" onClick=${() => navigate("forecast")}>
             See every corridor</button>
         </div>`}
@@ -144,6 +170,7 @@ export function ForecastView({ corridorId }) {
         </div>
       </div>
 
+      ${!corridorId && html`<${ForecastSkill} />`}
       ${!corridorId && html`<${NetworkPanel} />`}
     </div>`;
 }

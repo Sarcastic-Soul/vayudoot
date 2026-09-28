@@ -1068,7 +1068,11 @@ button.quiet.history-more:hover { color: var(--ink); background: none; }
   text-transform: capitalize;
 }
 
-.case-list .kind.is-waiting { color: var(--ink-soft); font-weight: var(--w-normal); }
+.case-list .kind.is-waiting {
+  color: var(--ink-soft);
+  font-weight: var(--w-normal);
+  text-transform: none;
+}
 
 .case-list .when {
   font-size: var(--t-meta);
@@ -1218,4 +1222,149 @@ button.quiet.history-more:hover { color: var(--ink); background: none; }
   margin-top: 6px;
   font-size: var(--t-eyebrow);
   color: var(--ink-soft);
+}
+
+/* ── the reason a case was not taken up ──────────────────────────────────
+   A rejected case with a recorded reason — a report from a country this node
+   holds no authority table for — has nothing else on the page to explain it:
+   no evidence stage ran and no model was called. So the reason is set as the
+   banner's body at full ink, not as a grey footnote. */
+.status-reason {
+  margin-top: var(--s2);
+  padding: var(--s3);
+  background: var(--surface);
+  border: 1px solid var(--attention-line);
+  border-radius: var(--radius-sm);
+}
+
+.status-reason p:last-child {
+  margin-top: 2px;
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ── jurisdiction: country, language, and what kind of clock ────────────
+   Three facts in one strip. The third changes colour with its meaning: a
+   statutory window is a legal duty and takes the ok hue; a follow-up interval
+   is only this system's suggestion and takes the information hue, with the
+   words "not statutory" on it, so the two can never be mistaken at a glance. */
+.case-juris {
+  display: grid;
+  gap: var(--s2);
+  margin: calc(-1 * var(--s2)) 0 var(--s5);
+}
+
+.juris-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+.juris-facts li {
+  display: grid;
+  gap: 4px;
+  padding: var(--s3) var(--s4);
+  border-left: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  margin: -1px 0 0 -1px;
+}
+
+.juris-k {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.juris-v {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--w-medium);
+  line-height: var(--lh-snug);
+}
+
+.juris-v svg[viewBox="0 0 24 24"] {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.juris-tag {
+  padding: 1px 8px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ok);
+  background: var(--ok-tint);
+  border: 1px solid var(--ok-line);
+  border-radius: var(--radius-pill);
+}
+
+.juris-tag.is-not {
+  color: var(--info);
+  background: var(--info-tint);
+  border-color: var(--info-line);
+}
+
+.juris-facts .is-followup { background: var(--info-tint); }
+
+.juris-note {
+  padding: var(--s3) var(--s4);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-left: 3px solid var(--info);
+  border-radius: var(--radius);
+}
+
+.juris-note strong { font-weight: var(--w-semi); }
+
+/* ── RTI, where it does not apply ────────────────────────────────────── */
+.rti-absent {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s3);
+  align-items: start;
+  margin-top: var(--s5);
+  padding: var(--s3) var(--s4);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+}
+
+.rti-absent strong { display: block; color: var(--ink); font-weight: var(--w-semi); }
+
+.rti-absent svg[viewBox="0 0 24 24"] {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

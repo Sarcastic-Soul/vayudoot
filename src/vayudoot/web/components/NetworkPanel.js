@@ -1,33 +1,178 @@
-/* The network: who this node is, whose feeds it reads, and what it publishes.
+/* The network: who this node is, whose feeds it reads, what it publishes, and
+ * how it forecasts.
  *
- * Federation here is a shared *detection layer*, not shared model weights —
- * the honest reading of "share predictive models", said on the panel rather
- * than left for a reader to assume the grander thing. A node publishes the
- * hotspots it found on a versioned feed and reads its neighbours', and a
- * neighbour's hotspots are forecasting context only: never republished as
- * ours. `federation.py` and `docs/federation.md` have the reasons.
+ * Federation here is a shared *detection layer*, plus a published forecaster
+ * spec — never shared model weights. A node publishes the hotspots it found on
+ * a versioned feed and reads its neighbours', and a neighbour's hotspots are
+ * forecasting context only: never republished as ours. `federation.py` and
+ * `docs/federation.md` have the reasons.
+ *
+ * From feed version 1.1 a node also publishes its forecaster: the prompt's
+ * hash, the horizon, the upwind reach, the risk bands, the models and its own
+ * scored record. The panel compares each neighbour's with ours and says what
+ * differs, in words. Two things about that comparison are deliberate:
+ *
+ *   Bands that differ between countries are by design. Each node anchors "low"
+ *   to its own country's air quality standard, so an Indian and a South
+ *   African node will never have the same bands, and the panel says so in a
+ *   neutral tone rather than flagging it like a fault.
+ *
+ *   A setting that could be adopted is shown as the environment variable a
+ *   person would set — and nothing more. There is no button that applies it.
+ *   Changing how this node forecasts is an operator's decision, made on
+ *   purpose, not something a neighbour's feed can do.
  *
  * Unreachable is an ordinary state on a federated network, so a neighbour that
  * did not answer is shown with its error rather than hidden, and zero
- * neighbours is said plainly. A panel that drew a busy network diagram over an
- * instance that reads nobody's feed would be the dishonest version of this.
+ * neighbours is said plainly.
  *
- * The flag is decoration beside the ISO code, never instead of it: a system
- * without an emoji font renders it as two letters.
+ * Flags are drawn (`Flag.js`), never emoji alone, and always beside the ISO
+ * code: a flag is decoration, not the label.
  */
 
 import { html } from "../lib/html.js";
 import { useNetwork } from "../lib/store.js";
-import { flagOf, plural, shortWhen } from "../lib/format.js";
-import { NetworkIcon, FeedIcon, GlobeIcon, OutIcon } from "./Icons.js";
+import {
+  countryName, plural, rateText, shortHash, shortWhen,
+} from "../lib/format.js";
+import { Flag, FlagMark } from "./Flag.js";
+import { ModelMark } from "./CorridorOutlook.js";
+import { NetworkIcon, FeedIcon, GlobeIcon, OutIcon, ForkIcon } from "./Icons.js";
 
-function Flag({ code }) {
-  const flag = flagOf(code);
+/* ── the forecaster, and what differs ─────────────────────────────────── */
+
+const num = (v) => (typeof v === "number" ? String(Math.round(v * 10) / 10) : String(v));
+
+/* Where each band's PM2.5 and PM10 ceiling differs, in words: "low up to 40
+   µg/m³ PM2.5 (ours 60)". Only the boundaries that differ are named. */
+function bandChanges(ours, theirs) {
+  const mine = Object.fromEntries((ours || []).map((b) => [b.risk, b]));
+  const out = [];
+  for (const b of theirs || []) {
+    const m = mine[b.risk];
+    if (!m) { out.push(`a "${b.risk}" band we do not have`); continue; }
+    const bits = [];
+    if (b.pm25_to !== m.pm25_to && b.pm25_to != null) {
+      bits.push(`${num(b.pm25_to)} µg/m³ PM2.5 (ours ${m.pm25_to == null ? "open"
+        : num(m.pm25_to)})`);
+    }
+    if (b.pm10_to !== m.pm10_to && b.pm10_to != null) {
+      bits.push(`${num(b.pm10_to)} PM10 (ours ${m.pm10_to == null ? "open" : num(m.pm10_to)})`);
+    }
+    if (bits.length) out.push(`${b.risk} up to ${bits.join(", ")}`);
+  }
+  return out;
+}
+
+function describe(diff) {
+  switch (diff.field) {
+    case "horizon_hours":
+      return `Looks ${num(diff.theirs)} hours ahead (ours ${num(diff.ours)})`;
+    case "upwind_km":
+      return `Reads hotspots up to ${num(diff.theirs)} km upwind (ours ${num(diff.ours)} km)`;
+    case "forecaster_version":
+      return `Forecaster version ${diff.theirs} (ours ${diff.ours})`;
+    case "prompt_sha256":
+      return `A different prompt: ${shortHash(diff.theirs)} (ours ${shortHash(diff.ours)})`;
+    case "model_ids":
+      return `Models ${(diff.theirs || []).join(" → ") || "none named"} (ours ${
+        (diff.ours || []).join(" → ") || "none named"})`;
+    case "bands": {
+      const changes = bandChanges(diff.ours, diff.theirs);
+      return `Risk bands: ${changes.length ? changes.join("; ") : "drawn differently"}`;
+    }
+    default:
+      return `${diff.field} differs`;
+  }
+}
+
+/* A scored record in one line. Null rates are "nothing scored", never 0%. */
+function skillLine(skill) {
+  if (!skill) return "No scored record published";
+  if (!skill.scored) return `No forecast scored yet (last ${skill.window_days} days)`;
+  return `${plural(skill.scored, "forecast")} scored · ${rateText(skill.exact_rate)} exact · `
+    + `persistence ${rateText(skill.persistence_exact_rate)} · CAMS ${
+      rateText(skill.cams_exact_rate)}`;
+}
+
+function ThisForecaster({ spec }) {
+  if (spec === null) return html`<div class="net-card skeleton net-skeleton"></div>`;
+  if (spec === false) {
+    return html`<div class="net-card"><p class="muted">This node's forecaster spec could not
+      be read.</p></div>`;
+  }
+  const small = spec.skill && spec.skill.scored > 0 && spec.skill.scored < 30;
   return html`
-    <span class="flag">
-      ${flag && html`<span class="flag-emoji" aria-hidden="true">${flag}</span>`}
-      <span class="flag-code">${String(code || "").toUpperCase() || "—"}</span>
-    </span>`;
+    <div class="net-card net-forecaster">
+      <div class="net-card-head">
+        <span class="eyebrow">This node's forecaster</span>
+        <${ModelMark}>Model-derived<//>
+      </div>
+      <dl class="net-facts">
+        <div><dt>Version</dt><dd class="tnum">v${spec.forecaster_version}</dd></div>
+        <div>
+          <dt>Prompt</dt>
+          <dd class="mono" title=${spec.prompt_sha256}>${shortHash(spec.prompt_sha256)}…</dd>
+        </div>
+        <div><dt>Looks ahead</dt><dd class="tnum">${num(spec.horizon_hours)} hours</dd></div>
+        <div><dt>Upwind reach</dt><dd class="tnum">${num(spec.upwind_km)} km</dd></div>
+        <div>
+          <dt>Models</dt>
+          <dd>${spec.provider}${spec.tier ? ` · ${spec.tier} tier` : ""}<br />
+            <span class="mono fc-models">${(spec.model_ids || []).join(" → ")}</span></dd>
+        </div>
+        <div><dt>Record</dt><dd>${skillLine(spec.skill)}</dd></div>
+      </dl>
+      ${small && html`<p class="net-hint">Fewer than 30 scored: anecdote, not evidence.</p>`}
+      <p class="net-hint">Published on the feed so a neighbour can see how this node forecasts
+        and compare. The spec is shared; nothing about it is applied to anyone.</p>
+    </div>`;
+}
+
+function PeerForecaster({ n, ownCountry }) {
+  const match = n.forecaster_match;
+  if (!match) return null;
+  if (!match.published) {
+    return html`
+      <div class="nb-fc">
+        <span class="fc-chip is-none">Publishes no forecaster</span>
+        <span class="nb-fc-note">Its feed is v${n.feed_version || "1.0"}; the forecaster spec
+          arrived in 1.1.</span>
+      </div>`;
+  }
+  const theirCountry = String(n.node?.country || "").toUpperCase();
+  const otherCountry = theirCountry && ownCountry && theirCountry !== ownCountry;
+  const diffs = match.differences || [];
+  const onlyBands = diffs.length > 0 && diffs.every((d) => d.field === "bands");
+  const chip = match.same_forecaster
+    ? html`<span class="fc-chip is-same">Same forecaster</span>`
+    : onlyBands && otherCountry
+      ? html`<span class="fc-chip is-national">Same method, national bands</span>`
+      : html`<span class="fc-chip is-diff">Different settings</span>`;
+  return html`
+    <div class="nb-fc">
+      ${chip}
+      ${diffs.length > 0 && html`
+        <ul class="nb-diffs">
+          ${diffs.map((d) => html`
+            <li key=${d.field}>
+              ${describe(d)}
+              ${d.field === "bands" && otherCountry && html`
+                <span class="nb-design">By design: each node anchors "low" to its own
+                  national standard, and ${countryName(theirCountry)}'s is not${" "}
+                  ${countryName(ownCountry)}'s.</span>`}
+            </li>`)}
+        </ul>`}
+      ${(match.adoptable || []).length > 0 && html`
+        <div class="nb-adopt">
+          <span class="nb-adopt-k"><${ForkIcon} /> To match it on this node, an operator would
+            set</span>
+          ${match.adoptable.map((a) => html`
+            <code key=${a.env}>${a.env}=<wbr />${num(a.value)}</code>`)}
+          <span class="nb-fc-note">Nothing is applied automatically.</span>
+        </div>`}
+      <span class="nb-fc-note">Their record: ${skillLine(n.forecaster?.skill)}</span>
+    </div>`;
 }
 
 function ThisNode({ node, feed }) {
@@ -41,7 +186,10 @@ function ThisNode({ node, feed }) {
     <div class="net-card net-self">
       <span class="eyebrow">This node</span>
       <div class="self-id">
-        <${Flag} code=${node.country} />
+        <span class="flag self-flag" title=${countryName(node.country) || null}>
+          <${FlagMark} code=${node.country} size=${32} />
+          <span class="flag-code">${String(node.country || "").toUpperCase() || "—"}</span>
+        </span>
         <div>
           <h4>${node.name}</h4>
           <p class="muted">${unconfigured ? "No region set" : node.region}</p>
@@ -65,7 +213,7 @@ function ThisNode({ node, feed }) {
     </div>`;
 }
 
-function Neighbours({ neighbours }) {
+function Neighbours({ neighbours, ownCountry }) {
   if (neighbours === null) return html`<div class="net-card skeleton net-skeleton"></div>`;
   if (neighbours === false) {
     return html`<div class="net-card"><p class="muted">The neighbour list could not be read.
@@ -104,6 +252,7 @@ function Neighbours({ neighbours }) {
                   <span class="nb-url">${n.url}</span>
                 </span>
                 ${n.error && html`<span class="nb-error">${n.error}</span>`}
+                ${!n.error && html`<${PeerForecaster} n=${n} ownCountry=${ownCountry} />`}
               </div>
               ${!n.error && html`
                 <span class="nb-count tnum">${n.hotspot_count}<small>${n.hotspot_count === 1
@@ -127,7 +276,8 @@ function FeedLink({ href, Icon, title, format, children }) {
 }
 
 export function NetworkPanel() {
-  const { node, neighbours, feed } = useNetwork();
+  const { node, neighbours, feed, forecaster } = useNetwork();
+  const ownCountry = node ? String(node.country || "").toUpperCase() : "";
 
   return html`
     <section class="network" aria-labelledby="network-title">
@@ -138,13 +288,17 @@ export function NetworkPanel() {
           <p>Smoke does not stop at a state line, or a national one. Each deployment is a node:
             it publishes what it detects on an open feed and reads its neighbours', so a fire
             upwind is in the forecast before the smoke arrives. What is shared is a detection
-            layer, not trained weights.</p>
+            layer and a description of how each node forecasts — never trained weights, and
+            never a setting pushed from one node to another.</p>
         </div>
       </header>
 
       <div class="network-grid">
-        <${ThisNode} node=${node} feed=${feed} />
-        <${Neighbours} neighbours=${neighbours} />
+        <div class="network-col">
+          <${ThisNode} node=${node} feed=${feed} />
+          <${ThisForecaster} spec=${forecaster} />
+        </div>
+        <${Neighbours} neighbours=${neighbours} ownCountry=${ownCountry} />
       </div>
 
       <div class="feed-links">

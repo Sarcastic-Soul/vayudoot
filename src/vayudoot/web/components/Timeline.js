@@ -8,7 +8,9 @@
  * still legible in glare, in greyscale, and with animation switched off. */
 
 import { html, Fragment } from "../lib/html.js";
-import { STAGES, STAGE_INDEX, words } from "../lib/format.js";
+import {
+  STAGES, STAGE_INDEX, words, caseCountry, countryName, isStatutory,
+} from "../lib/format.js";
 import { CheckIcon, CrossIcon } from "./Icons.js";
 
 const STATE_WORD = {
@@ -51,10 +53,17 @@ function detailFor(key, c) {
   }
   if (key === "jurisdiction" && c.jurisdiction) {
     const j = c.jurisdiction;
+    /* A follow-up interval is not a legal deadline, and the row says so in
+       its own label rather than in a footnote a reader might skip. */
+    const statutory = isStatutory(j);
     return html`<${Detail} pairs=${{
       "Authority": `${j.authority_name} (${j.authority_tier})`,
+      "Country": countryName(caseCountry(j)),
       "Statute": `${j.statute}${j.section ? ` — ${j.section}` : ""}`,
-      "Response window": `${j.response_window_days} days`,
+      [statutory ? "Response window" : "Follow-up interval"]: statutory
+        ? `${j.response_window_days} days (statutory)`
+        : `${j.response_window_days} days — not statutory; no law sets a deadline here`,
+      "Language": j.local_language || "English only",
       "Escalates to": j.escalation_authority || "—",
     }} />`;
   }
@@ -64,6 +73,9 @@ function detailFor(key, c) {
 
 function stateOf(index, c) {
   const reached = STAGE_INDEX[c.stage] ?? 0;
+  /* Halted before the evidence stage ran — refused on where the report is,
+     before any model was called — means no stage finished at all. */
+  if (c.stage === "halted" && !c.evidence) return "pending";
   if (c.stage === "halted") return index === 0 ? "done" : "pending";
   if (index < reached) return "done";
   if (index > reached) return "pending";
@@ -112,6 +124,17 @@ export function Timeline({ record }) {
               </div>
             </li>`;
         })}
+        ${record.status === "rejected" && record.error && html`
+          <li class="step" data-state="failed">
+            <${Node} state="failed" />
+            <div class="step-body">
+              <div class="step-head">
+                <h4>Not taken up</h4>
+                <span class="step-state">Stopped before any model call</span>
+              </div>
+              <div class="detail">${record.error}</div>
+            </div>
+          </li>`}
         ${record.status === "failed" && record.error && html`
           <li class="step" data-state="failed">
             <${Node} state="failed" />
