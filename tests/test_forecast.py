@@ -659,3 +659,73 @@ class TestNaivePeakWindow:
         )
 
         assert outlook.generated_at.tzinfo is UTC
+
+
+# --------------------------------------------------------------------------- #
+# What the forecast tools hand the model
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    ("bearings", "expected"),
+    [
+        ([350.0, 10.0], 0.0),
+        ([315.0, 45.0], 0.0),
+        ([90.0, 90.0, 90.0], 90.0),
+        ([200.0, 220.0], 210.0),
+    ],
+)
+def test_the_dominant_wind_is_a_vector_mean_not_an_arithmetic_one(bearings, expected):
+    """350 and 10 degrees are both northerly; their arithmetic mean is 180.
+
+    The arithmetic mean told the model air arrived from the opposite side of the
+    compass whenever the wind was northerly, which inverts the judgement the
+    forecast rests on: whether a fire is upwind.
+    """
+    from vayudoot.tools.weather import dominant_bearing
+
+    got = dominant_bearing([3.0] * len(bearings), bearings)
+    assert got is not None
+    assert min(abs(got - expected), 360 - abs(got - expected)) < 0.01
+
+
+def test_a_calm_hour_does_not_pull_the_dominant_wind():
+    from vayudoot.tools.weather import dominant_bearing
+
+    got = dominant_bearing([5.0, 5.0, 0.0], [300.0, 320.0, 120.0])
+    assert got is not None and abs(got - 310.0) < 0.01
+
+
+def test_no_wind_has_no_dominant_direction():
+    from vayudoot.tools.weather import dominant_bearing
+
+    assert dominant_bearing([], []) is None
+    assert dominant_bearing([2.0, 2.0], [0.0, 180.0]) is None
+
+
+def test_the_forecast_tools_ask_for_hours_from_now_not_from_midnight(respx_mock):
+    """`forecast_days` starts the series at 00:00 UTC today, so an evening call
+    spent most of a day of its horizon on hours that had already happened."""
+    import httpx
+
+    from vayudoot.tools.weather import get_air_quality_forecast, get_wind_forecast
+
+    air = respx_mock.get("https://air-quality-api.open-meteo.com/v1/air-quality").mock(
+        return_value=httpx.Response(
+            200, json={"hourly": {"time": ["2026-09-28T19:00"], "pm2_5": [80.0], "pm10": [90.0]}}
+        )
+    )
+    wind = respx_mock.get("https://api.open-meteo.com/v1/forecast").mock(
+        return_value=httpx.Response(
+            200,
+            json={"hourly": {"wind_speed_10m": [3.0], "wind_direction_10m": [350.0]}},
+        )
+    )
+
+    get_air_quality_forecast._tool_func(28.6, 77.2, 72)
+    get_wind_forecast._tool_func(28.6, 77.2, 72)
+
+    for route in (air, wind):
+        params = route.calls.last.request.url.params
+        assert params["forecast_hours"] == "72"
+        assert "forecast_days" not in params

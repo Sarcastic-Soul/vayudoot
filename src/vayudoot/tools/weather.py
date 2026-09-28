@@ -85,7 +85,12 @@ def get_air_quality_forecast(latitude: float, longitude: float, hours: int = 72)
                 "latitude": latitude,
                 "longitude": longitude,
                 "hourly": "pm2_5,pm10",
-                "forecast_days": min((span // 24) + 1, 5),
+                # From the current hour, not from midnight. `forecast_days`
+                # starts the series at 00:00 UTC today, so a call made in the
+                # evening spent most of a day of its "next 72 hours" on hours
+                # that had already happened, and a peak found there was
+                # reported as a forecast.
+                "forecast_hours": span,
             },
             timeout=20,
         )
@@ -148,7 +153,7 @@ def get_wind_forecast(latitude: float, longitude: float, hours: int = 72) -> dic
                 "longitude": longitude,
                 "hourly": "wind_speed_10m,wind_direction_10m",
                 "wind_speed_unit": "ms",
-                "forecast_days": min((span // 24) + 1, 5),
+                "forecast_hours": span,
             },
             timeout=20,
         )
@@ -158,7 +163,6 @@ def get_wind_forecast(latitude: float, longitude: float, hours: int = 72) -> dic
         return {"error": f"Open-Meteo wind forecast request failed: {exc}"}
 
     speeds = [v for v in (hourly.get("wind_speed_10m") or [])[:span] if v is not None]
-    bearings = [v for v in (hourly.get("wind_direction_10m") or [])[:span] if v is not None]
     if not speeds:
         return {"error": "Open-Meteo returned no hourly wind data"}
 
@@ -172,11 +176,44 @@ def get_wind_forecast(latitude: float, longitude: float, hours: int = 72) -> dic
         # nothing disperses, so a low mean is as much a warning as a high one.
         "stagnant_hours": sum(1 for v in speeds if v < 1.5),
     }
-    if bearings:
-        out["dominant_wind_from_degrees"] = round(sum(bearings) / len(bearings), 1)
-        source_lat, source_lon = upwind_point(
-            latitude, longitude, sum(bearings) / len(bearings), 50.0
-        )
+    # Paired from the raw series, hour by hour: the filtered lists above can
+    # drop different hours and would pair one hour's speed with another's
+    # direction.
+    dominant = dominant_bearing(
+        (hourly.get("wind_speed_10m") or [])[:span],
+        (hourly.get("wind_direction_10m") or [])[:span],
+    )
+    if dominant is not None:
+        out["dominant_wind_from_degrees"] = round(dominant, 1)
+        source_lat, source_lon = upwind_point(latitude, longitude, dominant, 50.0)
         out["air_arrives_from_latitude"] = round(source_lat, 5)
         out["air_arrives_from_longitude"] = round(source_lon, 5)
     return out
+
+
+def dominant_bearing(speeds: list, bearings: list) -> float | None:
+    """The direction the wind mostly blows from, as a speed-weighted vector mean.
+
+    Compass bearings wrap at 360, so their arithmetic mean is wrong exactly when
+    the wind is northerly: 350 and 10 average to 180, a southerly. Checked live
+    on 28 September 2026 over a 72-hour Mumbai forecast whose hours ran from 9 to
+    356 degrees: the arithmetic mean said 151 (south-south-east) and the vector
+    mean 359 (north). The model was being told air came from the opposite side,
+    which inverts the one judgement the forecast turns on — whether a fire is
+    upwind. Each hour is weighted by its speed because an hour of calm carries
+    no air from anywhere.
+
+    Returns None when there is nothing to average or the hours cancel out.
+    """
+    import math
+
+    pairs = [
+        (s, b) for s, b in zip(speeds, bearings, strict=False) if s is not None and b is not None
+    ]
+    if not pairs:
+        return None
+    east = sum(s * math.sin(math.radians(b)) for s, b in pairs)
+    north = sum(s * math.cos(math.radians(b)) for s, b in pairs)
+    if math.hypot(east, north) < 1e-9:
+        return None
+    return (math.degrees(math.atan2(east, north)) + 360) % 360
