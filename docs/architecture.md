@@ -144,8 +144,9 @@ before banding. That rounding is load-bearing rather than tidy: 0.7 + 0.2 is
 0.8999999999999999 in binary floating point, so an unrounded comparison drops a hotspot a
 whole band on a representation artefact.
 
-**Thresholds are the Indian standards.** A station reading becomes a signal only if it
-exceeds the NAAQS 24-hour standard for its pollutant, and a reading below its standard
+**Thresholds are the node country's national standards** — `standards.py`, with the
+numbers in `data/standards.json`. A station reading becomes a signal only if it exceeds
+the 24-hour standard for its pollutant, and a reading below its standard
 produces no signal at all — a station reporting clean air is evidence of nothing happening
 and must not put a dot on a map. That is not the same as the reading being useless: the
 corroboration stage reads a normal value too, because there it argues *against* a citizen's
@@ -156,10 +157,14 @@ rather than trusted to arrive in the table's unit. The standards table once held
 thousand-fold unit error is invisible in a number and glaring on a map. An unrecognised
 unit costs one signal rather than being guessed at.
 
-These are the Indian standards and not the WHO guidelines, which are several times
-stricter. A hotspot is raised so that an Indian authority acts on it, and it must be
-measured against the number that authority is bound by; a map flagging half the country for
-exceeding a guideline nobody is obliged to meet tells an inspector nothing.
+These are national standards — India's NAAQS, South Africa's NAAQS under the Air Quality
+Act, Brazil's CONAMA resolution — and not the WHO guidelines, which are several times
+stricter. A hotspot is raised so that an authority acts on it, and it must be measured
+against the number that authority is bound by; a map flagging half the country for
+exceeding a guideline nobody is obliged to meet tells an inspector nothing. A country with
+no table falls back to the WHO guidelines, named as guidelines. The node's country decides,
+not the station's: the authority the node alerts is bound by its own country's numbers.
+`standards.py` has the rest of the reasoning.
 
 ### Grouping — `grouping.py`
 
@@ -187,6 +192,31 @@ the authority had the case. Detection uses 2 km and 14 days: 2 km absorbs the er
 375 m VIIRS pixel located to the pixel rather than to the fire inside it, and a fortnight
 answers whether something is happening *now* rather than whether an authority sat on
 something.
+
+## Acting on a hotspot — `alerts.py`, `exposure.py`, `agents/alert.py`, `agents/imagery.py`
+
+Three things can be done with a hotspot without any citizen being involved, and each
+module's docstring holds its full reasoning.
+
+**Alert the authority** (`alerts.py`, `agents/alert.py`). Only a corroborated hotspot can
+be alerted: an alert is a claim made in the system's own name, and corroboration gates
+those. Jurisdiction is a table lookup on the geocoded state, city and country, so no model
+does it. The facts block — area, confidence, sources, exposure, any imagery reading — is
+built in Python and cannot be embellished; the model, on `fast`, writes only a short
+summary above it. Nothing is sent from here: an alert stops at `awaiting_confirmation` and
+goes through the same sandbox filing as a complaint.
+
+**Count who is breathing it** (`exposure.py`). The population of GeoNames `cities15000`
+places whose centre is within reach of the hotspot. A coarse figure, not a headcount, and
+the `basis` string says why. Exposure never touches confidence or ranking: it answers "how
+much does it matter if this is real", which is a different question from "is this real".
+
+**Look at the sky** (`tools/imagery.py`, `agents/imagery.py`). A NASA GIBS VIIRS
+true-colour snapshot around the hotspot, read by Gemini on `primary` for visible smoke and
+cloud. The reading is an annotation and never a signal: a model's opinion about a coarse
+picture must not be able to corroborate citizen reports, or a hallucinated plume would decide
+what the public map says. It runs only when an operator asks, and is cached per hotspot and
+image date.
 
 ## Forecasting — `agents/forecast.py`, `corridors.py`
 
@@ -244,7 +274,21 @@ fast call — and takes the **worst** risk any of them carries rather than an av
 corridor is a population strip and a supply line, so the segment in trouble is what an
 authority needs to see, and averaging it away would hide exactly the thing worth acting on.
 A waypoint whose call failed is dropped rather than allowed to sink the corridor, and the
-summary reports how many of the waypoints answered.
+summary reports how many of the waypoints answered. Each waypoint gets its own agent: a
+Strands `Agent` refuses a second concurrent call, and one agent shared across parallel
+waypoints once meant every waypoint but one failed silently.
+
+**Every forecast is scored — `ledger.py`.** Each forecast served is written to a ledger at
+the moment it is made, with the no-model CAMS baseline fetched alongside, so nothing
+observed later can leak into what was predicted. Once the window closes, OpenAQ reference
+stations within 25 km are read and the worst 24-hour mean is mapped to the same four bands;
+where no station is close enough the forecast is `unscorable`, never counted right or wrong.
+Every outcome is recorded beside two baselines that use no model — yesterday carried
+forward, and the raw CAMS number — because a hit rate alone means nothing in Delhi in
+November, where "high" is right most days. Scoring spends no model call. The bands' low
+edge is the node country's own standard, the number the forecast tool shows the model.
+`scripts/forecast_backtest.py` asks the same question of the past, and
+`docs/forecast-evaluation.md` says how far that can be trusted.
 
 ## Federation — `federation.py`
 
@@ -277,6 +321,14 @@ because nobody could tell whose evidence a hotspot rested on. `fetch_neighbour` 
 refuses a feed reporting our own node id, which is what a load balancer, a copied
 configuration or a mirroring peer produces: reading our own hotspots back would double every
 one of them and look like independent agreement.
+
+**The forecaster is shared by description, never by execution.** From feed 1.1 a node
+publishes a `ForecasterSpec`: version, a SHA-256 of the prompt, horizon, reach, models,
+bands and ledger skill. `compare_forecaster` tells whether a peer runs the same forecaster,
+and so whether two skill figures can be compared. A prompt's text is never published,
+fetched or run: a prompt taken from a feed would let any node tell every other node's model
+what to say. Differences are reported, and for the numeric ones the environment variable a
+person would set is named; nothing is applied automatically.
 
 Like every tool in the project, `fetch_neighbour` returns a dict and never raises. A peer
 that is down, slow or serving something unparseable is an ordinary condition on a federated
@@ -330,6 +382,22 @@ byte for byte rather than being re-encoded.
 Unreadable bytes are a `415` at the API boundary. Failing at the door gives the citizen
 something to act on; failing at the model gives them a case that dies four seconds later for
 no visible reason.
+
+### 0b. Voice — `audio.py`, `agents/voice.py`
+
+A report may carry a voice note of up to 90 seconds, in any language. `audio.py` decides
+the format from the bytes and measures the length where the file states it; nothing is
+transcoded. `agents/voice.py` hands the audio to Gemini on `fast` — Gemini hears it
+directly, so no Speech-to-Text or Translation service is needed, and those need billing —
+and gets back a `VoiceAccount`: the transcript in the language spoken, an English
+translation, and the useful details. Names of people and businesses are removed in code,
+whatever the model did. Strands' Gemini provider does not send audio blocks, so
+`FallbackGeminiModel` adds that one branch.
+
+It runs inside the evidence stage, not as a stage of its own. The account is handed to the
+evidence and drafting agents marked as the reporter's own claim; it is never a signal and
+cannot move corroboration. A voice note that cannot be heard is not fatal when the report
+has a photograph or a written note, and is fatal when it was the whole report.
 
 ### 1. Evidence — `agents/evidence.py`
 
@@ -385,7 +453,16 @@ An agent on the `fast` tier with two tools: reverse geocoding, then a lookup aga
 data-driven authority table keyed by administrative region and pollution category.
 
 The table is JSON, not code. Pointing the system at another state or another country is a
-data change. The prompt forbids inventing an authority, an address, or a statute section.
+data change: India, South Africa (nine provinces) and Brazil (sixteen states) are each one
+file. The prompt forbids inventing an authority, an address, or a statute section.
+
+**The country is settled before any model is paid for.** The pipeline geocodes first; a
+report from a country this node holds no table for is rejected with the reason in
+`case.error`, and no model is called. After the agent runs, the fields a table decides —
+country, local language, the response window and whether it is statutory — are overwritten
+from the table (`pipeline._settle_table_facts`). A complaint that called a follow-up
+interval a statutory deadline would be making a false legal claim, and only India's table
+has a statutory window.
 
 **Coverage is reported, not assumed.** A fixed table has edges, and the failure at those
 edges used to be silent: if a category called for a municipal body and the city was not
@@ -586,6 +663,16 @@ later cannot tell us anything new about it. `Hotspot` is the opposite and is del
 changes whenever a signal arrives. `live_signals()` applies the retention window;
 `all_signals()` still has everything, because the record of what was observed is worth
 keeping even once it stops being current.
+
+## Analysis across nations — `export.py`, `scripts/export_bigquery.py`
+
+The export writes every node's signals, hotspots (as polygons, never points), alerts,
+corridors, neighbours' hotspots and the forecast ledger as NDJSON with BigQuery schemas,
+for the free BigQuery sandbox. The sandbox refuses DML and streaming, so each export is a
+snapshot appended by a load job, and views pick the latest copy. Citizen signals are
+coarsened and carry no text; alerts carry status and authority, never the letter. Adding a
+table is one `Table` entry. `docs/bigquery.md` has the setup and ready queries, each checked
+against the schema by the test suite.
 
 ## Evaluating the prompts — `evals/`, `scripts/eval.py`
 
