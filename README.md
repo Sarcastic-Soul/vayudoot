@@ -535,6 +535,13 @@ Punjab detecting while Delhi forecasts.
 | `GET` | `/geocode` | `?lat=&lon=` for an address, `?q=` to search a place. Backs the map |
 | `GET` | `/health` | Active provider, and confirmation that live filing is off |
 
+**Analysis and demo tooling** (scripts, not endpoints): `scripts/export_bigquery.py`
+exports signals, hotspots (as areas), alert statuses and corridors for the free
+BigQuery sandbox, with queries that compare countries in
+[`docs/bigquery.md`](docs/bigquery.md). `scripts/demo_prep.py` makes every model
+call a demo shows ahead of time, so a recording cannot be spoiled by a busy
+free-tier model; it never confirms or files anything.
+
 `POST /reports` also answers `413` if the upload is larger than the instance
 accepts and `429` if the rate limit is reached — a report costs about ten model
 calls against a metered free tier, so an open endpoint on a public URL is one
@@ -553,12 +560,32 @@ running when it died.
 Everything region-specific is data, not code, which is what decides whether this
 becomes a national system or stays a Delhi demo.
 
-- **Authorities** — all 28 states and 8 union territories at state tier, in
-  [`authorities.example.json`](src/vayudoot/data/authorities.example.json).
-  Adding a municipal body is a JSON edit.
-- **Corridors** — six, in [`corridors.json`](src/vayudoot/data/corridors.json),
-  spanning eleven states and union territories. Waypoints are sampling points,
-  not a route.
+Three countries today, each switched on by data files and
+`VAYUDOOT_NODE_COUNTRY` alone:
+
+- **India** — all 28 states and 8 union territories at state tier, in
+  [`authorities.example.json`](src/vayudoot/data/authorities.example.json),
+  measured against the NAAQS. Complaints, alerts and RTI.
+- **South Africa** — all 9 provinces, the Highveld district and metro air quality
+  authorities, and the national department for escalation, under the National
+  Environmental Management: Air Quality Act 2004, measured against South Africa's
+  national ambient standards. Alerts and complaints; the local language is set
+  per province.
+- **Brazil** — 16 state environment agencies, four city departments and IBAMA,
+  under the fire, environmental crimes and national environment policy laws,
+  measured against CONAMA Resolution 506/2024. Alerts and complaints in
+  Portuguese.
+
+A country with no table is refused clearly rather than addressed to a
+placeholder, and a ground-station reading from one is measured against the WHO
+2021 guidelines, labelled as such. **Corridors** are in
+[`corridors.json`](src/vayudoot/data/corridors.json): seven in India (one
+crossing into Pakistan), two in South Africa and four in Brazil. A node scans
+only its own country's. Every authority address in every table is on `.invalid`.
+
+No government runs any of these nodes. `scripts/federation_demo.py --brics`
+starts South African and Brazilian nodes beside Delhi's to show the contract
+holding across countries.
 
 ## Deploying
 

@@ -429,6 +429,20 @@ and free, keyless public data.
       see `Exposure` in `schemas.py` for what it counts. Kept off the public
       feed.
 
+- [x] **South Africa and Brazil.** Authority tables, statutes, national ambient
+      standards, towns and corridors for both, as data. Alerts and complaints
+      resolve through the geocoded country; RTI stays Indian because it is an
+      Indian statute. `SERVED_COUNTRIES` comes from the tables present. Pakistan
+      in the cross-border demo is not a BRICS member, which is why these two
+      were added.
+
+- [x] **BigQuery sandbox export.** Load jobs only, since the sandbox allows no
+      streaming or DML; snapshots append and views pick the latest. Needs a
+      Google Cloud project with no billing, which is a one-time manual step.
+
+- [x] **Demo prep.** `scripts/demo_prep.py` warms every model call the video
+      shows and can only POST the imagery read and the alert draft.
+
 - [x] **Model fallback across free-tier Gemini models.** AI Studio meters each
       model separately, so the primary tier walks a chain of Flash models and
       moves on at 429, 503 or 404. About fifty reports a day instead of ten.
