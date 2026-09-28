@@ -89,6 +89,30 @@ _throttled_at: dict[str, float] = {}
 THROTTLE_COOLDOWN_SECONDS = 60.0
 
 
+def _worth_another_model(exc: Exception) -> bool:
+    """Whether a failure belongs to this model rather than to the request.
+
+    Three kinds do, and each is worth moving down the chain for: a 429 (this
+    model's quota is spent), a 503 (this model is overloaded — AI Studio's free
+    tier answers "high demand" for hours at a time on a popular model while its
+    siblings are idle), and a 404 (this model id was retired). Strands turns
+    only the first into `ModelThrottledException`; a 503 arrives as the SDK's
+    `ServerError`, which is why this does not rely on Strands' mapping.
+    Anything else — a bad request, a schema the model cannot follow — would fail
+    the same way on every model, so it is raised at once.
+    """
+    from google.genai.errors import APIError
+    from strands.types.exceptions import ModelThrottledException
+
+    if isinstance(exc, ModelThrottledException):
+        return True
+    if isinstance(exc, APIError):
+        return exc.code in (404, 429, 500, 503) or exc.status in (
+            "RESOURCE_EXHAUSTED", "UNAVAILABLE", "NOT_FOUND",
+        )
+    return False
+
+
 def _gemini_with_fallback():
     """Build the class lazily so importing this module never imports Gemini."""
     import time
@@ -128,8 +152,8 @@ def _gemini_with_fallback():
                         started = True
                         yield event
                     return
-                except ModelThrottledException as exc:
-                    if started:
+                except Exception as exc:
+                    if started or not _worth_another_model(exc):
                         raise
                     _throttled_at[model_id] = time.monotonic()
                     last = exc
@@ -137,8 +161,6 @@ def _gemini_with_fallback():
             raise last
 
         async def structured_output(self, *args: Any, **kwargs: Any):
-            from google.genai.errors import ClientError
-
             last: Exception | None = None
             for model_id in self._candidates():
                 self.update_config(model_id=model_id)
@@ -146,11 +168,11 @@ def _gemini_with_fallback():
                     async for event in super().structured_output(*args, **kwargs):
                         yield event
                     return
-                except ClientError as exc:
-                    if exc.status not in ("RESOURCE_EXHAUSTED", "UNAVAILABLE"):
+                except Exception as exc:
+                    if not _worth_another_model(exc):
                         raise
                     _throttled_at[model_id] = time.monotonic()
-                    last = ModelThrottledException(exc.message or str(exc))
+                    last = ModelThrottledException(str(exc))
             assert last is not None
             raise last
 

@@ -98,3 +98,68 @@ def test_a_rate_limited_model_falls_through_to_the_next(providers, monkeypatch):
     assert asked == chain[:2]
     assert events == [{"answered_by": chain[1]}]
     assert chain[0] in models._throttled_at
+
+
+def test_an_overloaded_model_falls_through_too(providers, monkeypatch):
+    """A 503 "high demand" arrives as the SDK's ServerError, not Strands' throttle.
+
+    A live cross-border demo run failed three times on exactly this while the
+    chain's other models were idle, because only 429s moved down the chain.
+    """
+    import asyncio
+
+    from google.genai.errors import ServerError
+    from strands.models.gemini import GeminiModel
+
+    from vayudoot import models
+
+    providers(primary="gemini")
+    monkeypatch.setattr(settings, "gemini_api_key", "test-key")
+    monkeypatch.setattr(models, "_throttled_at", {})
+    asked: list[str] = []
+
+    async def fake_stream(self, *args, **kwargs):
+        asked.append(self.config["model_id"])
+        if len(asked) == 1:
+            raise ServerError(503, {"error": {"status": "UNAVAILABLE", "message": "busy"}})
+        yield {"answered_by": self.config["model_id"]}
+
+    monkeypatch.setattr(GeminiModel, "stream", fake_stream)
+    model = models.build_model(tier="fast")
+
+    async def collect():
+        return [event async for event in model.stream([])]
+
+    events = asyncio.run(collect())
+    assert len(asked) == 2
+    assert events == [{"answered_by": settings.model_chain_for("fast")[1]}]
+
+
+def test_a_bad_request_is_not_retried_on_another_model(providers, monkeypatch):
+    import asyncio
+
+    import pytest as _pytest
+    from google.genai.errors import ClientError
+    from strands.models.gemini import GeminiModel
+
+    from vayudoot import models
+
+    providers(primary="gemini")
+    monkeypatch.setattr(settings, "gemini_api_key", "test-key")
+    monkeypatch.setattr(models, "_throttled_at", {})
+    asked: list[str] = []
+
+    async def fake_stream(self, *args, **kwargs):
+        asked.append(self.config["model_id"])
+        raise ClientError(400, {"error": {"status": "INVALID_ARGUMENT", "message": "bad"}})
+        yield  # pragma: no cover
+
+    monkeypatch.setattr(GeminiModel, "stream", fake_stream)
+    model = models.build_model(tier="primary")
+
+    async def collect():
+        return [event async for event in model.stream([])]
+
+    with _pytest.raises(ClientError):
+        asyncio.run(collect())
+    assert len(asked) == 1
