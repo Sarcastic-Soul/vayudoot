@@ -313,9 +313,9 @@
       <span class="cite">Si et al., BMJ Global Health, 2026 (GBD 2023)</span>
     </div>
   </div>
-  <!-- [TODO pending: South Africa and Brazil nodes] When those nodes run, add a
-       line under the South Africa and Brazil cards: "Vayudoot node configured
-       for ..." — only once it runs, and never as if an agency runs it. -->
+  <p style="font-size:13.5px;margin-top:10px;color:var(--muted)">Vayudoot runs nodes configured for
+  South Africa's Highveld and Brazil's arc of deforestation, each with its own country's authority
+  table and air-quality standard. No South African or Brazilian agency runs them or has been approached.</p>
   <div class="cols" style="margin-top:22px;gap:26px">
     <div class="callout warn">
       <p style="font-size:14.5px"><strong>One sensor is not enough.</strong> More than 90% of large farm
@@ -534,9 +534,10 @@
         a node; the PK node is this software started with <code>PK</code> in its
         config, to show the contract crosses a border.</p>
       </div>
-      <!-- [TODO pending: South Africa and Brazil nodes] Once they run, add them to the
-           caption and to this list, e.g. "Nodes configured for Gauteng (ZA) and
-           Sao Paulo (BR) read the same contract." Do not claim before they run. -->
+      <p style="font-size:14px;margin-top:10px"><strong>The same contract, two more countries.</strong>
+      Nodes configured for South Africa's Highveld (ZA) and Brazil's arc of deforestation (BR)
+      publish feed 1.1 in exactly the same shape, and a Delhi node reads both without a line of
+      code changing. Only <code>VAYUDOOT_NODE_COUNTRY</code> differs.</p>
       <p style="font-size:14px;margin-top:10px"><strong>The forecaster is shared by description.</strong>
       Each node publishes its forecaster's version, a hash of its prompt, its bands and its
       measured skill, so two nodes can tell whether their accuracy figures compare. The
@@ -553,11 +554,11 @@
   <div class="cols-4">
     <div class="statbox teal">
       <div class="stat teal">36</div>
-      <div class="stat-label">Indian states and union territories in the authority table: all 28 states and all 8 UTs, with statute, deadline and escalation path</div>
+      <div class="stat-label">Indian states and union territories in the authority table: all 28 states and all 8 UTs, with statute, deadline and escalation path. Plus South Africa's 9 provinces and 16 Brazilian states</div>
     </div>
     <div class="statbox teal">
-      <div class="stat teal">7</div>
-      <div class="stat-label">economic corridors, 46 sampling points, across 11 Indian states and UTs and Pakistan's Punjab</div>
+      <div class="stat teal">13</div>
+      <div class="stat-label">economic corridors, 86 sampling points, across India, Pakistan's Punjab, South Africa and Brazil</div>
     </div>
     <div class="statbox teal">
       <div class="stat teal">2</div>
@@ -583,14 +584,11 @@
     <div>
       <h3 style="font-size:16px">What reaches beyond India today, and what does not</h3>
       <ul style="font-size:15px">
-        <li>The feed, the GeoJSON, the node identity and the forecast are country-neutral. A PK node runs today.</li>
+        <li>The feed, the GeoJSON, the node identity and the forecast are country-neutral. PK, ZA and BR nodes run today.</li>
         <li>FIRMS, GIBS, Open-Meteo, OpenAQ and GeoNames are global, so detection and forecasting work anywhere.</li>
-        <li>The authority table and the exceedance thresholds are Indian. Another country needs its own table and its own standard.</li>
+        <li>Authority tables and 24-hour standards exist for India, South Africa and Brazil — PM2.5 limits of 60, 40 and 50 µg/m³. A fourth country is a JSON file, not code.</li>
+        <li>Only India's table carries a statutory response deadline. Elsewhere the interval is marked as this system's follow-up, and RTI drafting is India-only.</li>
       </ul>
-      <!-- [TODO pending: South Africa and Brazil nodes] If they land, add a line:
-           "Nodes configured for South Africa's Highveld and Brazil run on the same
-           contract" and change the "2 countries" stat above only if a corridor
-           or node really crosses into them. -->
     </div>
   </div>
   <span class="num">10</span>

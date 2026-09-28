@@ -218,9 +218,13 @@ second, then go back.
 > in any country can open it in QGIS without our code. What is shared is a
 > detection layer, not model weights.
 
-<!-- [TODO pending: South Africa and Brazil nodes] If the coordinator lands
-them, add one line here: "The same contract carries a node for [..] and [..]."
-and show them in the neighbours list. Do not add it until they run. -->
+> The same contract carries nodes configured for South Africa's Highveld and
+> Brazil's arc of deforestation — coal plants in one, forest fires in the other,
+> each with its own country's authority table and air standard. Only the
+> country code differs. No agency in either country runs them.
+
+*For this line, `python scripts/federation_demo.py --brics --no-forecast`
+starts both and shows Delhi reading them, with no model call.*
 
 **Action:** back to the corridor list. Open **Lahore–Delhi trans-boundary smoke
 corridor**.

@@ -16,6 +16,7 @@ For the submission form. Three versions; use the first.
 > board that covers it, sent only after a person confirms and only to a sandbox.
 > Each node publishes its hotspots on an open feed and GeoJSON, so a fire
 > detected in one region is in a neighbour's forecast before the smoke arrives.
+> It runs today with nodes configured for India, Pakistan, South Africa and Brazil.
 
 **Shorter, if the field is tight**
 
@@ -29,8 +30,3 @@ For the submission form. Three versions; use the first.
 
 > Satellites find it, citizens identify it, Gemini forecasts it, and a person
 > decides whether the right authority hears about it.
-
-<!-- [TODO pending: South Africa and Brazil nodes] Once those node configurations
-     run, the main version can say "tested with nodes configured for India,
-     Pakistan, South Africa and Brazil". Not before, and never as if a government
-     runs one. -->
