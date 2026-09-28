@@ -572,6 +572,130 @@ class CorridorForecast(BaseModel):
         return _as_utc(value)
 
 
+RiskBand = Literal["low", "elevated", "high", "severe"]
+
+
+class ForecastOutcome(BaseModel):
+    """What the ground stations recorded over a forecast's window.
+
+    Written once the window has passed, by `ledger.py`, which spends no model
+    call doing it. `unscorable` is a result in its own right: no reference
+    station close enough, or too few hours reported. It is never counted as a
+    hit or a miss.
+    """
+
+    status: Literal["scored", "unscorable"]
+    scored_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    reason: str = ""
+    #: `pm25` when any nearby station reported it, else `pm10`.
+    pollutant: Literal["pm25", "pm10"] | None = None
+    #: The worst 24-hour mean in the window, µg/m³, across the stations used.
+    observed_value: float | None = None
+    observed_band: RiskBand | None = None
+    #: Forecast band minus observed band, in steps: +1 called one band too high.
+    band_error: int | None = None
+    stations: list[str] = Field(default_factory=list)
+    days_covered: int = 0
+    days_total: int = 0
+    #: Baseline one: the band the station recorded over the 24 hours before the
+    #: forecast was made, carried forward unchanged.
+    persistence_value: float | None = None
+    persistence_band: RiskBand | None = None
+    #: Baseline two: the raw Open-Meteo (CAMS) number captured when the forecast
+    #: was made, mapped to a band by the same rule, with no model involved.
+    cams_value: float | None = None
+    cams_band: RiskBand | None = None
+
+
+class ForecastRecord(BaseModel):
+    """One forecast this node made, kept so it can be checked afterwards.
+
+    Written when the forecast is served, before anything about its window is
+    known, which is what makes the record prospective: nothing observed later
+    can leak into what was predicted.
+    """
+
+    forecast_id: str
+    made_at: datetime
+    latitude: float
+    longitude: float
+    location_name: str = ""
+    corridor_id: str = ""
+    horizon_hours: int
+    window_start: datetime
+    window_end: datetime
+    risk: RiskBand
+    confidence: float
+    peak_window_start: datetime | None = None
+    peak_window_end: datetime | None = None
+    #: The inputs summary: what the forecast said it read, and what it said
+    #: was driving the outlook, copied from the forecast itself.
+    drivers: list[str] = Field(default_factory=list)
+    basis: list[str] = Field(default_factory=list)
+    forecaster_version: str = ""
+    prompt_sha256: str = ""
+    model_id: str = ""
+    #: The raw Open-Meteo worst 24-hour mean for the same window, fetched at
+    #: the time the forecast was made. Keyed by pollutant. Empty if the fetch
+    #: failed, in which case this forecast has no CAMS baseline.
+    cams_worst_day: dict[str, float] = Field(default_factory=dict)
+    #: None while the window is open or the stations have not reported yet.
+    outcome: ForecastOutcome | None = None
+    scoring_attempts: int = 0
+
+    @field_validator("made_at", "window_start", "window_end", "peak_window_start",
+                     "peak_window_end")
+    @classmethod
+    def _tz_aware(cls, value: datetime | None) -> datetime | None:
+        return _as_utc(value)
+
+
+class BandScores(BaseModel):
+    """How often a set of band calls matched what was observed."""
+
+    scored: int = 0
+    exact: int = 0
+    within_one: int = 0
+    exact_rate: float | None = None
+    within_one_rate: float | None = None
+    #: observed band -> called band -> count. Every cell present, zeros included.
+    confusion: dict[str, dict[str, int]] = Field(default_factory=dict)
+
+
+class BaselineComparison(BaseModel):
+    """A baseline and the forecaster, scored on exactly the same forecasts.
+
+    Only forecasts where the baseline itself could be scored are counted, for
+    both sides. Comparing a forecaster's rate over one set against a baseline's
+    over another would compare the samples, not the methods.
+    """
+
+    name: Literal["persistence", "cams"]
+    description: str
+    compared: int = 0
+    baseline: BandScores = Field(default_factory=BandScores)
+    forecast: BandScores = Field(default_factory=BandScores)
+
+
+class ForecastSkill(BaseModel):
+    """This node's forecast record over a window, against what was observed."""
+
+    window_days: int
+    since: datetime
+    #: The forecaster these figures are for. Empty when the summary deliberately
+    #: spans every revision, which a published summary never does.
+    forecaster_version: str = ""
+    prompt_sha256: str = ""
+    recorded: int = 0
+    pending: int = 0
+    scored: int = 0
+    unscorable: int = 0
+    forecast: BandScores = Field(default_factory=BandScores)
+    baselines: list[BaselineComparison] = Field(default_factory=list)
+    band_basis: str = ""
+    caveat: str = ""
+
+
 class NodeIdentity(BaseModel):
     """Who this instance is, on a network of instances.
 
@@ -616,19 +740,89 @@ class FeedHotspot(BaseModel):
     last_seen_at: datetime
 
 
+class BandDefinition(BaseModel):
+    """What one risk band means in measured air, as the ledger scores it."""
+
+    risk: RiskBand
+    pm25_from: float
+    pm25_to: float | None = None
+    pm10_from: float
+    pm10_to: float | None = None
+
+
+class ForecasterSkillSummary(BaseModel):
+    """A node's measured forecast skill, in the few numbers a peer needs."""
+
+    window_days: int = Field(ge=0)
+    scored: int = Field(ge=0)
+    unscorable: int = Field(ge=0)
+    exact_rate: float | None = Field(default=None, ge=0, le=1)
+    within_one_rate: float | None = Field(default=None, ge=0, le=1)
+    #: The two baselines' exact rates on the same forecasts, without which the
+    #: forecaster's own rate cannot be read.
+    persistence_exact_rate: float | None = Field(default=None, ge=0, le=1)
+    cams_exact_rate: float | None = Field(default=None, ge=0, le=1)
+    caveat: str = Field(default="", max_length=500)
+
+
+class ForecasterSpec(BaseModel):
+    """Which forecaster a node runs, so a peer can tell whether it runs the same one.
+
+    Identifies the forecaster; never carries it. There is a hash of the prompt
+    and no prompt text, on purpose: see `federation.py` for why a peer's prompt
+    is never fetched or run. Every string is bounded, because this arrives from
+    peers and is shown to operators.
+    """
+
+    forecaster_version: str = Field(max_length=32)
+    prompt_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    horizon_hours: int = Field(ge=1, le=240)
+    upwind_km: float = Field(ge=0, le=5000)
+    tier: str = Field(default="fast", max_length=16)
+    provider: str = Field(default="", max_length=32)
+    #: The model ids the tier tries, in order: the first, then its fallbacks.
+    model_ids: list[str] = Field(default_factory=list, max_length=8)
+    bands: list[BandDefinition] = Field(default_factory=list, max_length=8)
+    band_basis: str = Field(default="", max_length=1000)
+    skill: ForecasterSkillSummary | None = None
+
+    @field_validator("model_ids")
+    @classmethod
+    def _short_ids(cls, value: list[str]) -> list[str]:
+        return [item[:100] for item in value]
+
+
 class HotspotFeed(BaseModel):
     """What one node publishes for its neighbours to read.
 
     Versioned on purpose. A second state standing up its own instance is the
     thing this is for, and a feed without a version is a feed nobody can safely
     change.
+
+    1.1 added `forecaster`, and nothing else. A 1.0 feed has no such field and
+    reads as `None`; a 1.0 reader ignores the field it does not know. So old and
+    new nodes read each other both ways.
     """
 
-    feed_version: str = "1.0"
+    feed_version: str = "1.1"
     node: NodeIdentity
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     hotspot_count: int = 0
     hotspots: list[FeedHotspot] = Field(default_factory=list)
+    forecaster: ForecasterSpec | None = None
+
+    @field_validator("forecaster", mode="wrap")
+    @classmethod
+    def _optional_forecaster(cls, value, handler):
+        """A malformed forecaster block is dropped, never the feed it came on.
+
+        The hotspots are what the feed is for. A peer publishing a spec this
+        node cannot read must not lose its fires from our forecasts.
+        """
+        try:
+            return handler(value)
+        except ValueError:
+            return None
 
 
 class RTIApplication(BaseModel):

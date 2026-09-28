@@ -21,6 +21,7 @@ photograph and draft a legal document. Constraint 5.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 
 from strands import Agent
 
@@ -33,6 +34,28 @@ from .prompts import FORECAST
 
 #: Worst-first, so a corridor can be summarised by the segment in trouble.
 RISK_ORDER: list[str] = ["low", "elevated", "high", "severe"]
+
+#: Which revision of the forecaster's *code* this is: what the tools fetch and
+#: summarise for the model, and what is done to its answer afterwards. The
+#: prompt's wording is covered separately by `prompt_sha256()`. Bump this when
+#: either of the first two changes, because a skill score earned by one
+#: revision says nothing about the next, and a peer comparing forecasters needs
+#: to see that they differ.
+#:
+#: 1 — everything up to September 2026.
+#: 2 — tool windows start at the current hour rather than midnight, the dominant
+#:     wind is a vector mean, each corridor waypoint has its own agent, and
+#:     every hotspot in reach is counted by direction, not only the nearest ten.
+FORECASTER_VERSION = "2"
+
+
+def prompt_sha256() -> str:
+    """SHA-256 of the forecast prompt text, as published to peers.
+
+    The hash, never the text, is what a node shares: see `federation.py` for
+    why a peer's prompt is never fetched or run here.
+    """
+    return hashlib.sha256(FORECAST.encode("utf-8")).hexdigest()
 
 
 def build_forecast_agent() -> Agent:
@@ -123,8 +146,17 @@ async def forecast_corridor(
     corridor is a population strip and a supply line: the segment in trouble is
     what an authority needs to see, and averaging it away would hide exactly the
     thing worth acting on.
+
+    **Each waypoint gets an agent of its own.** A Strands `Agent` refuses a
+    second invocation while one is in flight and raises `ConcurrencyException`,
+    and it keeps its conversation between calls. Sharing one across the gather
+    made every waypoint but the first fail, the failures were then dropped as
+    ordinary provider errors, and a live corridor reported "1 of 5 waypoints"
+    with the worst risk taken from whichever one happened to win the lock.
+    Sequential reuse would be wrong too: the second waypoint would read the
+    first waypoint's tool results in its own context. An `agent` passed in is
+    shared, which is only for tests whose stub tolerates it.
     """
-    agent = agent or build_forecast_agent()
     pool = hotspots or []
 
     outlooks = await asyncio.gather(
@@ -134,7 +166,7 @@ async def forecast_corridor(
                 longitude=lon,
                 location_name=_waypoint_label(corridor, index),
                 nearby_hotspots=pool,
-                agent=agent,
+                agent=agent or build_forecast_agent(),
             )
             for index, (lat, lon) in enumerate(corridor.waypoints)
         ),
@@ -187,13 +219,43 @@ def upwind_hotspots(
     return [h for km, h in sorted(within, key=lambda pair: pair[0]) if km <= reach]
 
 
+#: How many hotspots are described one by one. The rest are counted by direction.
+LISTED_HOTSPOTS = 10
+
+
 def _describe_hotspots(latitude: float, longitude: float, hotspots: list[Hotspot]) -> str:
+    """The hotspots in reach, for the prompt: a count by direction, then the nearest.
+
+    **The count is not optional.** Only the nearest ten are described, and in
+    version 1 nothing said how many there were. Found building the backtest: on
+    2 November 2025 Ludhiana had 1,113 satellite hotspots within reach and Delhi
+    574 on 5 November, and the model was shown ten in each case — the same
+    picture as a quiet week with ten fires. Whether the air arriving on the
+    forecast wind crosses a burning district is the question the forecast turns
+    on, so every hotspot is counted by the direction it lies in, and the wind
+    tool's direction can be read against it.
+    """
     near = upwind_hotspots(latitude, longitude, hotspots)
     if not near:
         return "Active pollution hotspots within reach of this location: none detected."
 
-    lines = ["Active pollution hotspots within reach of this location:"]
-    for spot in near[:10]:
+    by_direction: dict[str, int] = {}
+    for spot in near:
+        side = _compass(latitude, longitude, spot.centre_latitude, spot.centre_longitude)
+        by_direction[side] = by_direction.get(side, 0) + 1
+    counts = ", ".join(
+        f"{count} to the {side}"
+        for side, count in sorted(by_direction.items(), key=lambda kv: -kv[1])
+    )
+    reach = settings.vayudoot_forecast_upwind_km
+    lines = [
+        (
+            f"Active pollution hotspots within {reach:.0f} km of this location: "
+            f"{len(near)} in total ({counts})."
+        ),
+        f"The {min(len(near), LISTED_HOTSPOTS)} nearest:",
+    ]
+    for spot in near[:LISTED_HOTSPOTS]:
         km = haversine_km(latitude, longitude, spot.centre_latitude, spot.centre_longitude)
         bearing = _compass(latitude, longitude, spot.centre_latitude, spot.centre_longitude)
         corroboration = (

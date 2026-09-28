@@ -40,6 +40,23 @@ never folded into our own detection. A node that laundered a neighbour's
 detection into its own feed would let one bad instance contaminate the whole
 network, and the corroboration rule in hard constraint 7 would be meaningless
 because nobody could tell whose evidence it rested on.
+
+**The forecaster is shared by description, never by execution.** Feed 1.1 adds
+a `ForecasterSpec`: the forecaster's version, a SHA-256 of its prompt, its
+horizon, upwind reach, model ids, band definitions and measured skill. A peer
+reading it can tell whether two nodes run the same forecaster, and so whether
+their skill numbers are comparable — "sharing predictive models" in the one form
+that can be checked.
+
+A peer's prompt text is never fetched, and never run here. A prompt is
+instructions to our model, with our tools and our keys behind it; taking one
+from a feed would let any node on the network, or anyone who took one over,
+tell every other node's model what to say — including that a smoggy week is
+safe, which is the harm hard constraint 7 is written against. So the contract
+has no prompt field, `ForecasterSpec` drops any unknown field on parsing, and
+`compare_forecaster` only ever reports differences. A person who decides a
+peer's horizon or reach is better can adopt those numbers through the
+environment variables it names; nothing on this node changes by itself.
 """
 
 from __future__ import annotations
@@ -47,7 +64,13 @@ from __future__ import annotations
 import httpx
 
 from .config import settings
-from .schemas import FeedHotspot, HotspotFeed, NodeIdentity
+from .schemas import (
+    FeedHotspot,
+    ForecasterSkillSummary,
+    ForecasterSpec,
+    HotspotFeed,
+    NodeIdentity,
+)
 from .tools.geo import point_at
 
 
@@ -103,7 +126,104 @@ def publish(hotspots: list) -> HotspotFeed:
         node=identity(),
         hotspot_count=len(published),
         hotspots=published,
+        forecaster=forecaster_spec(),
     )
+
+
+def forecaster_spec() -> ForecasterSpec:
+    """The forecaster this node runs, and how well it has done. No prompt text.
+
+    Skill is the ledger's, over `vayudoot_forecast_skill_days`, for the
+    forecaster now running only: a score earned by a previous prompt is not this
+    one's to publish.
+    """
+    from . import ledger, store
+    from .agents import forecast
+
+    measured = ledger.skill(store.forecast_records(), days=settings.vayudoot_forecast_skill_days)
+    baseline = {b.name: b.baseline.exact_rate for b in measured.baselines}
+    return ForecasterSpec(
+        forecaster_version=forecast.FORECASTER_VERSION,
+        prompt_sha256=forecast.prompt_sha256(),
+        horizon_hours=settings.vayudoot_forecast_horizon_hours,
+        upwind_km=settings.vayudoot_forecast_upwind_km,
+        tier="fast",
+        provider=settings.provider_for("fast"),
+        model_ids=settings.model_chain_for("fast"),
+        bands=ledger.band_definitions(),
+        band_basis=ledger.BAND_BASIS,
+        skill=ForecasterSkillSummary(
+            window_days=measured.window_days,
+            scored=measured.scored,
+            unscorable=measured.unscorable,
+            exact_rate=measured.forecast.exact_rate,
+            within_one_rate=measured.forecast.within_one_rate,
+            persistence_exact_rate=baseline.get("persistence"),
+            cams_exact_rate=baseline.get("cams"),
+            caveat=measured.caveat[:500],
+        ),
+    )
+
+
+#: The numeric parameters a person may adopt from a peer, and the environment
+#: variable that sets each here. Numbers only, range-checked by the schema:
+#: nothing a peer publishes is ever applied automatically.
+ADOPTABLE = {
+    "horizon_hours": "VAYUDOOT_FORECAST_HORIZON_HOURS",
+    "upwind_km": "VAYUDOOT_FORECAST_UPWIND_KM",
+}
+
+
+def compare_forecaster(theirs: ForecasterSpec | None, ours: ForecasterSpec | None = None) -> dict:
+    """Whether a peer runs the forecaster we do, and where it differs.
+
+    "The same forecaster" means the same code version, the same prompt hash, and
+    the same horizon, reach and bands: then the two nodes' skill figures measure
+    the same thing. The models are reported separately (`same_models`), since a
+    fallback model answering on one node is ordinary and does not change what
+    was asked.
+
+    Reports and suggests, never applies; see the module docstring.
+    """
+    if theirs is None:
+        return {
+            "published": False,
+            "same_forecaster": None,
+            "same_prompt": None,
+            "same_models": None,
+            "differences": [],
+            "adoptable": [],
+        }
+    ours = ours or forecaster_spec()
+    compared = {
+        "forecaster_version": (ours.forecaster_version, theirs.forecaster_version),
+        "prompt_sha256": (ours.prompt_sha256, theirs.prompt_sha256),
+        "horizon_hours": (ours.horizon_hours, theirs.horizon_hours),
+        "upwind_km": (ours.upwind_km, theirs.upwind_km),
+        "bands": (
+            [b.model_dump() for b in ours.bands],
+            [b.model_dump() for b in theirs.bands],
+        ),
+        "model_ids": (ours.model_ids, theirs.model_ids),
+    }
+    differences = [
+        {"field": name, "ours": mine, "theirs": other}
+        for name, (mine, other) in compared.items()
+        if mine != other
+    ]
+    differing = {d["field"] for d in differences}
+    return {
+        "published": True,
+        "same_forecaster": not (differing - {"model_ids"}),
+        "same_prompt": "prompt_sha256" not in differing,
+        "same_models": "model_ids" not in differing,
+        "differences": differences,
+        "adoptable": [
+            {"field": name, "env": env, "value": getattr(theirs, name)}
+            for name, env in ADOPTABLE.items()
+            if name in differing
+        ],
+    }
 
 
 #: Vertices on the ring approximating a hotspot's circle. Thirty-two keeps the

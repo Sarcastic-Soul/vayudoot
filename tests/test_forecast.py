@@ -152,6 +152,23 @@ async def test_the_corroboration_state_travels_into_the_prompt():
     assert "not independently corroborated" in agent.prompts[0]
 
 
+async def test_every_hotspot_in_reach_is_counted_not_only_the_ten_listed():
+    """A burning season with hundreds of fires must not read like a quiet week
+    with ten. Found building the backtest: Ludhiana had 1,113 hotspots in reach
+    on 2 November 2025, and the model was shown ten with no count."""
+    west = [hotspot(f"VDH-W{i:03d}", at=(28.6139, 76.5 - i * 0.01)) for i in range(40)]
+    east = [hotspot(f"VDH-E{i:03d}", at=(28.6139, 78.2 + i * 0.01)) for i in range(3)]
+    agent = StubAgent(outlook())
+
+    await forecast.forecast_location(*DELHI, nearby_hotspots=west + east, agent=agent)
+
+    prompt = agent.prompts[0]
+    assert "43 in total" in prompt
+    assert "40 to the west" in prompt
+    assert "3 to the east" in prompt
+    assert prompt.count("km to the") == forecast.LISTED_HOTSPOTS
+
+
 async def test_no_hotspots_is_stated_rather_than_left_out():
     """Silence reads as missing data; an explicit "none" reads as a quiet picture."""
     agent = StubAgent(outlook())
@@ -282,6 +299,77 @@ async def test_a_corridor_missing_a_waypoint_is_served_but_not_cached(client, mo
 
     assert response.status_code == 200
     assert "corridor:ncr" not in api_module._forecast_cache
+
+
+class _SlowForecastModel:
+    """A Strands model that answers a forecast after a pause, like a real one.
+
+    Used with the real `strands.Agent`, not a stub, because the bug it guards
+    against lives in the SDK's own behaviour: an `Agent` refuses a second
+    invocation while one is in flight. A stub that tolerates concurrency is
+    exactly what let the shared-agent corridor pass every test while failing
+    every live run.
+    """
+
+    def __new__(cls):
+        import asyncio
+        import json
+
+        from strands.models import Model
+
+        class Slow(Model):
+            def update_config(self, **kwargs):
+                pass
+
+            def get_config(self):
+                return {}
+
+            async def structured_output(self, *args, **kwargs):
+                raise NotImplementedError
+                yield  # pragma: no cover
+
+            async def stream(self, messages, tool_specs=None, system_prompt=None, **kwargs):
+                await asyncio.sleep(0.05)
+                name = next(
+                    (t["name"] for t in tool_specs or [] if "Forecast" in t["name"]),
+                    "AirQualityForecast",
+                )
+                payload = json.dumps(
+                    {"latitude": 0, "longitude": 0, "risk": "elevated", "confidence": 0.5}
+                )
+                yield {"messageStart": {"role": "assistant"}}
+                yield {
+                    "contentBlockStart": {
+                        "start": {"toolUse": {"toolUseId": "t1", "name": name}}
+                    }
+                }
+                yield {"contentBlockDelta": {"delta": {"toolUse": {"input": payload}}}}
+                yield {"contentBlockStop": {}}
+                yield {"messageStop": {"stopReason": "tool_use"}}
+
+        return Slow()
+
+
+async def test_every_waypoint_of_a_live_corridor_is_forecast(monkeypatch):
+    """Regression: one shared `Agent` made every waypoint but the first fail.
+
+    The SDK raises `ConcurrencyException` on a second concurrent invocation of
+    the same agent, and the corridor dropped those as ordinary provider errors,
+    so a live corridor reported one waypoint out of five. Each waypoint must get
+    an agent of its own.
+    """
+    from strands import Agent
+
+    monkeypatch.setattr(
+        forecast,
+        "build_forecast_agent",
+        lambda: Agent(model=_SlowForecastModel(), callback_handler=None),
+    )
+
+    result = await forecast.forecast_corridor(corridor(4))
+
+    assert len(result.waypoint_forecasts) == 4
+    assert "4 of 4 waypoints reporting" in result.summary
 
 
 async def test_a_corridor_forecast_carries_the_disclaimer():
@@ -588,3 +676,73 @@ class TestNaivePeakWindow:
         )
 
         assert outlook.generated_at.tzinfo is UTC
+
+
+# --------------------------------------------------------------------------- #
+# What the forecast tools hand the model
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    ("bearings", "expected"),
+    [
+        ([350.0, 10.0], 0.0),
+        ([315.0, 45.0], 0.0),
+        ([90.0, 90.0, 90.0], 90.0),
+        ([200.0, 220.0], 210.0),
+    ],
+)
+def test_the_dominant_wind_is_a_vector_mean_not_an_arithmetic_one(bearings, expected):
+    """350 and 10 degrees are both northerly; their arithmetic mean is 180.
+
+    The arithmetic mean told the model air arrived from the opposite side of the
+    compass whenever the wind was northerly, which inverts the judgement the
+    forecast rests on: whether a fire is upwind.
+    """
+    from vayudoot.tools.weather import dominant_bearing
+
+    got = dominant_bearing([3.0] * len(bearings), bearings)
+    assert got is not None
+    assert min(abs(got - expected), 360 - abs(got - expected)) < 0.01
+
+
+def test_a_calm_hour_does_not_pull_the_dominant_wind():
+    from vayudoot.tools.weather import dominant_bearing
+
+    got = dominant_bearing([5.0, 5.0, 0.0], [300.0, 320.0, 120.0])
+    assert got is not None and abs(got - 310.0) < 0.01
+
+
+def test_no_wind_has_no_dominant_direction():
+    from vayudoot.tools.weather import dominant_bearing
+
+    assert dominant_bearing([], []) is None
+    assert dominant_bearing([2.0, 2.0], [0.0, 180.0]) is None
+
+
+def test_the_forecast_tools_ask_for_hours_from_now_not_from_midnight(respx_mock):
+    """`forecast_days` starts the series at 00:00 UTC today, so an evening call
+    spent most of a day of its horizon on hours that had already happened."""
+    import httpx
+
+    from vayudoot.tools.weather import get_air_quality_forecast, get_wind_forecast
+
+    air = respx_mock.get("https://air-quality-api.open-meteo.com/v1/air-quality").mock(
+        return_value=httpx.Response(
+            200, json={"hourly": {"time": ["2026-09-28T19:00"], "pm2_5": [80.0], "pm10": [90.0]}}
+        )
+    )
+    wind = respx_mock.get("https://api.open-meteo.com/v1/forecast").mock(
+        return_value=httpx.Response(
+            200,
+            json={"hourly": {"wind_speed_10m": [3.0], "wind_direction_10m": [350.0]}},
+        )
+    )
+
+    get_air_quality_forecast._tool_func(28.6, 77.2, 72)
+    get_wind_forecast._tool_func(28.6, 77.2, 72)
+
+    for route in (air, wind):
+        params = route.calls.last.request.url.params
+        assert params["forecast_hours"] == "72"
+        assert "forecast_days" not in params
