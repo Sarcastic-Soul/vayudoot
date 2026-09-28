@@ -6,8 +6,17 @@ from strands import Agent
 
 from ..clustering import describe
 from ..models import build_model
-from ..schemas import Cluster, Complaint, Corroboration, EvidencePacket, Jurisdiction, Report
+from ..schemas import (
+    Cluster,
+    Complaint,
+    Corroboration,
+    EvidencePacket,
+    Jurisdiction,
+    Report,
+    VoiceAccount,
+)
 from .prompts import DRAFTING
+from .voice import spoken_account_block
 
 
 def build_drafting_agent() -> Agent:
@@ -28,6 +37,7 @@ async def draft_complaint(
     cluster: Cluster | None = None,
     case_id: str = "",
     agent: Agent | None = None,
+    voice: VoiceAccount | None = None,
 ) -> Complaint:
     """Write the complaint.
 
@@ -52,10 +62,10 @@ INCIDENT
   Type: {evidence.pollution_type.value}
   Severity: {evidence.severity}
   Classification confidence: {evidence.confidence:.2f}
-  Evidence basis: {_basis(report)}
+  Evidence basis: {_basis(report, voice)}
   Reported indicators: {', '.join(evidence.visible_indicators) or 'none recorded'}
   Citizen's note: {report.note or '(none)'}
-
+{spoken_account_block(voice)}
 INDEPENDENT EVIDENCE
   Corroborated: {corroboration.corroborated}
   Air quality: {corroboration.air_quality_summary or '(no data)'}
@@ -72,7 +82,7 @@ Write the complaint body citing only the statute and section given above."""
     return result.structured_output
 
 
-def _basis(report: Report) -> str:
+def _basis(report: Report, voice: VoiceAccount | None = None) -> str:
     """What the classification was actually made from.
 
     Stated because a note-only report now reaches this stage. Before the evidence
@@ -80,13 +90,20 @@ def _basis(report: Report) -> str:
     confidence floor, so a complaint could safely assume a photograph existed.
     It no longer can, and a letter that refers to a photograph nobody has is a
     letter an authority can dismiss on the first reply.
+
+    A voice note is named as the citizen's account, not as a recording the
+    authority can ask for: the audio stays with the instance (see `api.py`),
+    so the letter must not offer it.
     """
+    heard = voice is not None and voice.heard_speech
+    account = "spoken account (a voice note, translated)" if heard else "written account"
     count = len(report.image_paths)
     if count == 0:
-        return "no photograph; the citizen's written account of what they observed"
+        return f"no photograph; the citizen's {account} of what they observed"
+    also = "their spoken account" if heard else "their note"
     if count == 1:
-        return "one photograph submitted by the citizen, plus their note"
-    return f"{count} photographs of the same event submitted by the citizen, plus their note"
+        return f"one photograph submitted by the citizen, plus {also}"
+    return f"{count} photographs of the same event submitted by the citizen, plus {also}"
 
 
 def _pattern_block(cluster: Cluster | None, case_id: str) -> str:
