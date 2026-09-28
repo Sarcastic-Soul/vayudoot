@@ -163,6 +163,40 @@ def test_every_alert_recipient_is_on_the_reserved_tld(monkeypatch):
     assert seen > len(categories)
 
 
+def test_every_alert_recipient_in_every_country_is_on_the_reserved_tld(monkeypatch):
+    """The same sweep for every country this node holds a table for.
+
+    A second country is a second committed table, and a table is exactly where a
+    real address would be pasted by someone "just testing". Every region, every
+    city key, every category and one unknown region per country, through the
+    real alert resolver. India, South Africa and Brazil must all be present, so a
+    table that stopped loading cannot pass by being absent.
+    """
+    from vayudoot import alerts
+    from vayudoot.tools.authorities import _load, served_countries
+
+    countries = served_countries()
+    assert {"in", "za", "br"} <= countries
+    monkeypatch.setattr(alerts, "SERVED_COUNTRIES", countries)
+    for country in sorted(countries):
+        table = _load(country)
+        categories = list(table["categories"])
+        seen = 0
+        for state, region in [*table["states"].items(), ("atlantis", {})]:
+            for city in ["", *region.get("municipal", {})]:
+                for category in categories:
+                    geo = {"state": state, "city": city, "country_code": country}
+                    monkeypatch.setattr(alerts, "reverse_geocode", lambda *a, _g=geo, **k: _g)
+                    jurisdiction, _ = alerts.resolve_jurisdiction(_alert_hotspot(category))
+                    where = (country, state, city, category)
+                    assert jurisdiction.email.endswith(".invalid"), where
+                    assert jurisdiction.country == country.upper(), where
+                    if jurisdiction.escalation_email:
+                        assert jurisdiction.escalation_email.endswith(".invalid"), where
+                    seen += 1
+        assert seen > len(categories), country
+
+
 def _alert_hotspot(category: str) -> Hotspot:
     try:
         pollution_type = PollutionType(category)

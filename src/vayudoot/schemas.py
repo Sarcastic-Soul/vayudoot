@@ -206,8 +206,28 @@ class Jurisdiction(BaseModel):
     response_window_days: int = Field(
         default=30, description="Statutory window before escalation is warranted"
     )
+    #: False when no statute sets a deadline for this authority to answer and
+    #: `response_window_days` is this system's follow-up interval instead. True
+    #: by default because every case filed before countries other than India
+    #: were supported was filed under an Indian rule that sets one.
+    response_window_statutory: bool = Field(
+        default=True,
+        description="Copy the lookup tool's response_window_statutory value exactly.",
+    )
+    response_window_note: str = Field(
+        default="", description="Copy the lookup tool's response_window_note verbatim."
+    )
     escalation_authority: str = ""
     escalation_email: str = ""
+    #: ISO 3166-1 alpha-2 code of the authority table that resolved this, which
+    #: decides the law cited and whether routes such as RTI exist. Empty on a
+    #: case from before tables were per country, which means India.
+    country: str = Field(default="", description="Copy the lookup tool's country value.")
+    #: The region's language as the authority table names it, or empty where
+    #: the table leaves it to the drafter.
+    local_language: str = Field(
+        default="", description="Copy the lookup tool's local_language value, or leave empty."
+    )
     reasoning: str = ""
 
 

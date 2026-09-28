@@ -1,0 +1,303 @@
+{
+  "_comment": [
+    "Brazil's jurisdiction table. Authority NAMES are real and public; every EMAIL",
+    "here is a non-routable placeholder on the reserved .invalid TLD, on purpose, so",
+    "that a misconfigured run cannot reach a real regulator. Real addresses belong",
+    "in authorities.br.json, which overrides this file and is not committed.",
+    "Keys are state and city names as reverse geocoding returns them; case and",
+    "accents are folded on both sides, so 'Pará' and 'para' are the same key.",
+    "Who acts is decided by Lei Complementar 140/2011: enforcement follows",
+    "licensing (arts. 7, 8 and 9, item XIII), and art. 17 §1 lets any identified",
+    "person bring a representation to the licensing body. Most licensing, and the",
+    "authorisation a controlled burn needs, sits with the state environmental",
+    "agency, so most categories resolve to the state. IBAMA is the federal body and",
+    "the escalation for every state; its Prevfogo centre handles fire.",
+    "State agency names were checked against each agency's own site or the state",
+    "legislature. Pará's SEMAS was renamed Secretaria de Estado de Meio Ambiente,",
+    "Clima e Sustentabilidade by state law 10.989 of 2025. Municipal secretariats",
+    "are listed only where the current name could be confirmed; Belém's and",
+    "Cuiabá's could not, and are left out rather than guessed.",
+    "No Brazilian environmental law sets a deadline for answering a complaint, so",
+    "every response_window_days is null and the lookup uses follow_up_days instead,",
+    "marked as not statutory."
+  ],
+  "country": "BR",
+  "country_name": "Brazil",
+  "access_to_information": "Lei 12.527/2011 (Lei de Acesso à Informação)",
+  "follow_up_days": 30,
+  "local_language": "Brazilian Portuguese",
+  "categories": {
+    "crop_residue_burning": {
+      "tier": "state",
+      "statute": "Lei 14.944/2024 (Política Nacional de Manejo Integrado do Fogo)",
+      "section": "Art. 30, fire in vegetation only with authorisation or in the cases listed, and art. 45, liability for irregular use of fire; setting fire to vegetation is also a crime under art. 41 of Lei 9.605/1998",
+      "response_window_days": null,
+      "response_window_note": "No Brazilian law sets a deadline for an environmental agency to answer a complaint. Lei 13.460/2017 gives public-service ombudsman channels 30 days, but it covers complaints about a public service, not about a polluter. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "industrial_emission": {
+      "tier": "state",
+      "statute": "Lei 6.938/1981 (Política Nacional do Meio Ambiente)",
+      "section": "Art. 3, III, pollution, and art. 14 §1, the polluter's liability regardless of fault; brought as a representation under art. 17 §1 of Lei Complementar 140/2011",
+      "response_window_days": null,
+      "response_window_note": "No Brazilian law sets a deadline for an environmental agency to answer a complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "open_waste_burning": {
+      "tier": "municipal",
+      "statute": "Lei 6.938/1981 (Política Nacional do Meio Ambiente)",
+      "section": "Art. 3, III, pollution; brought as a representation under art. 17 §1 of Lei Complementar 140/2011",
+      "response_window_days": null,
+      "response_window_note": "No Brazilian law sets a deadline for an environmental agency to answer a complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "construction_dust": {
+      "tier": "municipal",
+      "statute": "Lei 6.938/1981 (Política Nacional do Meio Ambiente)",
+      "section": "Art. 3, III, pollution; brought as a representation under art. 17 §1 of Lei Complementar 140/2011",
+      "response_window_days": null,
+      "response_window_note": "No Brazilian law sets a deadline for an environmental agency to answer a complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "vehicle_emission": {
+      "tier": "state",
+      "statute": "Lei 6.938/1981 (Política Nacional do Meio Ambiente)",
+      "section": "Art. 3, III, pollution; brought as a representation under art. 17 §1 of Lei Complementar 140/2011",
+      "response_window_days": null,
+      "response_window_note": "No Brazilian law sets a deadline for an environmental agency to answer a complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "default": {
+      "tier": "state",
+      "statute": "Lei 6.938/1981 (Política Nacional do Meio Ambiente)",
+      "section": "Art. 3, III, pollution; causing pollution that harms or may harm human health is a crime under art. 54 of Lei 9.605/1998",
+      "response_window_days": null,
+      "response_window_note": "No Brazilian law sets a deadline for an environmental agency to answer a complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    }
+  },
+  "states": {
+    "pará": {
+      "state_board": {
+        "name": "Secretaria de Estado de Meio Ambiente, Clima e Sustentabilidade (SEMAS-PA)",
+        "office": "SEMAS, Belém",
+        "email": "semas-pa@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "mato grosso": {
+      "state_board": {
+        "name": "Secretaria de Estado de Meio Ambiente (SEMA-MT)",
+        "office": "SEMA, Cuiabá",
+        "email": "sema-mt@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "rondônia": {
+      "state_board": {
+        "name": "Secretaria de Estado do Desenvolvimento Ambiental (SEDAM)",
+        "office": "SEDAM, Porto Velho",
+        "email": "sedam-ro@example.invalid"
+      },
+      "municipal": {
+        "porto velho": {
+          "name": "Secretaria Municipal de Meio Ambiente e Desenvolvimento Sustentável de Porto Velho (SEMA)",
+          "office": "Prefeitura de Porto Velho",
+          "email": "sema-portovelho@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "amazonas": {
+      "state_board": {
+        "name": "Instituto de Proteção Ambiental do Amazonas (IPAAM)",
+        "office": "IPAAM, Manaus",
+        "email": "ipaam@example.invalid"
+      },
+      "municipal": {
+        "manaus": {
+          "name": "Secretaria Municipal de Meio Ambiente, Sustentabilidade e Mudança do Clima (SEMMASCLIMA)",
+          "office": "Prefeitura de Manaus",
+          "email": "semmasclima@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "são paulo": {
+      "state_board": {
+        "name": "CETESB, Companhia Ambiental do Estado de São Paulo",
+        "office": "The CETESB agência ambiental for the reported municipality",
+        "email": "cetesb@example.invalid"
+      },
+      "municipal": {
+        "são paulo": {
+          "name": "Secretaria Municipal do Verde e do Meio Ambiente (SVMA)",
+          "office": "Prefeitura de São Paulo",
+          "email": "svma@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "rio de janeiro": {
+      "state_board": {
+        "name": "Instituto Estadual do Ambiente (INEA)",
+        "office": "INEA, Rio de Janeiro",
+        "email": "inea@example.invalid"
+      },
+      "municipal": {
+        "rio de janeiro": {
+          "name": "Secretaria Municipal do Ambiente e Clima (SMAC)",
+          "office": "Prefeitura do Rio de Janeiro",
+          "email": "smac-rio@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "minas gerais": {
+      "state_board": {
+        "name": "Fundação Estadual de Meio Ambiente (FEAM)",
+        "office": "FEAM, linked to the Secretaria de Estado de Meio Ambiente e Desenvolvimento Sustentável (SEMAD), Belo Horizonte",
+        "email": "feam@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "acre": {
+      "state_board": {
+        "name": "Instituto de Meio Ambiente do Acre (IMAC)",
+        "office": "IMAC, Rio Branco",
+        "email": "imac@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "tocantins": {
+      "state_board": {
+        "name": "Instituto Natureza do Tocantins (Naturatins)",
+        "office": "Naturatins, Palmas",
+        "email": "naturatins@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "maranhão": {
+      "state_board": {
+        "name": "Secretaria de Estado do Meio Ambiente e Recursos Naturais (SEMA-MA)",
+        "office": "SEMA, São Luís",
+        "email": "sema-ma@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "mato grosso do sul": {
+      "state_board": {
+        "name": "Instituto de Meio Ambiente de Mato Grosso do Sul (IMASUL)",
+        "office": "IMASUL, Campo Grande",
+        "email": "imasul@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "goiás": {
+      "state_board": {
+        "name": "Secretaria de Estado de Meio Ambiente e Desenvolvimento Sustentável (SEMAD-GO)",
+        "office": "SEMAD, Goiânia",
+        "email": "semad-go@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "distrito federal": {
+      "state_board": {
+        "name": "Instituto do Meio Ambiente e dos Recursos Hídricos do Distrito Federal – Brasília Ambiental (IBRAM)",
+        "office": "Brasília Ambiental, Brasília",
+        "email": "brasilia-ambiental@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "paraná": {
+      "state_board": {
+        "name": "Instituto Água e Terra (IAT)",
+        "office": "IAT, Curitiba",
+        "email": "iat-pr@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "rio grande do sul": {
+      "state_board": {
+        "name": "Fundação Estadual de Proteção Ambiental Henrique Luis Roessler (FEPAM)",
+        "office": "FEPAM, Porto Alegre",
+        "email": "fepam@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    },
+    "bahia": {
+      "state_board": {
+        "name": "Instituto do Meio Ambiente e Recursos Hídricos (INEMA)",
+        "office": "INEMA, Salvador",
+        "email": "inema@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+        "email": "ibama@example.invalid"
+      }
+    }
+  },
+  "default_state": {
+    "state_board": {
+      "name": "Órgão estadual de meio ambiente",
+      "office": "The state environmental agency for the reported municipality",
+      "email": "br-state-agency@example.invalid"
+    },
+    "municipal": {},
+    "escalation": {
+      "name": "IBAMA, Instituto Brasileiro do Meio Ambiente e dos Recursos Naturais Renováveis",
+      "email": "ibama@example.invalid"
+    }
+  }
+}

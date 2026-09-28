@@ -1,0 +1,339 @@
+{
+  "_comment": [
+    "South Africa's jurisdiction table. Authority NAMES are real and public; every",
+    "EMAIL here is a non-routable placeholder on the reserved .invalid TLD, on",
+    "purpose, so that a misconfigured run cannot reach a real regulator. Real",
+    "addresses belong in authorities.za.json, which overrides this file and is not",
+    "committed.",
+    "Keys are province and city names as reverse geocoding returns them; case and",
+    "accents are folded on both sides.",
+    "The law is the National Environmental Management: Air Quality Act 39 of 2004",
+    "(NEM:AQA). Section 36 makes metropolitan and district municipalities the",
+    "licensing authorities for listed activities, which is why an industrial",
+    "emission resolves to a metro or a district rather than to the province. On the",
+    "Mpumalanga Highveld, Nkangala District licenses the power stations and mines in",
+    "Emalahleni and Steve Tshwete, and Gert Sibande District licenses those in Govan",
+    "Mbeki (Secunda), Lekwa and Msukaligwa. Sources: the National Air Quality",
+    "Officer's 2023 and 2024 reports on saaqis.environment.gov.za, and Eskom's",
+    "atmospheric emission licence register.",
+    "Provincial department names are from each province's 2026/27 budget vote at",
+    "treasury.gov.za. Gauteng's environment function became a standalone",
+    "Department of Environment in 2024.",
+    "No South African statute sets a deadline for answering an air pollution",
+    "complaint, so every response_window_days is null and the lookup uses",
+    "follow_up_days instead, marked as not statutory.",
+    "local_language is the language spoken most often in households in that",
+    "province, from Census 2022 (Stats SA P0301.4, table 2.9). It is the language a",
+    "summary for residents is written in, not the language of the complaint, which",
+    "is English."
+  ],
+  "country": "ZA",
+  "country_name": "South Africa",
+  "access_to_information": "Promotion of Access to Information Act 2 of 2000 (PAIA)",
+  "follow_up_days": 30,
+  "categories": {
+    "industrial_emission": {
+      "tier": "municipal",
+      "statute": "National Environmental Management: Air Quality Act 39 of 2004",
+      "section": "Section 22, no listed activity without an atmospheric emission licence, and section 51, offences including breach of licence conditions; section 36 names the licensing authority",
+      "response_window_days": null,
+      "response_window_note": "The Air Quality Act sets no deadline for a licensing authority to answer a complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "open_waste_burning": {
+      "tier": "municipal",
+      "statute": "National Environmental Management Act 107 of 1998",
+      "section": "Section 28, duty of care to prevent significant pollution",
+      "response_window_days": null,
+      "response_window_note": "No statute sets a deadline for a municipality to answer a pollution complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "crop_residue_burning": {
+      "tier": "state",
+      "statute": "National Environmental Management Act 107 of 1998",
+      "section": "Section 28, duty of care to prevent significant pollution",
+      "response_window_days": null,
+      "response_window_note": "No statute sets a deadline for a provincial department to answer a pollution complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "construction_dust": {
+      "tier": "municipal",
+      "statute": "National Environmental Management Act 107 of 1998",
+      "section": "Section 28, duty of care to prevent significant pollution",
+      "response_window_days": null,
+      "response_window_note": "No statute sets a deadline for a municipality to answer a pollution complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "vehicle_emission": {
+      "tier": "municipal",
+      "statute": "National Environmental Management Act 107 of 1998",
+      "section": "Section 28, duty of care to prevent significant pollution",
+      "response_window_days": null,
+      "response_window_note": "No statute sets a deadline for a municipality to answer a pollution complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    },
+    "default": {
+      "tier": "state",
+      "statute": "National Environmental Management: Air Quality Act 39 of 2004",
+      "section": "Section 35(2), duty to prevent offensive odours, and section 51, offences",
+      "response_window_days": null,
+      "response_window_note": "The Air Quality Act sets no deadline for answering a complaint. The interval shown is this system's suggested follow-up, not a statutory period."
+    }
+  },
+  "states": {
+    "mpumalanga": {
+      "state_board": {
+        "name": "Department of Agriculture, Rural Development, Land and Environmental Affairs (DARDLEA)",
+        "office": "Provincial air quality officer, Mpumalanga",
+        "email": "dardlea@example.invalid"
+      },
+      "municipal": {
+        "emalahleni": {
+          "name": "Nkangala District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority for Emalahleni Local Municipality",
+          "email": "nkangala-aqo@example.invalid"
+        },
+        "witbank": {
+          "name": "Nkangala District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority for Emalahleni Local Municipality",
+          "email": "nkangala-aqo@example.invalid"
+        },
+        "kriel": {
+          "name": "Nkangala District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority for Emalahleni Local Municipality",
+          "email": "nkangala-aqo@example.invalid"
+        },
+        "middelburg": {
+          "name": "Nkangala District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority for Steve Tshwete Local Municipality",
+          "email": "nkangala-aqo@example.invalid"
+        },
+        "mhluzi": {
+          "name": "Nkangala District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority for Steve Tshwete Local Municipality",
+          "email": "nkangala-aqo@example.invalid"
+        },
+        "secunda": {
+          "name": "Gert Sibande District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority for Govan Mbeki Local Municipality",
+          "email": "gert-sibande-aqo@example.invalid"
+        },
+        "embalenhle": {
+          "name": "Gert Sibande District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority for Govan Mbeki Local Municipality",
+          "email": "gert-sibande-aqo@example.invalid"
+        },
+        "standerton": {
+          "name": "Gert Sibande District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority for Lekwa Local Municipality",
+          "email": "gert-sibande-aqo@example.invalid"
+        },
+        "ermelo": {
+          "name": "Gert Sibande District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority for Msukaligwa Local Municipality",
+          "email": "gert-sibande-aqo@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+        "email": "dffe-naqo@example.invalid"
+      },
+      "local_language": "siSwati"
+    },
+    "gauteng": {
+      "state_board": {
+        "name": "Gauteng Department of Environment",
+        "office": "Provincial air quality officer, Gauteng",
+        "email": "gauteng-environment@example.invalid"
+      },
+      "municipal": {
+        "johannesburg": {
+          "name": "City of Johannesburg Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "joburg-aqo@example.invalid"
+        },
+        "pretoria": {
+          "name": "City of Tshwane Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "tshwane-aqo@example.invalid"
+        },
+        "tshwane": {
+          "name": "City of Tshwane Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "tshwane-aqo@example.invalid"
+        },
+        "ekurhuleni": {
+          "name": "City of Ekurhuleni Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "ekurhuleni-aqo@example.invalid"
+        },
+        "germiston": {
+          "name": "City of Ekurhuleni Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "ekurhuleni-aqo@example.invalid"
+        },
+        "benoni": {
+          "name": "City of Ekurhuleni Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "ekurhuleni-aqo@example.invalid"
+        },
+        "boksburg": {
+          "name": "City of Ekurhuleni Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "ekurhuleni-aqo@example.invalid"
+        },
+        "kempton park": {
+          "name": "City of Ekurhuleni Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "ekurhuleni-aqo@example.invalid"
+        },
+        "vanderbijlpark": {
+          "name": "Sedibeng District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority, Vaal Triangle Air-Shed Priority Area",
+          "email": "sedibeng-aqo@example.invalid"
+        },
+        "vereeniging": {
+          "name": "Sedibeng District Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority, Vaal Triangle Air-Shed Priority Area",
+          "email": "sedibeng-aqo@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+        "email": "dffe-naqo@example.invalid"
+      },
+      "local_language": "isiZulu"
+    },
+    "western cape": {
+      "state_board": {
+        "name": "Department of Environmental Affairs and Development Planning (DEA&DP)",
+        "office": "Provincial air quality officer, Western Cape",
+        "email": "deadp@example.invalid"
+      },
+      "municipal": {
+        "cape town": {
+          "name": "City of Cape Town",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "capetown-aqo@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+        "email": "dffe-naqo@example.invalid"
+      },
+      "local_language": "Afrikaans"
+    },
+    "kwazulu-natal": {
+      "state_board": {
+        "name": "Department of Economic Development, Tourism and Environmental Affairs (EDTEA)",
+        "office": "Provincial air quality officer, KwaZulu-Natal",
+        "email": "edtea@example.invalid"
+      },
+      "municipal": {
+        "durban": {
+          "name": "eThekwini Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "ethekwini-aqo@example.invalid"
+        },
+        "ethekwini": {
+          "name": "eThekwini Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "ethekwini-aqo@example.invalid"
+        },
+        "pinetown": {
+          "name": "eThekwini Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "ethekwini-aqo@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+        "email": "dffe-naqo@example.invalid"
+      },
+      "local_language": "isiZulu"
+    },
+    "eastern cape": {
+      "state_board": {
+        "name": "Department of Economic Development, Environmental Affairs and Tourism (DEDEAT)",
+        "office": "Provincial air quality officer, Eastern Cape",
+        "email": "dedeat@example.invalid"
+      },
+      "municipal": {
+        "gqeberha": {
+          "name": "Nelson Mandela Bay Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "nmb-aqo@example.invalid"
+        },
+        "port elizabeth": {
+          "name": "Nelson Mandela Bay Metropolitan Municipality",
+          "office": "Air quality officer, atmospheric emission licensing authority",
+          "email": "nmb-aqo@example.invalid"
+        }
+      },
+      "escalation": {
+        "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+        "email": "dffe-naqo@example.invalid"
+      },
+      "local_language": "isiXhosa"
+    },
+    "free state": {
+      "state_board": {
+        "name": "Department of Economic, Small Business Development, Tourism and Environmental Affairs",
+        "office": "Provincial air quality officer, Free State",
+        "email": "freestate-environment@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+        "email": "dffe-naqo@example.invalid"
+      },
+      "local_language": "Sesotho"
+    },
+    "limpopo": {
+      "state_board": {
+        "name": "Department of Economic Development, Environment and Tourism (LEDET)",
+        "office": "Provincial air quality officer, Limpopo",
+        "email": "ledet@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+        "email": "dffe-naqo@example.invalid"
+      },
+      "local_language": "Sepedi"
+    },
+    "north west": {
+      "state_board": {
+        "name": "Department of Economic Development, Environment, Conservation and Tourism (DEDECT)",
+        "office": "Provincial air quality officer, North West",
+        "email": "dedect@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+        "email": "dffe-naqo@example.invalid"
+      },
+      "local_language": "Setswana"
+    },
+    "northern cape": {
+      "state_board": {
+        "name": "Department of Agriculture, Environmental Affairs, Rural Development and Land Reform",
+        "office": "Provincial air quality officer, Northern Cape",
+        "email": "nc-environment@example.invalid"
+      },
+      "municipal": {},
+      "escalation": {
+        "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+        "email": "dffe-naqo@example.invalid"
+      },
+      "local_language": "Afrikaans"
+    }
+  },
+  "default_state": {
+    "state_board": {
+      "name": "Provincial environmental affairs department",
+      "office": "Provincial air quality officer for the reported area",
+      "email": "za-provincial-department@example.invalid"
+    },
+    "municipal": {},
+    "escalation": {
+      "name": "Department of Forestry, Fisheries and the Environment (National Air Quality Officer)",
+      "email": "dffe-naqo@example.invalid"
+    }
+  }
+}

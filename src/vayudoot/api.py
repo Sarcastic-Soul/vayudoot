@@ -33,6 +33,7 @@ from . import (
     pack,
     register,
     scan,
+    standards,
     store,
 )
 from .agents import draft_rti_application, forecast_corridor, forecast_location
@@ -59,7 +60,7 @@ from .schemas import (
     Signal,
     SignalSource,
 )
-from .tools.authorities import authority_table
+from .tools.authorities import access_to_information_law, authority_table, country_name
 from .tools.geocode import reverse_geocode, search_places
 
 log = logging.getLogger(__name__)
@@ -699,8 +700,12 @@ def list_corridors() -> list[Corridor]:
     Data, not code: adding one is an edit to `data/corridors.json`, the same
     property the authority table has. A second state standing up its own
     instance adds its own corridors without touching Python.
+
+    Only the corridors that list this node's country: one file holds every
+    country's, and a Johannesburg node listing Indian highways would be
+    offering forecasts it has no authority to hand them to.
     """
-    return corridors.all_corridors()
+    return corridors.for_country()
 
 
 @app.get("/corridors/{corridor_id}/forecast", response_model=CorridorForecast)
@@ -763,7 +768,8 @@ def submit_sensor_reading(reading: SensorReading, request: Request) -> Signal:
         raise HTTPException(
             status_code=422,
             detail=(
-                f"{reading.parameter} at {reading.value} is below the Indian standard "
+                f"{reading.parameter} at {reading.value} is below "
+                f"{standards.for_country().phrase} "
                 "or is not a pollutant with one. A reading that is not an exceedance "
                 "is not evidence of an event."
             ),
@@ -1016,6 +1022,14 @@ def _rti_not_available(case: Case) -> str:
         )
     if case.filed_at is None or case.jurisdiction is None:
         return "This case has no filed complaint to ask about"
+    if not filing.rti_supported(case):
+        route = access_to_information_law(case.jurisdiction.country)
+        return (
+            "An RTI application is drafted under India's Right to Information Act, 2005, "
+            f"which does not apply to an authority in {country_name(case.jurisdiction.country)}."
+            + (f" The route there is the {route}, which this system does not draft." if route
+               else " This system does not draft that country's access-to-information request.")
+        )
     days = case.jurisdiction.response_window_days
     return (
         f"The {days}-day statutory window since filing has not lapsed. Ask what was done "

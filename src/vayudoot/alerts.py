@@ -18,9 +18,12 @@ gate, coordinated false reports would turn into an official-looking alert.
 gives the state and city; `lookup_authority` maps them to an authority. The
 pipeline's jurisdiction stage wraps the same two tools in an agent because it
 began that way; here there is nothing to judge, and spending a model call to
-read a JSON table would be spending quota on arithmetic. A hotspot whose centre
-is outside India is refused rather than resolved: the table holds Indian
-authorities only, and the generic fallback would address a Pakistani or
+read a JSON table would be spending quota on arithmetic. The geocoded country
+picks the table — India's, South Africa's, Brazil's, whichever this node
+carries — so a Mpumalanga hotspot is addressed under South African law and a
+Pará one under Brazilian. A hotspot centred in a country with no table is
+refused rather than resolved: every table's generic fallback is a placeholder
+for a region of *its own* country, and using it would address a Pakistani or
 Nepalese fire to an Indian state board placeholder. Such a hotspot reaches its
 own country through this node's federation feed instead.
 
@@ -41,7 +44,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from . import store
+from . import standards, store
 from .agents.alert import write_alert_brief
 from .schemas import (
     AlertStatus,
@@ -53,19 +56,27 @@ from .schemas import (
     PollutionType,
     SignalSource,
 )
-from .tools.authorities import coverage_is_generic, lookup_authority
+from .tools.authorities import (
+    country_name,
+    coverage_is_generic,
+    lookup_authority,
+    served_countries,
+)
 from .tools.geocode import reverse_geocode
 
-#: Country codes this node holds authorities for. The authority table is
-#: Indian, and a country outside it has its own regulators, reached through
-#: federation rather than invented here.
-SERVED_COUNTRIES: frozenset[str] = frozenset({"in"})
+#: Country codes this node holds authorities for: every country with an
+#: authority table in `data/`, and nothing listed in Python. A country outside
+#: them has its own regulators, reached through federation rather than
+#: invented here.
+SERVED_COUNTRIES: frozenset[str] = served_countries()
 
 #: How each source is named in a facts block, in the order they are listed.
 #: Instruments first, because they are what made the hotspot alertable.
+#: `{standard}` is filled with the standard this node scored the readings
+#: against, so an alert says which country's law the exceedance is under.
 SOURCE_LABELS: dict[SignalSource, str] = {
     SignalSource.SATELLITE: "satellite thermal detections (NASA FIRMS VIIRS)",
-    SignalSource.GROUND_STATION: "ground station readings above the Indian standard",
+    SignalSource.GROUND_STATION: "ground station readings above {standard}",
     SignalSource.CITIZEN_REPORT: "citizen photograph reports",
     SignalSource.CITIZEN_SENSOR: "citizen low-cost sensor readings",
 }
@@ -124,11 +135,12 @@ def resolve_jurisdiction(hotspot: Hotspot) -> tuple[Jurisdiction, dict]:
     country_code = str(geo.get("country_code", "")).strip().lower()
     if country_code not in SERVED_COUNTRIES:
         where = geo.get("country") or "no country the geocoder could name"
+        held = ", ".join(country_name(c) for c in sorted(SERVED_COUNTRIES))
         raise OutsideJurisdiction(
-            f"Hotspot {hotspot.hotspot_id} is centred in {where}, outside the jurisdiction "
-            "this node holds authorities for. It will not invent one: the hotspot is "
-            "published on this node's federation feed (/feed, /feed.geojson), which is how "
-            "the authorities of that country reach it."
+            f"Hotspot {hotspot.hotspot_id} is centred in {where}, outside every jurisdiction "
+            f"this node holds authorities for ({held}). It will not invent one: the hotspot "
+            "is published on this node's federation feed (/feed, /feed.geojson), which is "
+            "how the authorities of that country reach it."
         )
 
     category = (
@@ -137,7 +149,10 @@ def resolve_jurisdiction(hotspot: Hotspot) -> tuple[Jurisdiction, dict]:
         else hotspot.pollution_type.value
     )
     found = lookup_authority(
-        state=geo.get("state", ""), city=geo.get("city", ""), pollution_type=category
+        state=geo.get("state", ""),
+        city=geo.get("city", ""),
+        pollution_type=category,
+        country=country_code,
     )
     jurisdiction = Jurisdiction(
         **{k: v for k, v in found.items() if k in Jurisdiction.model_fields},
@@ -212,10 +227,11 @@ def facts_block(
         f"Span: {s.span_days} day(s)",
         f"Signals: {s.signal_count} in total",
     ]
+    standard = standards.for_country()
     for source, label in SOURCE_LABELS.items():
         count = s.source_counts.get(source, 0)
         if count:
-            lines.append(f"  {label}: {count}")
+            lines.append(f"  {label.format(standard=standard.phrase)}: {count}")
 
     if hotspot is not None:
         evidence = _evidence_lines(hotspot)
@@ -299,7 +315,9 @@ async def draft_alert(hotspot: Hotspot, agent=None) -> HotspotAlert:
     imagery = store.latest_imagery(hotspot.hotspot_id)
     facts = facts_block(snapshot, area, hotspot=hotspot, imagery=imagery)
 
-    brief = await write_alert_brief(facts, jurisdiction, geo.get("state", ""), agent=agent)
+    brief = await write_alert_brief(
+        facts, jurisdiction, geo.get("state", ""), country=geo.get("country", ""), agent=agent
+    )
 
     alert = HotspotAlert(
         alert_id=f"VDA-{uuid.uuid4().hex[:8].upper()}",
