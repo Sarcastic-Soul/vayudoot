@@ -8,7 +8,7 @@ The exposure figure on every hotspot is a sum over this table, so where the tabl
 came from has to be something anybody can check and rebuild, not a file that
 appeared in the repository one day. This script is that provenance: it downloads
 GeoNames `cities15000` (every populated place over 15,000 people, published under
-CC BY 4.0), keeps the countries whose smoke reaches India, and writes the five
+CC BY 4.0), keeps the countries listed below, and writes the five
 columns `exposure.py` reads.
 
 Which countries, and why:
@@ -20,11 +20,15 @@ Which countries, and why:
   standing up across any of those borders needs its own towns in the table.
 - BT, because it is four rows and leaving a neighbour out would be a strange
   thing to explain.
+- ZA and BR, because the repository carries authority tables for South Africa
+  and Brazil, so a node started with `VAYUDOOT_NODE_COUNTRY=ZA` or `BR` must be
+  able to count the people near its own hotspots without a rebuild. Brazil is
+  most of the added rows; together they keep the file well under a megabyte.
 
-A node in another country rebuilds the table for its own air shed with
-`--countries` — Brazil with the neighbours whose Amazon and Chaco fire smoke it
-shares, South Africa with Mozambique and Zimbabwe — and changes nothing else.
-The same script, the same five columns, the same attribution.
+A node whose air shed crosses more borders rebuilds the table with `--countries`
+— Brazil with the neighbours whose Amazon and Chaco fire smoke it shares, South
+Africa with Mozambique and Zimbabwe — and changes nothing else. The same script,
+the same five columns, the same attribution.
 
 Which places, and why some are dropped:
 
@@ -52,7 +56,7 @@ from pathlib import Path
 SOURCE_URL = "https://download.geonames.org/export/dump/cities15000.zip"
 OUT = Path(__file__).resolve().parents[1] / "src" / "vayudoot" / "data" / "settlements.csv"
 
-COUNTRIES = ("IN", "PK", "BD", "NP", "BT")
+COUNTRIES = ("IN", "PK", "BD", "NP", "BT", "ZA", "BR")
 
 #: Feature codes that describe a place nobody should be counted in, or a place
 #: already counted as part of a larger one. See the module docstring.
@@ -107,8 +111,8 @@ def write(
     today = datetime.now(UTC).date().isoformat()
     with OUT.open("w", encoding="utf-8", newline="") as handle:
         handle.write(
-            "# Populated places over 15,000 people in the countries whose smoke this\n"
-            "# node's air shed shares (" + ", ".join(countries) + ").\n"
+            "# Populated places over 15,000 people in the countries this table covers\n"
+            "# (" + ", ".join(countries) + "); see scripts/build_settlements.py for why.\n"
             "# Source: GeoNames cities15000, " + SOURCE_URL + "\n"
             "# Licence: Creative Commons Attribution 4.0 (CC BY 4.0), (c) GeoNames,\n"
             "# https://www.geonames.org/ . Filtered, not edited: city sections (PPLX) and\n"

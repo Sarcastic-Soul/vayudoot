@@ -8,9 +8,11 @@ module adds: a population figure, and the largest towns it came from.
 
 **What is counted, exactly.** The populations of places in the GeoNames
 `cities15000` gazetteer (CC BY 4.0) whose *centre* lies within a radius of the
-hotspot's centre. `data/settlements.csv` is that gazetteer filtered to India and
-the neighbouring countries whose smoke reaches it; `scripts/build_settlements.py`
-rebuilds it, so the provenance is checkable rather than asserted.
+hotspot's centre. `data/settlements.csv` is that gazetteer filtered to India, the
+neighbouring countries whose smoke reaches it, and South Africa and Brazil, the
+two other countries this repository carries authority tables for;
+`scripts/build_settlements.py` rebuilds it, so the provenance is checkable rather
+than asserted.
 
 It is therefore a lower bound in the countryside and a coarse figure in a city,
 and the `basis` string says both. Villages under 15,000 people are not in the
