@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import (
+    alerts,
     clustering,
     corridors,
     errors,
@@ -35,19 +36,23 @@ from . import (
     store,
 )
 from .agents import draft_rti_application, forecast_corridor, forecast_location
+from .agents.imagery import ImageryUnavailable, read_hotspot_imagery
 from .config import settings
 from .images import UnsupportedImage, normalise, suffix_for
 from .pipeline import new_case, run
 from .ratelimit import limiter
 from .schemas import (
     AirQualityForecast,
+    AlertStatus,
     Case,
     CaseStatus,
     Cluster,
     Corridor,
     CorridorForecast,
     Hotspot,
+    HotspotAlert,
     HotspotFeed,
+    ImageryReading,
     NodeIdentity,
     Report,
     SensorReading,
@@ -401,10 +406,169 @@ def list_hotspots() -> list[Hotspot]:
 
 @app.get("/hotspots/{hotspot_id}", response_model=Hotspot)
 def get_hotspot(hotspot_id: str) -> Hotspot:
+    return _require_hotspot(hotspot_id)
+
+
+@app.post("/hotspots/{hotspot_id}/alert", response_model=HotspotAlert)
+async def draft_hotspot_alert(hotspot_id: str, redraft: bool = False) -> HotspotAlert:
+    """Draft an alert to the authority responsible for a hotspot's area.
+
+    The route by which a hotspot nobody reported reaches somebody who can act on
+    it. Nothing is sent: the alert comes back `awaiting_confirmation`, and only
+    `POST /alerts/{id}/confirm` writes it anywhere. Hard constraint 2.
+
+    Refused with 409 for a hotspot no instrument corroborates (constraint 7 —
+    the citizens behind it have the complaint route), and with 422 for one
+    centred outside the country this node holds authorities for. An alert
+    already awaiting confirmation for the hotspot is returned as it is rather
+    than drafted again, because drafting costs a model call; pass
+    `redraft=true` to spend one deliberately.
+    """
+    hotspot = _require_hotspot(hotspot_id)
+    if not redraft and (pending := alerts.pending_for(hotspot_id)) is not None:
+        return pending
+    try:
+        return await alerts.draft_alert(hotspot)
+    except alerts.AlertRefused as exc:
+        raise HTTPException(exc.status_code, str(exc)) from exc
+    except Exception as exc:
+        if (busy := _model_busy(exc, tier="fast")) is None:
+            raise
+        raise busy from exc
+
+
+@app.post("/hotspots/{hotspot_id}/imagery", response_model=ImageryReading)
+async def read_imagery(hotspot_id: str, reread: bool = False) -> ImageryReading:
+    """Fetch the latest satellite true-colour snapshot of a hotspot and have it read.
+
+    A model's reading of a coarse image, labelled as such on the object. It is
+    an annotation for the operator and never a corroborating signal: it cannot
+    change a hotspot's confidence or its corroboration flag. `agents/imagery.py`
+    says why.
+
+    Cached per hotspot and image date, so asking twice about the same pass costs
+    one primary-tier call, not two. `reread=true` spends another deliberately.
+    """
+    hotspot = _require_hotspot(hotspot_id)
+    try:
+        return await read_hotspot_imagery(hotspot, reread=reread)
+    except ImageryUnavailable as exc:
+        raise HTTPException(502, str(exc)) from exc
+    except Exception as exc:
+        if (busy := _model_busy(exc, tier="primary")) is None:
+            raise
+        raise busy from exc
+
+
+@app.get("/hotspots/{hotspot_id}/imagery", response_model=ImageryReading)
+def get_imagery(hotspot_id: str) -> ImageryReading:
+    """The most recent cached reading, without fetching or spending anything.
+
+    Served from the cache even if the hotspot has since dropped out of
+    detection: the reading is a record of what a picture showed on a date.
+    """
+    reading = store.latest_imagery(hotspot_id)
+    if reading is None:
+        raise HTTPException(404, f"No satellite image has been read for {hotspot_id}")
+    return reading
+
+
+@app.get("/hotspots/{hotspot_id}/imagery.jpg")
+def get_imagery_image(hotspot_id: str) -> FileResponse:
+    """The exact snapshot the latest reading was made from.
+
+    Served from the cache rather than fetched again, because the point is that
+    the operator sees the picture the model read — not a newer composite of the
+    same day that GIBS has since filled in.
+    """
+    reading = store.latest_imagery(hotspot_id)
+    path = store.imagery_image(hotspot_id, reading.image_date) if reading else None
+    if path is None:
+        raise HTTPException(404, f"No satellite image has been read for {hotspot_id}")
+    return FileResponse(path, media_type="image/jpeg")
+
+
+def _model_busy(exc: Exception, tier: str) -> HTTPException | None:
+    """A 503 for a model that could not answer right now, or None.
+
+    Two kinds count: a recognised free-tier rate limit, and a whole fallback
+    chain answering "high demand" (the SDK's 503 `ServerError`), which AI
+    Studio's free tier does for hours at a time. Either way the operator should
+    try again later, and a 500 would say the code is broken when it is not.
+    Anything else gives None, and the caller re-raises the original.
+    """
+    if errors.is_rate_limit(exc, tier=tier):
+        return HTTPException(503, errors.describe(exc, tier=tier))
+    seen: Exception | None = exc
+    while seen is not None:
+        if getattr(seen, "code", None) == 503 or getattr(seen, "status", None) == "UNAVAILABLE":
+            return HTTPException(
+                503,
+                f"The {tier}-tier model is overloaded right now (every model in its "
+                "free-tier fallback chain answered 503). Nothing was saved; try again "
+                "in a minute.",
+            )
+        seen = seen.__cause__ or seen.__context__
+    return None
+
+
+def _require_hotspot(hotspot_id: str) -> Hotspot:
     found = next((h for h in hotspots.current() if h.hotspot_id == hotspot_id), None)
     if found is None:
         raise HTTPException(status_code=404, detail=f"Unknown hotspot: {hotspot_id}")
     return found
+
+
+@app.get("/alerts", response_model=list[HotspotAlert])
+def list_alerts(hotspot_id: str = "") -> list[HotspotAlert]:
+    """Every hotspot alert, newest first; `hotspot_id` narrows to one hotspot."""
+    found = store.all_alerts()
+    if hotspot_id:
+        found = [a for a in found if a.hotspot_id == hotspot_id]
+    return found
+
+
+@app.get("/alerts/{alert_id}", response_model=HotspotAlert)
+def get_alert(alert_id: str) -> HotspotAlert:
+    return _require_alert(alert_id)
+
+
+@app.post("/alerts/{alert_id}/confirm", response_model=HotspotAlert)
+def confirm_alert(alert_id: str) -> HotspotAlert:
+    """The human-in-the-loop gate for alerts. Nothing is sent until a person confirms.
+
+    Writes the envelope to the sandbox outbox through the same guard every
+    complaint goes through; with live filing switched on and no transport, it
+    refuses rather than pretending to send.
+    """
+    alert = _require_alert(alert_id)
+    if alert.status is not AlertStatus.AWAITING_CONFIRMATION:
+        raise HTTPException(409, f"Alert is {alert.status.value}, not awaiting confirmation")
+    try:
+        filing.file_alert(alert, alerts.render_body(alert))
+    except filing.LiveFilingNotConfigured as exc:
+        raise HTTPException(503, str(exc)) from exc
+    store.save_alert(alert)
+    return alert
+
+
+@app.get("/alerts/{alert_id}/envelope", response_class=PlainTextResponse)
+def get_alert_envelope(alert_id: str) -> str:
+    """The sent alert exactly as it was written to the sandbox outbox."""
+    alert = _require_alert(alert_id)
+    if alert.status is not AlertStatus.SENT:
+        raise HTTPException(409, f"Alert is {alert.status.value}; nothing has been sent")
+    path = filing.alert_outbox_path(alert)
+    if not path.exists():
+        raise HTTPException(404, f"No envelope in the outbox for {alert.alert_id}")
+    return path.read_text()
+
+
+def _require_alert(alert_id: str) -> HotspotAlert:
+    alert = store.load_alert(alert_id)
+    if alert is None:
+        raise HTTPException(404, f"No such alert: {alert_id}")
+    return alert
 
 
 @app.get("/node", response_model=NodeIdentity)

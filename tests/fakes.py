@@ -9,9 +9,11 @@ pipeline runs offline in milliseconds.
 from __future__ import annotations
 
 from vayudoot.schemas import (
+    AlertBrief,
     Complaint,
     Corroboration,
     EvidencePacket,
+    ImageryAssessment,
     Jurisdiction,
     PollutionType,
     RTIApplication,
@@ -96,6 +98,34 @@ def rti_application() -> RTIApplication:
         placeholders=["Applicant name", "Postal address", "Fee instrument"],
         body_local="",
         local_language="Hindi",
+    )
+
+
+def alert_brief() -> AlertBrief:
+    """What the fast-tier alert agent would return, minus the model."""
+    return AlertBrief(
+        subject="Satellite-detected burning, Ludhiana district, 2026-09-27",
+        summary_en=(
+            "Satellite thermal detections and an elevated PM2.5 reading place a pollution "
+            "event within a 1.5 km radius in Ludhiana district. The instruments detect heat "
+            "and polluted air; they do not show what is burning."
+        ),
+        summary_local="लुधियाना ज़िले में उपग्रह द्वारा आग का पता चला।",
+        local_language="Punjabi",
+        suggested_checks=[
+            "Site visit to the area during the evening burn window.",
+            "Check the nearest station's hourly PM2.5 record for the same period.",
+        ],
+    )
+
+
+def imagery_assessment(plume: bool = True) -> ImageryAssessment:
+    """What the primary-tier imagery agent would return, minus the model."""
+    return ImageryAssessment(
+        plume_visible=plume,
+        cloud_obscured=False,
+        description="A grey plume drawn out to the south-east over cultivated fields.",
+        confidence=0.7,
     )
 
 

@@ -22,6 +22,8 @@ def isolated_storage(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "vayudoot_case_dir", tmp_path / "cases")
     monkeypatch.setattr(settings, "vayudoot_upload_dir", tmp_path / "uploads")
     monkeypatch.setattr(settings, "vayudoot_sandbox_outbox", tmp_path / "outbox")
+    monkeypatch.setattr(settings, "vayudoot_alert_dir", tmp_path / "alerts")
+    monkeypatch.setattr(settings, "vayudoot_imagery_dir", tmp_path / "imagery")
     monkeypatch.setattr(settings, "vayudoot_live_filing", False)
     # Force the JSON-file backend regardless of a developer's own shell — a
     # stray DATABASE_URL must never make the suite touch a real database.

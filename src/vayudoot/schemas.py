@@ -690,3 +690,188 @@ class Case(BaseModel):
         stamp = datetime.now(UTC).isoformat(timespec="seconds")
         self.history.append(f"{stamp} {entry}")
         self.updated_at = datetime.now(UTC)
+
+
+# --------------------------------------------------------------------------- #
+# Satellite imagery
+# --------------------------------------------------------------------------- #
+
+
+#: Fixed wording carried on every imagery reading, for `FORECAST_DISCLAIMER`'s
+#: reason: the label travels with the object rather than being left to whatever
+#: renders it. Hard constraint 7.
+IMAGERY_DISCLAIMER = (
+    "Model-derived reading of a coarse satellite true-colour image (NASA GIBS, VIIRS, "
+    "roughly 250-375 m per pixel). An annotation for an operator, not a measurement: it "
+    "does not corroborate the hotspot and does not change its confidence."
+)
+
+
+class ImageryAssessment(BaseModel):
+    """What the imagery agent returns: its judgement of one snapshot, nothing else.
+
+    Separate from `ImageryReading` so the model is asked only for what it can
+    know. The date, the layer and the frame are facts about the fetch; left to
+    the model they would come back as guesses.
+    """
+
+    plume_visible: bool = Field(
+        description=(
+            "True only when a distinct smoke plume is visible: a translucent grey, brown or "
+            "bluish streak drawn out from a source. Uniform regional haze is not a plume."
+        )
+    )
+    cloud_obscured: bool = Field(
+        description="True when cloud covers the centre of the frame so the ground cannot be seen."
+    )
+    description: str = Field(
+        description=(
+            "Two or three sentences on what the image shows near its centre: smoke, haze, "
+            "cloud, and the general kind of land (fields, built-up area, water). Never a "
+            "facility, a business or an operator."
+        )
+    )
+    confidence: float = Field(
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Calibrated 0 to 1 confidence in the plume_visible answer. A coarse satellite "
+            "image is never certain; 1.0 is not a valid answer."
+        ),
+    )
+
+
+class ImageryReading(ImageryAssessment):
+    """A model's reading of one satellite snapshot of a hotspot, with its provenance.
+
+    An annotation on a hotspot, never a signal. It is not in `SignalSource`, not
+    in `INDEPENDENT_SOURCES`, and nothing reads it when computing confidence —
+    see `agents/imagery.py` for why that line is drawn where it is.
+    """
+
+    hotspot_id: str = ""
+    #: The UTC date of the satellite pass the image was composited from.
+    image_date: str = ""
+    #: The GIBS layer name, e.g. `VIIRS_SNPP_CorrectedReflectance_TrueColor`.
+    layer: str = ""
+    #: The frame as [south, west, north, east], in degrees.
+    bbox: list[float] = Field(default_factory=list)
+    read_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    disclaimer: str = IMAGERY_DISCLAIMER
+
+
+# --------------------------------------------------------------------------- #
+# Hotspot alerts
+# --------------------------------------------------------------------------- #
+
+
+class AlertStatus(str, Enum):
+    """An alert's lifecycle, which is deliberately much shorter than a case's.
+
+    There is no acknowledgement, escalation or RTI here. An alert tells an
+    authority that its instruments and ours see something in an area; what it
+    does next is an inspection, and there is no citizen waiting on a statutory
+    window to chase it with.
+    """
+
+    DRAFT = "draft"
+    AWAITING_CONFIRMATION = "awaiting_confirmation"
+    SENT = "sent"
+
+
+class AlertBrief(BaseModel):
+    """The model-written half of an alert: a short situation summary.
+
+    Everything factual — where, how big, how sure, from what — is in the alert's
+    `facts` block, built in Python so it cannot drift. This is only the prose an
+    officer reads first.
+    """
+
+    subject: str = Field(description="One line: the kind of event, the area, and the date.")
+    summary_en: str = Field(
+        description=(
+            "A short situation summary in English: what the evidence shows in this area, how "
+            "sure it is, and what it does not show. Conditions, never accusations."
+        )
+    )
+    summary_local: str = Field(
+        default="", description="The same summary in the region's main language."
+    )
+    local_language: str = Field(
+        default="", description="The name of that language, or empty if it is English."
+    )
+    suggested_checks: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Verification steps for an inspector, e.g. a site visit to the area during the "
+            "evening burn window. Never instructions to the public."
+        ),
+    )
+
+
+class HotspotSnapshot(BaseModel):
+    """The hotspot as it stood when the alert was drafted.
+
+    A copy, not a reference. Hotspots are derived on every request and change as
+    signals arrive — the id is stable but the numbers are not — so an alert has
+    to carry what it was actually drafted against. Signals and case ids are left
+    out for `FeedHotspot`'s reason: an authority needs to know what is happening
+    and how sure we are, not which of our citizens reported it.
+    """
+
+    hotspot_id: str
+    pollution_type: PollutionType
+    centre_latitude: float
+    centre_longitude: float
+    radius_km: float
+    confidence: float
+    severity: Literal["low", "moderate", "high", "severe"]
+    corroborated: bool
+    signal_count: int
+    source_counts: dict[SignalSource, int] = Field(default_factory=dict)
+    first_seen_at: datetime
+    last_seen_at: datetime
+    span_days: int
+    exposure: Exposure | None = None
+
+    @classmethod
+    def of(cls, hotspot: Hotspot) -> HotspotSnapshot:
+        return cls.model_validate(hotspot.model_dump(include=set(cls.model_fields)))
+
+
+class HotspotAlert(BaseModel):
+    """An alert to the authority responsible for the area a hotspot covers.
+
+    The route by which a hotspot nobody reported reaches somebody who can act on
+    it. Through v0.3 an authority heard about pollution only through a citizen's
+    complaint, so a fire seen by a satellite and a station, with no citizen near
+    it, reached no one.
+
+    Held at `awaiting_confirmation` until a person confirms it, for hard
+    constraint 2, and written to the sandbox outbox when they do, for hard
+    constraint 1. Persisted like a case; see `store.py`.
+    """
+
+    alert_id: str
+    hotspot_id: str
+    hotspot: HotspotSnapshot
+    #: The area in words — city, district, state. Never a street address:
+    #: reverse geocoding answers with the nearest building, and an alert naming
+    #: a building is an accusation against whoever occupies it. Constraint 7.
+    area: str = ""
+    jurisdiction: Jurisdiction
+    #: The deterministic facts block, exactly as it appears in the envelope.
+    facts: str = ""
+    #: The imagery reading the facts block cited, if one was cached.
+    imagery: ImageryReading | None = None
+    brief: AlertBrief | None = None
+    status: AlertStatus = AlertStatus.DRAFT
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    sent_at: datetime | None = None
+    history: list[str] = Field(default_factory=list)
+
+    def log(self, entry: str) -> None:
+        stamp = datetime.now(UTC).isoformat(timespec="seconds")
+        self.history.append(f"{stamp} {entry}")
+        self.updated_at = datetime.now(UTC)

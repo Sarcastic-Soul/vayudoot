@@ -108,6 +108,15 @@ class Settings(BaseSettings):
     # Storage
     vayudoot_case_dir: Path = Path("./data/cases")
     vayudoot_upload_dir: Path = Path("./data/uploads")
+    #: Hotspot alerts for the JSON backend. A directory of its own rather than a
+    #: sibling derived from the case directory, so a test or a deployment can
+    #: point it somewhere explicitly; see `store.py` for why alerts must never
+    #: share a directory with cases.
+    vayudoot_alert_dir: Path = Path("./data/alerts")
+    #: Satellite snapshots and the model's reading of each, one pair per hotspot
+    #: and image date. Files only, whatever the backend — see `store.py` under
+    #: "Imagery" for why a cache that is lost on redeploy is acceptable here.
+    vayudoot_imagery_dir: Path = Path("./data/imagery")
     #: A Postgres connection string (Neon, Supabase, or any other host — the
     #: store is plain SQL, nothing provider-specific). Unprefixed, like the
     #: other external-service credentials above, because it's the name every
@@ -298,6 +307,20 @@ class Settings(BaseSettings):
     #: concentrated at ground level before dispersing into the regional haze;
     #: past it, the forecast's upwind reasoning is the right tool, not this.
     vayudoot_exposure_radius_km: float = 10.0
+
+    # Satellite imagery. See `tools/imagery.py`.
+    #
+    #: Half the side of the square snapshot taken around a hotspot, in km. A
+    #: VIIRS true-colour pixel is roughly 250-375 m, so a hotspot's own 1-2 km
+    #: circle is a handful of pixels and shows nothing. A smoke plume from a
+    #: field or landfill fire runs downwind for tens of kilometres, which is the
+    #: thing the image is for, so the frame is set to hold a plume rather than
+    #: the fire: 25 km each way, about 100 m per pixel at 512 x 512.
+    vayudoot_imagery_half_side_km: float = 25.0
+    #: How many days back to look for a processed pass. Today's image does not
+    #: exist until the afternoon overpass has been processed, and a gap in the
+    #: archive can cost a day more, so the most recent of three is taken.
+    vayudoot_imagery_days_back: int = 2
 
     # Federation. A node publishes the hotspots it found and can read a
     # neighbour's; see `federation.py`. What is shared is a detection layer, not

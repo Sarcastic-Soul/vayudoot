@@ -1,10 +1,15 @@
-"""Filing and escalation.
+"""Filing, escalation, and hotspot alerts: everything that would reach an authority.
 
 SAFETY: live filing sends a formal complaint to a real regulator. It is disabled
 unless VAYUDOOT_LIVE_FILING is explicitly true AND a real transport is wired in,
 which it deliberately is not in this repository. Every demo run writes the
 complaint to a local sandbox outbox instead. An unattended prototype must not be
 able to spam a pollution control board.
+
+Hotspot alerts go through this module for exactly that reason, rather than
+through a sender of their own. There is one guard, `_refuse_live_filing`, and
+every path that writes an envelope calls it first; a second copy of the rule
+somewhere else is a copy that can drift.
 """
 
 from __future__ import annotations
@@ -13,7 +18,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from .config import settings
-from .schemas import Case, CaseStatus
+from .schemas import AlertStatus, Case, CaseStatus, HotspotAlert
 
 
 class LiveFilingNotConfigured(RuntimeError):
@@ -25,14 +30,29 @@ def _outbox() -> Path:
     return settings.vayudoot_sandbox_outbox
 
 
-def render(case: Case, recipient: str, subject: str, body: str) -> str:
+def _refuse_live_filing(message: str) -> None:
+    """The one gate between this process and a real regulator.
+
+    Live filing switched on means somebody expects a message to leave, and no
+    transport exists for it to leave through. Raising says so loudly; writing to
+    the sandbox anyway would let them believe it had been sent.
+    """
+    if settings.vayudoot_live_filing:
+        raise LiveFilingNotConfigured(message)
+
+
+def _envelope(recipient: str, subject: str, reference: str, body: str) -> str:
     return (
         f"To: {recipient}\n"
         f"Subject: {subject}\n"
-        f"Case-Id: {case.case_id}\n"
+        f"{reference}\n"
         f"X-Vayudoot-Mode: {'LIVE' if settings.vayudoot_live_filing else 'SANDBOX'}\n"
         f"\n{body}\n"
     )
+
+
+def render(case: Case, recipient: str, subject: str, body: str) -> str:
+    return _envelope(recipient, subject, f"Case-Id: {case.case_id}", body)
 
 
 def file_complaint(case: Case) -> Path:
@@ -40,12 +60,11 @@ def file_complaint(case: Case) -> Path:
     if case.complaint is None or case.jurisdiction is None:
         raise ValueError("Case is not ready to file: complaint or jurisdiction missing")
 
-    if settings.vayudoot_live_filing:
-        raise LiveFilingNotConfigured(
-            "Live filing is enabled but no delivery transport is configured. "
-            "Wire a real transport deliberately, and confirm the recipient address is "
-            "correct, before sending anything to an actual regulator."
-        )
+    _refuse_live_filing(
+        "Live filing is enabled but no delivery transport is configured. "
+        "Wire a real transport deliberately, and confirm the recipient address is "
+        "correct, before sending anything to an actual regulator."
+    )
 
     envelope = render(
         case,
@@ -130,8 +149,7 @@ def escalate(case: Case) -> Path:
     """Re-file to the next authority tier once the response window has lapsed."""
     if case.complaint is None or case.jurisdiction is None:
         raise ValueError("Case is not ready to escalate")
-    if settings.vayudoot_live_filing:
-        raise LiveFilingNotConfigured("Live filing is enabled but no transport is configured.")
+    _refuse_live_filing("Live filing is enabled but no transport is configured.")
 
     was_acknowledged = case.status is CaseStatus.ACKNOWLEDGED
     days = case.jurisdiction.response_window_days
@@ -168,4 +186,43 @@ def escalate(case: Case) -> Path:
         f"Escalated to {case.jurisdiction.escalation_authority} after {days} days "
         f"with {since} (sandbox outbox: {path})"
     )
+    return path
+
+
+def alert_outbox_path(alert: HotspotAlert) -> Path:
+    """Where a sent alert's envelope is, so the API can show exactly what was written."""
+    return settings.vayudoot_sandbox_outbox / f"{alert.alert_id}.eml"
+
+
+def file_alert(alert: HotspotAlert, body: str) -> Path:
+    """Send a hotspot alert. Writes to the sandbox outbox unless live filing is on.
+
+    `body` is rendered by `alerts.render_body` and passed in rather than built
+    here, so this module stays what it was — the guard and the envelope — and
+    knows nothing about what an alert says.
+    """
+    if alert.brief is None:
+        raise ValueError("Alert is not ready to send: it has no drafted summary")
+    if alert.status is not AlertStatus.AWAITING_CONFIRMATION:
+        raise ValueError(f"Alert is {alert.status.value}, not awaiting confirmation")
+
+    _refuse_live_filing(
+        "Live filing is enabled but no delivery transport is configured. A hotspot alert "
+        "goes to a real regulator exactly as a complaint does; wire a transport "
+        "deliberately, and confirm the recipient address, before sending one."
+    )
+
+    envelope = _envelope(
+        recipient=alert.jurisdiction.email,
+        subject=alert.brief.subject,
+        reference=f"Alert-Id: {alert.alert_id}\nHotspot-Id: {alert.hotspot_id}",
+        body=body,
+    )
+    _outbox()
+    path = alert_outbox_path(alert)
+    path.write_text(envelope)
+
+    alert.status = AlertStatus.SENT
+    alert.sent_at = datetime.now(UTC)
+    alert.log(f"Sent to {alert.jurisdiction.authority_name} (sandbox outbox: {path})")
     return path
