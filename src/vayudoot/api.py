@@ -50,6 +50,7 @@ from .schemas import (
     Cluster,
     Corridor,
     CorridorForecast,
+    ForecasterSpec,
     ForecastRecord,
     ForecastSkill,
     Hotspot,
@@ -592,6 +593,17 @@ def get_node() -> NodeIdentity:
     return federation.identity()
 
 
+@app.get("/forecaster", response_model=ForecasterSpec)
+def get_forecaster() -> ForecasterSpec:
+    """Which forecaster this node runs, and its measured skill.
+
+    The prompt's hash, never its text: a peer uses this to check whether two
+    nodes run the same forecaster, not to run ours. `federation.py` says why.
+    Also carried on `/feed` from feed version 1.1.
+    """
+    return federation.forecaster_spec()
+
+
 @app.get("/feed", response_model=HotspotFeed)
 def get_feed() -> HotspotFeed:
     """This node's hotspots, published for its neighbours.
@@ -635,17 +647,34 @@ def get_neighbours() -> dict:
     Read live rather than cached, and failures are reported rather than hidden: a
     peer being unreachable is ordinary on a federated network, and an operator
     needs to see which of them answered.
+
+    Each reachable peer also says which forecaster it runs, if its feed is 1.1
+    or later, and whether that is the one this node runs. Reported, never
+    applied: `federation.compare_forecaster`.
     """
     results = [federation.fetch_neighbour(url) for url in settings.neighbour_feeds]
+    ours = federation.forecaster_spec()
+
+    def forecaster_of(result: dict) -> ForecasterSpec | None:
+        return result["feed"].forecaster if "feed" in result else None
+
     return {
         "configured": len(results),
         "reachable": sum(1 for r in results if "error" not in r),
+        "forecaster": ours.model_dump(mode="json"),
         "neighbours": [
             {
                 "url": r["url"],
                 "node": r["feed"].node.model_dump() if "feed" in r else None,
                 "hotspot_count": r.get("hotspot_count", 0),
                 "error": r.get("error"),
+                "feed_version": r["feed"].feed_version if "feed" in r else None,
+                "forecaster": (
+                    forecaster_of(r).model_dump(mode="json") if forecaster_of(r) else None
+                ),
+                "forecaster_match": (
+                    federation.compare_forecaster(forecaster_of(r), ours) if "feed" in r else None
+                ),
             }
             for r in results
         ],

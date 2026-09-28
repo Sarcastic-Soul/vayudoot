@@ -717,19 +717,89 @@ class FeedHotspot(BaseModel):
     last_seen_at: datetime
 
 
+class BandDefinition(BaseModel):
+    """What one risk band means in measured air, as the ledger scores it."""
+
+    risk: RiskBand
+    pm25_from: float
+    pm25_to: float | None = None
+    pm10_from: float
+    pm10_to: float | None = None
+
+
+class ForecasterSkillSummary(BaseModel):
+    """A node's measured forecast skill, in the few numbers a peer needs."""
+
+    window_days: int = Field(ge=0)
+    scored: int = Field(ge=0)
+    unscorable: int = Field(ge=0)
+    exact_rate: float | None = Field(default=None, ge=0, le=1)
+    within_one_rate: float | None = Field(default=None, ge=0, le=1)
+    #: The two baselines' exact rates on the same forecasts, without which the
+    #: forecaster's own rate cannot be read.
+    persistence_exact_rate: float | None = Field(default=None, ge=0, le=1)
+    cams_exact_rate: float | None = Field(default=None, ge=0, le=1)
+    caveat: str = Field(default="", max_length=500)
+
+
+class ForecasterSpec(BaseModel):
+    """Which forecaster a node runs, so a peer can tell whether it runs the same one.
+
+    Identifies the forecaster; never carries it. There is a hash of the prompt
+    and no prompt text, on purpose: see `federation.py` for why a peer's prompt
+    is never fetched or run. Every string is bounded, because this arrives from
+    peers and is shown to operators.
+    """
+
+    forecaster_version: str = Field(max_length=32)
+    prompt_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    horizon_hours: int = Field(ge=1, le=240)
+    upwind_km: float = Field(ge=0, le=5000)
+    tier: str = Field(default="fast", max_length=16)
+    provider: str = Field(default="", max_length=32)
+    #: The model ids the tier tries, in order: the first, then its fallbacks.
+    model_ids: list[str] = Field(default_factory=list, max_length=8)
+    bands: list[BandDefinition] = Field(default_factory=list, max_length=8)
+    band_basis: str = Field(default="", max_length=1000)
+    skill: ForecasterSkillSummary | None = None
+
+    @field_validator("model_ids")
+    @classmethod
+    def _short_ids(cls, value: list[str]) -> list[str]:
+        return [item[:100] for item in value]
+
+
 class HotspotFeed(BaseModel):
     """What one node publishes for its neighbours to read.
 
     Versioned on purpose. A second state standing up its own instance is the
     thing this is for, and a feed without a version is a feed nobody can safely
     change.
+
+    1.1 added `forecaster`, and nothing else. A 1.0 feed has no such field and
+    reads as `None`; a 1.0 reader ignores the field it does not know. So old and
+    new nodes read each other both ways.
     """
 
-    feed_version: str = "1.0"
+    feed_version: str = "1.1"
     node: NodeIdentity
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     hotspot_count: int = 0
     hotspots: list[FeedHotspot] = Field(default_factory=list)
+    forecaster: ForecasterSpec | None = None
+
+    @field_validator("forecaster", mode="wrap")
+    @classmethod
+    def _optional_forecaster(cls, value, handler):
+        """A malformed forecaster block is dropped, never the feed it came on.
+
+        The hotspots are what the feed is for. A peer publishing a spec this
+        node cannot read must not lose its fires from our forecasts.
+        """
+        try:
+            return handler(value)
+        except ValueError:
+            return None
 
 
 class RTIApplication(BaseModel):
