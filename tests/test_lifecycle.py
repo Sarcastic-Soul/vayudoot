@@ -509,6 +509,9 @@ async def test_an_upload_past_the_cap_is_refused_before_it_is_decoded(client, mo
 async def test_a_body_too_large_to_parse_is_refused_by_its_declared_length(client, monkeypatch):
     fakes.patch_stages(monkeypatch, pipeline)
     monkeypatch.setattr(settings, "vayudoot_max_upload_bytes", 4096)
+    # The declared-length budget also allows for one voice note; shrink that
+    # too, or its default alone would let this body through to the parser.
+    monkeypatch.setattr(settings, "vayudoot_max_audio_bytes", 4096)
 
     # If the handler is reached at all, the multipart parser has already spooled
     # the whole body — so this asserts the refusal happens before that.

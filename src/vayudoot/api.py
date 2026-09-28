@@ -38,6 +38,10 @@ from . import (
 )
 from .agents import draft_rti_application, forecast_corridor, forecast_location
 from .agents.imagery import ImageryUnavailable, read_hotspot_imagery
+from .audio import UnsupportedAudio
+from .audio import duration_seconds as audio_duration
+from .audio import sniff as sniff_audio
+from .audio import suffix_for as audio_suffix
 from .config import settings
 from .images import UnsupportedImage, normalise, suffix_for
 from .pipeline import new_case, run
@@ -188,7 +192,7 @@ async def refuse_an_oversized_body(request: Request, call_next):
     high-water mark is one raw image, not the whole body.
     """
     declared = request.headers.get("content-length")
-    limit = _body_budget()
+    limit = _body_budget() + settings.vayudoot_max_audio_bytes
     oversized = declared and declared.isdigit() and int(declared) > limit + _MULTIPART_OVERHEAD
     if request.method == "POST" and oversized:
         return JSONResponse(status_code=413, content={"detail": _too_large(int(declared))})
@@ -274,6 +278,67 @@ async def _store_photographs(images: list[UploadFile]) -> list[str]:
     return paths
 
 
+def _voice_too_large(size: int) -> str:
+    limit_mb = settings.vayudoot_max_audio_bytes / (1024 * 1024)
+    return (
+        f"That voice note is too large: {size / (1024 * 1024):.1f} MB, and the limit is "
+        f"{limit_mb:.0f} MB. A voice note here is at most "
+        f"{settings.vayudoot_max_audio_seconds} seconds; a shorter recording, or one shared "
+        "from a voice-memo app rather than as uncompressed audio, will fit."
+    )
+
+
+async def _read_voice_note(upload: UploadFile | None) -> tuple[str, bytes] | None:
+    """Read and check a voice note without writing it anywhere yet.
+
+    Checked before the photographs are stored, so a refused voice note does not
+    leave photographs on disk for a case that was never created. The format is
+    read from the bytes (`audio.sniff`); the browser's content type and the file
+    name are claims. Length is checked where the file states it — see `audio.py`
+    for why that is not always.
+    """
+    if upload is None or not upload.filename:
+        return None
+    limit = settings.vayudoot_max_audio_bytes
+    if upload.size is not None and upload.size > limit:
+        raise HTTPException(413, _voice_too_large(upload.size))
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await upload.read(_CHUNK):
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(413, _voice_too_large(total))
+        chunks.append(chunk)
+    data = b"".join(chunks)
+
+    try:
+        audio_format = sniff_audio(data)
+    except UnsupportedAudio as exc:
+        raise HTTPException(415, f"That file could not be read as a voice note: {exc}") from exc
+
+    seconds = audio_duration(data, audio_format)
+    most = settings.vayudoot_max_audio_seconds
+    if seconds is not None and seconds > most + 1:  # a recorder's stop lands a little late
+        raise HTTPException(
+            413,
+            f"That voice note is {seconds:.0f} seconds long; the limit is {most}. Say what is "
+            "happening, where, and how often — that fits comfortably.",
+        )
+    return audio_format, data
+
+
+def _store_voice_note(voice: tuple[str, bytes] | None) -> str:
+    """Write a checked voice note beside the photographs, exactly as recorded."""
+    if voice is None:
+        return ""
+    audio_format, data = voice
+    uploads = settings.vayudoot_upload_dir
+    uploads.mkdir(parents=True, exist_ok=True)
+    path = uploads / f"{uuid.uuid4().hex}{audio_suffix(audio_format)}"
+    path.write_bytes(data)
+    return str(path)
+
+
 def _client_key(request: Request) -> str:
     """Who to count this request against.
 
@@ -303,6 +368,10 @@ def health() -> dict:
         "reports_remaining_today": limiter.remaining_today() if limiter.enabled else None,
         "reports_per_day": settings.vayudoot_reports_per_day if limiter.enabled else None,
         "max_upload_bytes": settings.vayudoot_max_upload_bytes,
+        # The recorder stops at the first and refuses a chosen file past the
+        # second, rather than letting the server say so after the upload.
+        "max_audio_seconds": settings.vayudoot_max_audio_seconds,
+        "max_audio_bytes": settings.vayudoot_max_audio_bytes,
     }
 
 
@@ -314,12 +383,25 @@ async def submit_report(
     note: str = Form(""),
     contact: str = Form(""),
     image: list[UploadFile] | None = File(None),
+    audio: UploadFile | None = File(None),
 ) -> Case:
     """Accept a report and start the pipeline. Returns before the run finishes.
 
     `image` is repeatable: one angle is often not enough to classify a plume, and
     the confidence floor then halts a real event. Sending the field once is
     exactly what it always was.
+
+    `audio` is one optional voice note, in the reporter's own language. A report
+    may be a voice note alone: the evidence stage already classifies an account
+    without a photograph, and a spoken account is that account in the form a
+    person standing near a fire can actually give. It is heard on the fast tier
+    (`agents/voice.py`) and costs one more call than the same report without it.
+
+    The recording is stored with the case and is not served back by any route.
+    `GET /cases/{id}` is world-readable by design, and a voice is as identifying
+    as the contact this module already withholds (`CASE_EXCLUDE`) — more so, if
+    the speaker named someone before the model left the name out. The case
+    carries the account as heard, names removed, which is what anyone needs.
     """
     # Metered before anything else: this is the endpoint that spends the day's
     # model quota, and the cheapest refusal is the one made before any work.
@@ -329,6 +411,7 @@ async def submit_report(
             429, decision.message, headers={"Retry-After": str(decision.retry_after_seconds)}
         )
 
+    voice = await _read_voice_note(audio)
     report = Report(
         report_id=uuid.uuid4().hex,
         latitude=latitude,
@@ -336,6 +419,7 @@ async def submit_report(
         note=note,
         reporter_contact=contact,
         image_paths=await _store_photographs(image or []),
+        audio_path=_store_voice_note(voice),
     )
 
     case = new_case(report)

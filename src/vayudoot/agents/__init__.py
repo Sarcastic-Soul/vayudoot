@@ -11,6 +11,7 @@ from .forecast import (
 from .imagery import build_imagery_agent, read_hotspot_imagery
 from .jurisdiction import build_jurisdiction_agent, resolve_jurisdiction
 from .rti import build_rti_agent, draft_rti_application, render_rti
+from .voice import build_voice_agent, hear_voice_note
 
 __all__ = [
     "analyse_evidence",
@@ -22,11 +23,13 @@ __all__ = [
     "build_imagery_agent",
     "build_jurisdiction_agent",
     "build_rti_agent",
+    "build_voice_agent",
     "corroborate",
     "draft_complaint",
     "draft_rti_application",
     "forecast_corridor",
     "forecast_location",
+    "hear_voice_note",
     "read_hotspot_imagery",
     "render_rti",
     "resolve_jurisdiction",

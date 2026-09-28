@@ -110,6 +110,9 @@ class Report(BaseModel):
     note: str = ""
     reporter_contact: str = ""
     observed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    #: A voice note, stored as recorded. Optional, like the photographs: a
+    #: report can be a photograph, a voice note, a written note, or any mix.
+    audio_path: str = ""
 
     @model_validator(mode="before")
     @classmethod
@@ -678,6 +681,132 @@ class RTIApplication(BaseModel):
     body_en: str = ""
 
 
+# --------------------------------------------------------------------------- #
+# Voice notes
+# --------------------------------------------------------------------------- #
+
+
+#: Fixed wording carried on every voice account, for `FORECAST_DISCLAIMER`'s
+#: reason: the label travels with the object rather than being left to whatever
+#: renders it.
+VOICE_DISCLAIMER = (
+    "Heard and translated by a model from the reporter's voice note. It is the reporter's "
+    "own account, not an observation, and it comes from the same person as the rest of the "
+    "report, so it corroborates nothing. Names of people and businesses are left out."
+)
+
+#: What a name is replaced with, in the transcript and everywhere else.
+NAME_OMITTED = "[name omitted]"
+
+
+class VoiceAccountFields(BaseModel):
+    """What was said in a voice note, as far as a model could hear it.
+
+    The base for both `VoiceHearing`, which is what the model returns, and
+    `VoiceAccount`, which is what is stored. They differ in one field on
+    purpose; see `VoiceHearing.named_parties`.
+    """
+
+    heard_speech: bool = Field(
+        description="True when the recording contains speech you could make out. Silence, "
+        "noise only, or speech too faint to follow is false."
+    )
+    language: str = Field(
+        default="",
+        description="The language spoken, named in English: 'Hindi', 'Tamil', 'Portuguese'.",
+    )
+    language_code: str = Field(
+        default="", description="Its BCP 47 code: 'hi', 'ta', 'pt-BR', 'en-IN'."
+    )
+    transcript: str = Field(
+        default="",
+        description="What was said, in the language it was spoken in and that language's own "
+        "script — Devanagari for Hindi, Tamil script for Tamil — never romanised. Every name "
+        f"of a person, business or facility replaced with {NAME_OMITTED}.",
+    )
+    translation_en: str = Field(
+        default="",
+        description="A faithful English translation of the transcript, names replaced the same "
+        "way. When the speaker spoke English, the transcript again.",
+    )
+    what_is_described: str = Field(
+        default="",
+        description="One plain English sentence: what the speaker says is happening, where "
+        "relative to landmarks they mention. Their claim, not a finding.",
+    )
+    pollution_type_hint: PollutionType = Field(
+        default=PollutionType.UNCLEAR,
+        description="The category the speaker's description fits, or unclear. A hint for the "
+        "evidence stage, not a classification.",
+    )
+    time_pattern: str = Field(
+        default="",
+        description="When it happens, in English, as the speaker put it: 'every night after "
+        "10 pm', 'Sunday mornings'. Empty if not said.",
+    )
+    duration: str = Field(
+        default="",
+        description="How long it has been going on, in English: 'about three months'. Empty "
+        "if not said.",
+    )
+    smells: list[str] = Field(
+        default_factory=list,
+        description="Smells the speaker mentions, translated into English: 'burning plastic'.",
+    )
+    health_effects: list[str] = Field(
+        default_factory=list,
+        description="Effects on people the speaker mentions, in English: 'children coughing'.",
+    )
+    confidence: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="How sure you are the transcript and translation are right. Clear speech "
+        "is high; noise, a faint voice or a language you are unsure of is low. Never 1.0.",
+    )
+
+
+class VoiceHearing(VoiceAccountFields):
+    """What the voice agent returns. Never stored as it is.
+
+    `named_parties` exists so the omission of names can be enforced in code
+    rather than only asked for in a prompt. The model lists every name it
+    heard; `agents.voice.redact` removes each from every text field, however it
+    was spelt, and then drops the list. A model that forgets to replace a name in
+    the transcript but remembers that it heard one is caught; the list itself
+    never reaches the case, the API or the complaint. Hard constraint 7 and the
+    standing non-goal of naming a responsible party.
+    """
+
+    named_parties: list[str] = Field(
+        default_factory=list,
+        description="Every name of a person, business, company or facility the speaker said, "
+        "each exactly as spoken and also in Latin letters if it was in another script. Used "
+        "only to remove them; never repeated anywhere.",
+    )
+
+
+class VoiceAccount(VoiceAccountFields):
+    """A citizen's voice note as heard by a model, with the names taken out.
+
+    Stored on the case, shown beside the transcript, and passed to the evidence
+    and drafting stages as the reporter's own claim. Never a signal and never
+    corroboration: it is the same person as the photograph and the note, heard a
+    second way.
+    """
+
+    #: How many name strings were taken out. Said, rather than silently dropped,
+    #: so a reader of the case knows the account was edited and why. The model
+    #: lists a name in each script it was written in, so one business can count
+    #: twice: treat it as "were any removed", not as a count of people.
+    names_omitted: int = 0
+    #: The model that actually answered, which is not always the configured
+    #: one: the fast tier walks a chain when a model is rate limited.
+    model: str = ""
+    heard_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    disclaimer: str = VOICE_DISCLAIMER
+
+
 class Case(BaseModel):
     """Everything known about one report, persisted across days."""
 
@@ -689,6 +818,9 @@ class Case(BaseModel):
     corroboration: Corroboration | None = None
     jurisdiction: Jurisdiction | None = None
     complaint: Complaint | None = None
+    #: The voice note as heard, when the report carried one and it could be
+    #: heard. See `VoiceAccount`.
+    voice: VoiceAccount | None = None
     address: str = ""
     #: The repeat-report pattern the complaint was drafted against, if there was
     #: one. A record of what the drafting stage actually saw, not a live answer:

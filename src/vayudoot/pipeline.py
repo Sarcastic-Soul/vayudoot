@@ -16,6 +16,8 @@ import uuid
 
 from . import clustering, errors, store
 from .agents import analyse_evidence, corroborate, draft_complaint, resolve_jurisdiction
+from .agents.voice import TIER as VOICE_TIER
+from .agents.voice import hear_voice_note
 from .schemas import Case, CaseStatus, Cluster, Jurisdiction, Report, Stage
 from .tools.authorities import (
     country_name,
@@ -108,7 +110,11 @@ async def _run_stages(report: Report, case: Case, checkpoint, persist: bool) -> 
         return case
 
     checkpoint(Stage.EVIDENCE)
-    case.evidence = await analyse_evidence(report)
+    if report.audio_path and not await _hear(report, case):
+        if persist:
+            store.save(case)
+        return case
+    case.evidence = await analyse_evidence(report, voice=case.voice)
     case.log(
         f"Classified as {case.evidence.pollution_type.value} "
         f"({case.evidence.severity}, confidence {case.evidence.confidence:.2f})"
@@ -165,6 +171,7 @@ async def _run_stages(report: Report, case: Case, checkpoint, persist: bool) -> 
         case.address,
         cluster=cluster,
         case_id=case.case_id,
+        voice=case.voice,
     )
     case.status = CaseStatus.AWAITING_CONFIRMATION
     case.log("Complaint drafted, awaiting citizen confirmation before filing")
@@ -197,6 +204,55 @@ def _settle_table_facts(jurisdiction: Jurisdiction, geo: dict, category: str) ->
     jurisdiction.response_window_days = facts["response_window_days"]
     jurisdiction.response_window_statutory = facts["response_window_statutory"]
     jurisdiction.response_window_note = facts["response_window_note"]
+
+
+async def _hear(report: Report, case: Case) -> bool:
+    """Hear the voice note into `case.voice`. False when the run cannot go on.
+
+    Runs inside the evidence stage rather than as a stage of its own: it exists
+    to feed the evidence agent, and a new `Stage` would add a step to every
+    case's timeline, voice note or not.
+
+    A voice note that cannot be heard is not fatal when the report has anything
+    else — a photograph or a written note is still a report, and failing it
+    because a clip would not play would throw away what the citizen did send.
+    It is fatal when the voice note was the whole report. Then the case fails
+    here with the reason, rather than spending a primary-tier evidence call
+    classifying an empty report into a halt that blames the photograph.
+
+    Nothing here touches corroboration or confidence. The account is handed to
+    the evidence and drafting stages as the reporter's claim, and that is all.
+    """
+    something_else = bool(report.image_paths or report.note.strip())
+    try:
+        case.voice = await hear_voice_note(report)
+    except Exception as exc:  # noqa: BLE001 - a clip that will not play is not a failed report
+        reason = errors.describe(exc, VOICE_TIER)
+        log.warning("Voice note for case %s could not be heard: %s", case.case_id, reason)
+        if something_else:
+            case.log(f"The voice note could not be heard ({reason}); going on without it")
+            return True
+        case.status = CaseStatus.FAILED
+        case.error = f"The voice note could not be heard, and it was the whole report. {reason}"
+        case.log(f"Failed during {case.stage.value}: {case.error}")
+        return False
+
+    voice = case.voice
+    if not voice.heard_speech:
+        case.log("The voice note had no speech that could be made out")
+        if not something_else:
+            case.status = CaseStatus.FAILED
+            case.error = (
+                "The voice note had no speech that could be made out, and the report carries "
+                "no photograph or written note to go on. Record it again closer to the phone."
+            )
+            case.log(f"Failed during {case.stage.value}: {case.error}")
+            return False
+        return True
+
+    omitted = "; the names it mentioned were left out" if voice.names_omitted else ""
+    case.log(f"Voice note heard in {voice.language or 'an unidentified language'}{omitted}")
+    return True
 
 
 def _pattern(case: Case) -> Cluster | None:

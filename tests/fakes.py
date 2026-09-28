@@ -17,6 +17,8 @@ from vayudoot.schemas import (
     Jurisdiction,
     PollutionType,
     RTIApplication,
+    VoiceAccount,
+    VoiceHearing,
 )
 
 
@@ -129,6 +131,39 @@ def imagery_assessment(plume: bool = True) -> ImageryAssessment:
     )
 
 
+def voice_hearing(**overrides) -> VoiceHearing:
+    """What the fast-tier voice agent would return for a Hindi note, minus the model.
+
+    Deliberately left carrying a name in the translation and in `named_parties`,
+    the way a model that half-follows the prompt answers, so that anything built
+    from it has to go through `agents.voice.redact` to come out clean.
+    """
+    fields = {
+        "heard_speech": True,
+        "language": "Hindi",
+        "language_code": "hi",
+        "transcript": "स्कूल के पीछे वाली फैक्ट्री हर रात दस बजे के बाद प्लास्टिक जलाती है।",
+        "translation_en": "The Sharma Plastics factory behind the school burns plastic every "
+        "night after 10 pm.",
+        "what_is_described": "Plastic burnt at a factory behind a school, nightly.",
+        "pollution_type_hint": PollutionType.OPEN_WASTE_BURNING,
+        "time_pattern": "every night after 10 pm",
+        "duration": "about three months",
+        "smells": ["burning plastic"],
+        "health_effects": ["children coughing"],
+        "confidence": 0.85,
+        "named_parties": ["Sharma Plastics", "शर्मा"],
+    }
+    return VoiceHearing(**(fields | overrides))
+
+
+def voice_account() -> VoiceAccount:
+    """The stored account a pipeline test gets, already through the redactor."""
+    from vayudoot.agents.voice import redact
+
+    return redact(voice_hearing(), model="fake-flash-lite")
+
+
 class StubAgent:
     """Stands in for a Strands `Agent`.
 
@@ -166,6 +201,8 @@ def patch_stages(
         "corroborate": ("corroboration", corroboration),
         "resolve_jurisdiction": ("jurisdiction", jurisdiction),
         "draft_complaint": ("drafting", complaint),
+        # Only reached when the report carries a voice note.
+        "hear_voice_note": ("voice", voice_account),
     }
     for attr, (name, factory) in stages.items():
         monkeypatch.setattr(

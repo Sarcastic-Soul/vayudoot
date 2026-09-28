@@ -1,6 +1,10 @@
-/* The only thing a citizen has to fill in: a photograph and a pin. Everything
- * else is optional, because standing in front of a burning waste heap is not
- * the moment for a form.
+/* The only thing a citizen has to fill in: a pin, and a photograph or a voice
+ * note. Everything else is optional, because standing in front of a burning
+ * waste heap is not the moment for a form.
+ *
+ * The voice note (`VoiceRecorder`) is in whatever language the citizen speaks.
+ * It is sent as one more multipart field, `audio`, and the server refuses it
+ * with the same 413 and 415 as a photograph, so the handling below covers it.
  *
  * Two ways this form can now be refused, and neither is the citizen's fault:
  *
@@ -27,6 +31,7 @@ import { useHealth } from "../lib/store.js";
 import { megabytes } from "../lib/format.js";
 import { LocationPicker } from "./LocationPicker.js";
 import { ImagePlusIcon } from "./Icons.js";
+import { VoiceRecorder } from "./VoiceRecorder.js";
 
 /* Below this the remaining daily budget is worth saying out loud. Above it,
  * saying so would be noise about a limit nobody is near. */
@@ -34,7 +39,7 @@ const LOW_BUDGET = 3;
 
 /* Nothing was lost, and the form still holds it. The server cannot say this;
  * it is the one thing a person wants to know when a submission is refused. */
-const KEPT = "Nothing was submitted. Your photograph and your pin are still here.";
+const KEPT = "Nothing was submitted. Everything you added, and your pin, is still here.";
 
 function whenAgain(seconds) {
   if (!seconds) return "";
@@ -69,6 +74,8 @@ export function ReportForm() {
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [voice, setVoice] = useState(null);
+  const [recording, setRecording] = useState(false);
   const [health, refreshHealth] = useHealth();
   const photo = useRef(null);
   const note = useRef(null);
@@ -124,6 +131,7 @@ export function ReportForm() {
     body.append("note", note.current.value);
     body.append("contact", contact.current.value);
     if (file) body.append("image", file);
+    if (voice) body.append("audio", voice.blob, voice.name);
 
     setBusy(true);
     try {
@@ -140,7 +148,8 @@ export function ReportForm() {
   return html`
     <header class="page-head">
       <h2>Report a pollution event</h2>
-      <p>A photograph and a pin are all that is needed. From those this instance
+      <p>A pin and a photograph — or a voice note, in any language — are all that is
+        needed. From those this instance
         classifies what it is looking at, checks it against satellite and ground
         readings, works out who holds jurisdiction, and drafts the complaint for
         you to approve.</p>
@@ -179,6 +188,9 @@ export function ReportForm() {
       </div>
 
       <div class="form-col">
+        <${VoiceRecorder} health=${health} clip=${voice} onClip=${setVoice}
+                          onRecording=${setRecording} />
+
         <div class="field">
           <label for="note">What did you see?</label>
           <textarea id="note" rows="3" ref=${note}
@@ -192,8 +204,8 @@ export function ReportForm() {
                  ref=${contact} />
         </div>
 
-        <button type="submit" class="primary" disabled=${busy}>
-          ${busy ? "Starting the case…" : "Run the case"}
+        <button type="submit" class="primary" disabled=${busy || recording}>
+          ${busy ? "Starting the case…" : recording ? "Stop the recording first" : "Run the case"}
         </button>
         <p class="submit-note">The run takes a few minutes. You will be taken to the case
           and can watch each stage finish.</p>
