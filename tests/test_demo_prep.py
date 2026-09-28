@@ -56,6 +56,7 @@ class FakeNode:
         self.forecast = list(forecast)
         self.corridor = corridor or {}
         self.lands_anyway = False
+        self.busy_detail = "model busy"
 
     def calls(self, method: str, prefix: str = "") -> list[str]:
         return [p for m, p, _ in self.requests if m == method and p.startswith(prefix)]
@@ -108,7 +109,7 @@ class FakeNode:
                 }
             if status == 200:
                 return httpx.Response(200, json=self.imagery[hotspot_id])
-            return httpx.Response(status, json={"detail": "model busy"})
+            return httpx.Response(status, json={"detail": self.busy_detail})
         if path.endswith("/alert"):
             status = self.alert_posts.pop(0) if self.alert_posts else 503
             if status == 200:
@@ -248,6 +249,23 @@ def test_503_forever_gives_up_cold_with_the_command_to_try_again(isolated_storag
     printed = capsys.readouterr().out
     assert "still unavailable after 3 attempts" in printed
     assert "demo_prep.py --url http://node.test --only imagery" in printed
+
+
+def test_a_spent_daily_quota_stops_the_run_asking(isolated_storage, capsys):
+    """Retrying a daily quota with backoff only collects more rejections, one per step."""
+    _seed_all(isolated_storage)
+    node = FakeNode(imagery_posts=(503,) * 10)
+    node.busy_detail = (
+        "gemini-3.8-flash (Gemini) has hit its free-tier request quota. "
+        f"{demo_prep.DAILY_QUOTA_SPENT}; it resets at midnight Pacific time."
+    )
+    prep, waits = _prep(node, isolated_storage, steps=("imagery", "alert", "forecast"), attempts=4)
+
+    assert prep.run() == 1
+    assert len(node.calls("POST")) == 1
+    assert node.calls("GET", "/forecast") == []
+    assert waits == []
+    assert "already spent" in capsys.readouterr().out
 
 
 def test_a_call_that_landed_despite_the_error_is_not_paid_for_again(isolated_storage):

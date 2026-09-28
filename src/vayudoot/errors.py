@@ -63,11 +63,18 @@ def describe(exc: Exception, tier: Tier) -> str:
         limits = _GEMINI_KNOWN_LIMITS.get(model_id)
         known = f" Its free-tier limits are {limits}." if limits else ""
         retry = _gemini_retry_seconds(exc)
-        wait = (
-            f"Retry in about {retry} seconds." if retry is not None
-            else "Per-minute limits clear within a minute; the daily allowance resets at "
-            "midnight Pacific time."
-        )
+        if is_daily_quota(exc):
+            # Checked before the retry delay: a spent daily quota still comes
+            # with a RetryInfo of a few seconds, and following it only spends
+            # another rejected request.
+            wait = f"{DAILY_QUOTA_SPENT}; it resets at midnight Pacific time."
+        elif retry is not None:
+            wait = f"Retry in about {retry} seconds."
+        else:
+            wait = (
+                "Per-minute limits clear within a minute; the daily allowance resets at "
+                "midnight Pacific time."
+            )
         return (
             f"{model_id} (Gemini) has hit its free-tier request quota while {work}."
             f"{known} {wait}"
@@ -80,6 +87,22 @@ def describe(exc: Exception, tier: Tier) -> str:
             "and try again shortly."
         )
     return fallback
+
+
+#: The words a daily-quota failure carries in its message. A caller that retries
+#: (`scripts/demo_prep.py`) looks for them, so they are one constant.
+DAILY_QUOTA_SPENT = "The daily request allowance is spent"
+
+
+def is_daily_quota(exc: Exception) -> bool:
+    """Whether a Gemini rate limit is the per-day quota rather than the per-minute one.
+
+    The 429 body names the quota it hit (`...PerDayPerProjectPerModel-FreeTier`)
+    in a `QuotaFailure` detail, and the same id appears in the message text. A
+    per-day limit will not clear by waiting minutes, so a retry loop has to
+    tell the two apart.
+    """
+    return any("PerDay" in str(candidate) for candidate in _chain(exc))
 
 
 def _is_rate_limit(exc: Exception, provider: str) -> bool:

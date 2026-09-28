@@ -56,6 +56,8 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from federation_demo import BURNING_SITES, DELHI, seeded_signals
 
+from vayudoot.errors import DAILY_QUOTA_SPENT
+
 DEFAULT_URL = "http://127.0.0.1:8000"
 RECOMMENDED_CACHE_MINUTES = 240
 
@@ -209,6 +211,10 @@ def _with_retry(
             continue
         if response.status_code == 503:
             note = _detail(response)
+            if DAILY_QUOTA_SPENT in note:
+                # Waiting minutes will not clear a daily quota; every retry is
+                # one more rejected request against it.
+                return None, None, f"{note} Not retried."
             continue
         return response, None, ""
     return None, None, f"still unavailable after {attempts} attempts: {note}"
@@ -241,6 +247,9 @@ class Prep:
         self.corridor_pause = corridor_pause
         self.cache_minutes = cache_minutes
         self.sleep = sleep
+        #: Set once a call reports the daily quota spent, so the rest of the
+        #: run stops asking instead of collecting one rejection per step.
+        self.quota_spent = False
         self.items: list[Item] = []
 
     # -- helpers ------------------------------------------------------------ #
@@ -258,9 +267,14 @@ class Prep:
         return command
 
     def _retry(self, call, landed=None):
-        return _with_retry(
+        if self.quota_spent:
+            return None, None, "not asked: the daily model allowance was already spent"
+        response, found, note = _with_retry(
             call, attempts=self.attempts, backoff=self.backoff, sleep=self.sleep, landed=landed
         )
+        if DAILY_QUOTA_SPENT in note:
+            self.quota_spent = True
+        return response, found, note
 
     def _hotspots(self) -> list[dict]:
         response = self.node.get("/hotspots")

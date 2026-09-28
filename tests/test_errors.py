@@ -128,3 +128,33 @@ def test_ollama_budget_trip_is_recognised_and_passed_through_unchanged(providers
 
     assert errors.is_rate_limit(exc, tier="primary")
     assert errors.describe(exc, tier="primary") == str(exc)
+
+
+def test_a_spent_daily_quota_says_so_instead_of_suggesting_a_retry(providers):
+    """A daily 429 still carries a RetryInfo of seconds; following it wastes a request."""
+    providers(primary="gemini")
+    body = {
+        "error": {
+            "code": 429,
+            "message": "Quota exceeded for metric generate_content_free_tier_requests.",
+            "status": "RESOURCE_EXHAUSTED",
+            "details": [
+                {
+                    "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                    "violations": [
+                        {"quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"}
+                    ],
+                },
+                {"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": "17s"},
+            ],
+        }
+    }
+    message = errors.describe(ClientError(429, body), tier="primary")
+
+    assert errors.DAILY_QUOTA_SPENT in message
+    assert "Retry in about" not in message
+
+
+def test_a_per_minute_quota_is_not_mistaken_for_the_daily_one(providers):
+    providers(primary="gemini")
+    assert not errors.is_daily_quota(_gemini_quota_error())
