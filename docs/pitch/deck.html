@@ -355,8 +355,8 @@
       </div>
       <div class="card" style="margin-top:12px">
         <h3>And citizens identify</h3>
-        <p>A photograph <em>upgrades</em> a hotspot by naming what is burning.
-        <!-- [TODO pending: voice reports] add "or a spoken report" here once voice intake is merged and working. -->
+        <p>A photograph — or a voice note in the reporter's own language, heard
+        and translated by Gemini — <em>upgrades</em> a hotspot by naming what is burning.
         Citizen-only hotspots are capped at 60% confidence, however many
         reports arrive — so fifteen coordinated fake reports cannot make one.</p>
       </div>
@@ -537,8 +537,10 @@
       <!-- [TODO pending: South Africa and Brazil nodes] Once they run, add them to the
            caption and to this list, e.g. "Nodes configured for Gauteng (ZA) and
            Sao Paulo (BR) read the same contract." Do not claim before they run. -->
-      <!-- [TODO pending: sharing the forecaster between nodes] If it lands, say
-           exactly what is shared (not weights), in one line. -->
+      <p style="font-size:14px;margin-top:10px"><strong>The forecaster is shared by description.</strong>
+      Each node publishes its forecaster's version, a hash of its prompt, its bands and its
+      measured skill, so two nodes can tell whether their accuracy figures compare. The
+      prompt itself is never sent or run elsewhere.</p>
     </div>
   </div>
   <span class="num">09</span>
@@ -607,11 +609,10 @@
           <tr><td class="tick">Compute</td><td>Render free tier, one FastAPI process for API and interface</td></tr>
           <tr><td class="tick">Storage</td><td>Neon Postgres free tier; JSON files when unset</td></tr>
           <tr><td class="tick">Evidence</td><td>NASA FIRMS, NASA GIBS, OpenAQ, Open-Meteo, Nominatim, GeoNames — all free</td></tr>
+          <tr><td class="tick">Analytics</td><td>BigQuery sandbox export — hotspots, alerts and forecast scores compared across countries in SQL. Free, no card</td></tr>
           <tr><td class="tick">Interface</td><td>Preact as native ES modules. No bundler, no build step, no Node</td></tr>
         </tbody>
       </table>
-      <!-- [TODO pending: BigQuery export] If it lands, add a row:
-           "Analytics | BigQuery sandbox export — free, no card" -->
     </div>
     <div>
       <div class="callout warn">

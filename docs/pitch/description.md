@@ -8,8 +8,9 @@ For the submission form. Three versions; use the first.
 
 > Vayudoot is a hyper-local pollution detection network in which citizen reports
 > are one class of sensor. It joins NASA satellite fire detections, ground
-> stations, weather and citizen photographs so instruments alone can raise a
-> hotspot, and uses Gemini to read the satellite picture of each one, forecast
+> stations and weather, so instruments alone can raise a hotspot, with citizen
+> photographs and voice notes in any language that name what is burning. It uses
+> Gemini to read the satellite picture of each hotspot, forecast
 > air quality 72 hours ahead along economic corridors — including one that
 > crosses the India–Pakistan border — and draft an alert to the pollution control
 > board that covers it, sent only after a person confirms and only to a sandbox.
@@ -33,5 +34,3 @@ For the submission form. Three versions; use the first.
      run, the main version can say "tested with nodes configured for India,
      Pakistan, South Africa and Brazil". Not before, and never as if a government
      runs one. -->
-<!-- [TODO pending: voice reports] If voice intake is merged, "citizen photographs"
-     can become "citizen photographs and spoken reports". -->
