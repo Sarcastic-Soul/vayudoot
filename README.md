@@ -131,6 +131,18 @@ the confidence cap is waiting for.
 A photograph runs the full case pipeline and, at the end, becomes a signal like
 any other. See [the pipeline](#the-reporting-pipeline) below.
 
+A report can also carry a **voice note** of up to 90 seconds, in any language.
+Someone standing next to a burning dump can say more in twenty seconds than they
+will type on a phone, and can say it in Hindi, Tamil, Zulu or Portuguese. Gemini
+hears the audio itself — no Speech-to-Text or Translation service, both of which
+need billing — and returns what was said as spoken, an English translation, and
+the details that matter to a complaint: what, when, for how long, the smell, the
+effect on health. Names of people and businesses are left out, because this
+service never names a responsible party even when the reporter does. The
+recording stays private; only what was heard is shown on the case. A voice note
+is the reporter's own account, from the same person as the rest of the report,
+so it never counts as corroboration.
+
 ### Forecasting — where it is about to be bad
 
 Gemini reads an Open-Meteo pollutant forecast, an Open-Meteo wind forecast and
@@ -202,7 +214,8 @@ here. It runs end to end on one photograph.
    iPhone, AVIF, TIFF, BMP and JPEG 2000 — converted into one a model accepts,
    turned upright if it carries an EXIF rotation, and capped at 1568 pixels on
    the longest edge. See [`images.py`](src/vayudoot/images.py).
-1. **Evidence.** Multimodal classification into a pollution category, with a
+1. **Evidence.** A voice note, if there is one, is heard first on the fast tier
+   and handed on as the reporter's account. Then multimodal classification into a pollution category, with a
    severity estimate, the visible indicators that drove it, and a calibrated
    confidence. Up to four photographs are read together as one event. A report
    with no photograph at all is still classifiable from a written account that
@@ -435,6 +448,7 @@ VAYUDOOT_MODEL_PROVIDER=gemini   # or ollama
 | Open-Meteo Air Quality | pollutant forecast for the outlook | none |
 | OpenStreetMap Nominatim | reverse geocoding | none |
 | NASA GIBS | true-colour satellite imagery of a hotspot | none |
+| Gemini audio input | hearing and translating a voice note | AI Studio (free) |
 | GeoNames `cities15000` | population exposure (CC BY 4.0, shipped as data) | none |
 
 Exceedance is measured against the **NAAQS** thresholds in the Indian standard
@@ -508,7 +522,7 @@ Punjab detecting while Delhi forecasts.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/reports` | Submit a photo and coordinates. Returns `202` with a case id and runs the pipeline in the background, or `415` if the file is not a readable image |
+| `POST` | `/reports` | Submit a photo, an optional voice note (`audio`: WebM, Ogg, MP3, M4A or WAV, up to 4 MB and 90 seconds) and coordinates. Returns `202` with a case id and runs the pipeline in the background, or `415` if a file is not a readable image or recording |
 | `GET` | `/cases` | List all cases, newest first |
 | `GET` | `/cases/{id}` | One case, with every intermediate result, its `stage`, and its history |
 | `GET` | `/cases/{id}/photo` | The submitted photograph |

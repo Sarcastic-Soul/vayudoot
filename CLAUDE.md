@@ -94,6 +94,12 @@ about one hotspot, and its reading is cached per hotspot and image date, so the
 same picture is never paid for twice. The hotspot alert is on `fast`: the facts
 block is built in Python and the model only writes a short summary of it.
 
+Voice is on `fast`. Hearing a voice note and translating it is transcription,
+not judgement; the judgement about what the report shows stays with evidence on
+`primary`. It adds one fast call to a report that carries a voice note and no
+primary call, and flash-lite heard Hindi, Tamil and Portuguese accurately in
+live tests.
+
 **The two tiers can sit on different providers.** `VAYUDOOT_MODEL_PROVIDER_FAST`
 overrides the provider for the fast tier only, and `settings.provider_for(tier)`
 is the single thing that decides. That is deliberate, not incidental: it spreads

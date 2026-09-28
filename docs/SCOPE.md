@@ -436,6 +436,15 @@ and free, keyless public data.
       in the cross-border demo is not a BRICS member, which is why these two
       were added.
 
+- [x] **Voice notes, in the reporter's own language.** Earlier listed as out of
+      scope because Cloud Speech-to-Text needs billing. Gemini hears audio
+      directly on the free tier, so the reason went away. A report can be a voice
+      note alone. Names of people or businesses are removed before anything is
+      stored, the recording is served by no route, and a voice note is the same
+      citizen source as the photograph, never corroboration. One known gap: a
+      business name written in a script without capital letters can leave its
+      trade word behind ("[name omitted] प्लास्टिक्स").
+
 - [x] **BigQuery sandbox export.** Load jobs only, since the sandbox allows no
       streaming or DML; snapshots append and views pick the latest. Needs a
       Google Cloud project with no billing, which is a one-time manual step.
@@ -454,14 +463,10 @@ and free, keyless public data.
 
 ## Still out of scope
 
-Every non-goal from v0.1 and v0.2 stands unless listed above. Four are worth
+Every non-goal from v0.1 and v0.2 stands unless listed above. Three are worth
 restating because the new brief reads as an invitation to build them.
 
 **Accounts, logins and roles.** Decided above: the operations view is public.
-
-**Voice intake.** Cloud Speech-to-Text needs a billing account and there is no
-card. Track 02 does not ask for voice; track 01 does, and we are not entering
-track 01.
 
 **Training or exchanging models between nodes.** Federation is reversed only as
 far as the data contract. Actual federated learning is not happening in sixteen
