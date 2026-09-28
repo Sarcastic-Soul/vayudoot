@@ -119,6 +119,94 @@
         { "place": "Raniganj", "latitude": 23.6146, "longitude": 87.1322 },
         { "place": "Asansol", "latitude": 23.6739, "longitude": 86.9524 }
       ]
+    },
+    "gauteng-emalahleni-middelburg": {
+      "name": "Johannesburg-eMalahleni-Middelburg (N12 and N4)",
+      "states": ["Gauteng", "Mpumalanga"],
+      "countries": ["ZA"],
+      "description": "The road east from Johannesburg along the N12 and N4 into the Mpumalanga Highveld coal belt, where most of South Africa's coal-fired power stations sit inside the Highveld Priority Area declared under the Air Quality Act.",
+      "waypoints": [
+        { "place": "Johannesburg", "latitude": -26.2023, "longitude": 28.0436 },
+        { "place": "Germiston", "latitude": -26.215, "longitude": 28.164 },
+        { "place": "Benoni", "latitude": -26.1885, "longitude": 28.3208 },
+        { "place": "Delmas", "latitude": -26.1466, "longitude": 28.6832 },
+        { "place": "eMalahleni", "latitude": -25.8713, "longitude": 29.2332 },
+        { "place": "Middelburg", "latitude": -25.7751, "longitude": 29.4648 }
+      ]
+    },
+    "gauteng-durban-n3": {
+      "name": "Gauteng-Durban (N3)",
+      "states": ["Gauteng", "Free State", "KwaZulu-Natal"],
+      "countries": ["ZA"],
+      "description": "South Africa's main freight road, from Johannesburg over the Drakensberg escarpment and down through Pietermaritzburg to the port and south Durban industrial basin.",
+      "waypoints": [
+        { "place": "Johannesburg", "latitude": -26.2023, "longitude": 28.0436 },
+        { "place": "Heidelberg", "latitude": -26.5048, "longitude": 28.3592 },
+        { "place": "Harrismith", "latitude": -28.2728, "longitude": 29.1295 },
+        { "place": "Estcourt", "latitude": -29.0127, "longitude": 29.8662 },
+        { "place": "Mooi River", "latitude": -29.2082, "longitude": 29.9946 },
+        { "place": "Pietermaritzburg", "latitude": -29.6168, "longitude": 30.3928 },
+        { "place": "Durban", "latitude": -29.8579, "longitude": 31.0292 }
+      ]
+    },
+    "via-dutra": {
+      "name": "São Paulo-Rio de Janeiro (Via Dutra, BR-116)",
+      "states": ["São Paulo", "Rio de Janeiro"],
+      "countries": ["BR"],
+      "description": "Brazil's busiest industrial corridor, the Paraíba valley between its two largest cities, with the steel works at Volta Redonda and the aerospace and car plants of São José dos Campos along it.",
+      "waypoints": [
+        { "place": "São Paulo", "latitude": -23.5475, "longitude": -46.6361 },
+        { "place": "São José dos Campos", "latitude": -23.1794, "longitude": -45.8869 },
+        { "place": "Taubaté", "latitude": -23.0264, "longitude": -45.5553 },
+        { "place": "Guaratinguetá", "latitude": -22.8164, "longitude": -45.1925 },
+        { "place": "Resende", "latitude": -22.4689, "longitude": -44.4467 },
+        { "place": "Barra Mansa", "latitude": -22.5442, "longitude": -44.1714 },
+        { "place": "Nova Iguaçu", "latitude": -22.7592, "longitude": -43.4511 },
+        { "place": "Rio de Janeiro", "latitude": -22.9064, "longitude": -43.1822 }
+      ]
+    },
+    "br-163-arc-of-deforestation": {
+      "name": "Cuiabá-Santarém (BR-163)",
+      "states": ["Mato Grosso", "Pará"],
+      "countries": ["BR"],
+      "description": "The soy highway north from Cuiabá through the Mato Grosso grain towns into Pará, across the arc of deforestation where most of the Amazon's clearing fires burn each dry season.",
+      "waypoints": [
+        { "place": "Cuiabá", "latitude": -15.5961, "longitude": -56.0967 },
+        { "place": "Nova Mutum", "latitude": -13.8289, "longitude": -56.0822 },
+        { "place": "Sorriso", "latitude": -12.5453, "longitude": -55.7114 },
+        { "place": "Sinop", "latitude": -11.8642, "longitude": -55.5025 },
+        { "place": "Guarantã do Norte", "latitude": -9.9505, "longitude": -54.9082 },
+        { "place": "Novo Progresso", "latitude": -7.1478, "longitude": -55.3811 },
+        { "place": "Itaituba", "latitude": -4.2761, "longitude": -55.9836 },
+        { "place": "Santarém", "latitude": -2.4431, "longitude": -54.7083 }
+      ]
+    },
+    "br-364-rondonia": {
+      "name": "Porto Velho-Vilhena (BR-364)",
+      "states": ["Rondônia"],
+      "countries": ["BR"],
+      "description": "The highway that opened Rondônia to settlement, running south-east from Porto Velho through the cattle and clearing towns of the state to the Mato Grosso border.",
+      "waypoints": [
+        { "place": "Porto Velho", "latitude": -8.7619, "longitude": -63.9039 },
+        { "place": "Ariquemes", "latitude": -9.9133, "longitude": -63.0408 },
+        { "place": "Jaru", "latitude": -10.4389, "longitude": -62.4664 },
+        { "place": "Ji-Paraná", "latitude": -10.8853, "longitude": -61.9517 },
+        { "place": "Cacoal", "latitude": -11.4386, "longitude": -61.4472 },
+        { "place": "Pimenta Bueno", "latitude": -11.6725, "longitude": -61.1936 },
+        { "place": "Vilhena", "latitude": -12.7406, "longitude": -60.1458 }
+      ]
+    },
+    "manaus-porto-velho": {
+      "name": "Manaus-Porto Velho (BR-319)",
+      "states": ["Amazonas", "Rondônia"],
+      "countries": ["BR"],
+      "description": "The road south from Manaus through the interfluve forest to Humaitá and Porto Velho. Fire smoke from the southern Amazonas and Rondônia frontier reaches Manaus along it in the dry season.",
+      "waypoints": [
+        { "place": "Manaus", "latitude": -3.1019, "longitude": -60.025 },
+        { "place": "Careiro", "latitude": -3.7681, "longitude": -60.3692 },
+        { "place": "Humaitá", "latitude": -7.5165, "longitude": -63.031 },
+        { "place": "Porto Velho", "latitude": -8.7619, "longitude": -63.9039 }
+      ]
     }
   }
 }

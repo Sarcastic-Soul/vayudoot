@@ -233,7 +233,11 @@ def _thinned(points: Sequence[tuple[float, float]]) -> list[tuple[float, float]]
 
 
 def _corridor_waypoints() -> list[tuple[float, float]]:
-    """Waypoints of every configured corridor, or nothing if there are none.
+    """Waypoints of this node's country's corridors, or nothing if there are none.
+
+    `corridors.for_country` decides which: a corridor counts when it lists the
+    node's country, so a cross-border one is scanned from both sides and another
+    country's is not scanned at all.
 
     Held together loosely on purpose. Corridors are data loaded from a JSON file
     and the module that loads them is not a dependency this one should fail
@@ -248,7 +252,7 @@ def _corridor_waypoints() -> list[tuple[float, float]]:
     loader = next(
         (
             getattr(corridors, name)
-            for name in ("all_corridors", "load_corridors")
+            for name in ("for_country", "all_corridors")
             if hasattr(corridors, name)
         ),
         None,

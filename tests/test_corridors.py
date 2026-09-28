@@ -14,6 +14,18 @@ from vayudoot.corridors import _DATA, all_corridors, corridors_near, get_corrido
 #: starts in Pakistan.
 SOUTH_ASIA_BBOX = (6.0, 37.0, 60.0, 98.0)
 
+#: The same check for every country a corridor may list, as (south, north, west,
+#: east). South Africa and Brazil are in the southern and western hemispheres, so
+#: a dropped minus sign lands a waypoint in the wrong box rather than in a
+#: plausible one. A corridor listing a country with no box here fails, which is
+#: the point: a new country's corridors are checked from their first commit.
+COUNTRY_BBOXES = {
+    "IN": SOUTH_ASIA_BBOX,
+    "PK": SOUTH_ASIA_BBOX,
+    "ZA": (-35.0, -22.0, 16.0, 33.0),
+    "BR": (-34.0, 6.0, -74.0, -34.0),
+}
+
 TRANSBOUNDARY = "lahore-delhi-transboundary"
 LAHORE = (31.5497, 74.3436)
 
@@ -46,9 +58,23 @@ def test_every_corridor_is_described_and_placed():
         assert 4 <= len(corridor.waypoints) <= 8, corridor.corridor_id
 
 
-def test_every_waypoint_is_a_plausible_coordinate_in_south_asia():
+def test_every_waypoint_is_a_plausible_coordinate_in_its_countries():
+    """Each waypoint must fall inside the box of one of the corridor's countries."""
+    for corridor in all_corridors():
+        boxes = [COUNTRY_BBOXES[c] for c in corridor.countries]
+        for lat, lon in corridor.waypoints:
+            assert any(s <= lat <= n and w <= lon <= e for s, n, w, e in boxes), (
+                corridor.corridor_id,
+                lat,
+                lon,
+            )
+
+
+def test_south_asian_corridors_stay_in_south_asia():
     south, north, west, east = SOUTH_ASIA_BBOX
     for corridor in all_corridors():
+        if not set(corridor.countries) <= {"IN", "PK"}:
+            continue
         for lat, lon in corridor.waypoints:
             assert south <= lat <= north, (corridor.corridor_id, lat, lon)
             assert west <= lon <= east, (corridor.corridor_id, lat, lon)

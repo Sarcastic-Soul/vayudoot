@@ -18,8 +18,12 @@ somebody check a number against a map before trusting a forecast built on it.
 A corridor may cross an international border, because smoke does. Nothing here
 treats that as a special case: the waypoints are coordinates and a forecast at
 Lahore is computed the same way as one at Ludhiana. The data file names a foreign
-province distinctly in `states` and lists `countries`, which `Corridor` does not
-yet carry and this loader therefore drops; see the note in `corridors.json`.
+province distinctly in `states` and lists `countries`, which `Corridor` carries.
+
+The same file holds every country's corridors, and `countries` is what decides
+which a node watches: see `for_country`. One file rather than one per country,
+unlike the authority tables, because a corridor is a line on a map rather than a
+legal claim, and a cross-border one belongs to two countries at once.
 """
 
 from __future__ import annotations
@@ -30,6 +34,7 @@ import math
 from functools import lru_cache
 from pathlib import Path
 
+from .config import settings
 from .schemas import Corridor
 from .tools.geo import haversine_km
 
@@ -57,6 +62,25 @@ def _corridors() -> tuple[Corridor, ...]:
 def all_corridors() -> list[Corridor]:
     """Every corridor in the table, in the order the data file declares them."""
     return list(_corridors())
+
+
+def for_country(country: str | None = None) -> list[Corridor]:
+    """The corridors a node in `country` watches; this node's country when None.
+
+    A corridor belongs to every country it lists, so a corridor that crosses a
+    border is watched from both sides — Lahore to Delhi is an Indian node's
+    corridor as much as a Pakistani one's, because that is where Indian air
+    comes from. A corridor that does not list the node's country is somebody
+    else's: a Delhi node has nothing to say about the Via Dutra, and scanning
+    it would spend free-tier forecast calls on air no authority it holds can
+    act on.
+
+    `all_corridors` and `get_corridor` stay unfiltered on purpose. The first is
+    the whole table, for checking the data; the second answers a direct request
+    by id, and refusing one that exists would only hide it.
+    """
+    code = (country or settings.vayudoot_node_country or "IN").strip().upper()
+    return [c for c in _corridors() if code in {cc.upper() for cc in c.countries}]
 
 
 def get_corridor(corridor_id: str) -> Corridor | None:
