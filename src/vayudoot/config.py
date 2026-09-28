@@ -39,6 +39,27 @@ DEFAULT_MODEL_IDS: dict[str, dict[str, str]] = {
     },
 }
 
+# Where a tier goes when its model answers 429. AI Studio's free tier meters
+# requests per *model*, not per key: each Flash model allows 20 a day and each
+# Flash-Lite 500. A report spends two primary calls, so one Flash model is ten
+# reports a day — a demo and a judge exhaust it before lunch. Walking a chain of
+# same-class models multiplies the allowance without a card and without leaving
+# Google, which hard constraint 6 requires. The chain only applies to the default
+# model; an explicit `VAYUDOOT_MODEL_ID` override means exactly that model.
+MODEL_FALLBACKS: dict[str, dict[str, tuple[str, ...]]] = {
+    "gemini": {
+        "primary": (
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3-flash-preview",
+            "gemini-2.5-flash",
+        ),
+        "fast": ("gemini-3.1-flash-lite",),
+    },
+    "ollama": {"primary": (), "fast": ()},
+}
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -266,6 +287,17 @@ class Settings(BaseSettings):
     #: guess — puts Punjab's burning outside Delhi's forecast entirely, which is
     #: precisely the event Indian air quality forecasting exists to catch.
     vayudoot_forecast_upwind_km: float = 400.0
+    #: How long a forecast is served from memory before the model is asked again.
+    #: A corridor outlook is one fast-tier call per waypoint against a free tier
+    #: metered per request, and the inputs — an hourly weather model and a scan
+    #: that runs hourly — do not move faster than this.
+    vayudoot_forecast_cache_minutes: int = 30
+
+    #: How far from a hotspot's centre a settlement counts as exposed. 10 km is
+    #: roughly the distance over which a single large fire's smoke stays
+    #: concentrated at ground level before dispersing into the regional haze;
+    #: past it, the forecast's upwind reasoning is the right tool, not this.
+    vayudoot_exposure_radius_km: float = 10.0
 
     # Federation. A node publishes the hotspots it found and can read a
     # neighbour's; see `federation.py`. What is shared is a detection layer, not
@@ -276,6 +308,8 @@ class Settings(BaseSettings):
     vayudoot_node_id: str = "vayudoot-local"
     vayudoot_node_name: str = "Vayudoot (unconfigured node)"
     vayudoot_node_region: str = "unspecified"
+    #: ISO 3166-1 alpha-2 country this node sits in.
+    vayudoot_node_country: str = "IN"
     vayudoot_node_url: str = ""
     vayudoot_node_contact: str = ""
     #: Neighbour feed URLs, comma-separated. A node reads these and folds their
@@ -298,6 +332,14 @@ class Settings(BaseSettings):
     def model_id_for(self, tier: Tier = "primary") -> str:
         override = self.vayudoot_model_id if tier == "primary" else self.vayudoot_model_id_fast
         return override or DEFAULT_MODEL_IDS[self.provider_for(tier)][tier]
+
+    def model_chain_for(self, tier: Tier = "primary") -> list[str]:
+        """The model to use, then the ones to try if it is rate limited."""
+        override = self.vayudoot_model_id if tier == "primary" else self.vayudoot_model_id_fast
+        if override:
+            return [override]
+        provider = self.provider_for(tier)
+        return [DEFAULT_MODEL_IDS[provider][tier], *MODEL_FALLBACKS[provider][tier]]
 
     @property
     def model_id(self) -> str:

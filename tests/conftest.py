@@ -30,3 +30,13 @@ def isolated_storage(tmp_path, monkeypatch):
     limiter.reset()
     ollama_budget.reset()
     return tmp_path
+
+
+@pytest.fixture(autouse=True)
+def fresh_forecast_cache():
+    """The API caches forecasts in memory; one test's answer must not be another's."""
+    from vayudoot import api
+
+    api._forecast_cache.clear()
+    yield
+    api._forecast_cache.clear()

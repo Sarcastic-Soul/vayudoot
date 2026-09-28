@@ -51,3 +51,50 @@ def test_an_explicit_model_id_overrides_the_table(providers):
 def test_every_provider_has_both_tiers_in_the_table():
     for provider, tiers in DEFAULT_MODEL_IDS.items():
         assert set(tiers) == {"primary", "fast"}, provider
+
+
+def test_the_default_gemini_model_heads_a_chain_of_fallbacks(providers):
+    """AI Studio meters each model separately, so the chain is the daily allowance."""
+    providers(primary="gemini")
+    chain = settings.model_chain_for("primary")
+    assert chain[0] == DEFAULT_MODEL_IDS["gemini"]["primary"]
+    assert len(chain) > 1
+    assert all(model.startswith("gemini-") for model in chain)
+
+
+def test_an_explicit_model_id_has_no_fallbacks(providers):
+    providers(primary="gemini", model_id="gemini-exact")
+    assert settings.model_chain_for("primary") == ["gemini-exact"]
+
+
+def test_a_rate_limited_model_falls_through_to_the_next(providers, monkeypatch):
+    """A 429 before the first chunk moves to the next model; the caller never sees it."""
+    import asyncio
+
+    from strands.models.gemini import GeminiModel
+    from strands.types.exceptions import ModelThrottledException
+
+    from vayudoot import models
+
+    providers(primary="gemini")
+    monkeypatch.setattr(settings, "gemini_api_key", "test-key")
+    monkeypatch.setattr(models, "_throttled_at", {})
+    asked: list[str] = []
+
+    async def fake_stream(self, *args, **kwargs):
+        asked.append(self.config["model_id"])
+        if len(asked) == 1:
+            raise ModelThrottledException("429")
+        yield {"answered_by": self.config["model_id"]}
+
+    monkeypatch.setattr(GeminiModel, "stream", fake_stream)
+    model = models.build_model(tier="primary")
+
+    async def collect():
+        return [event async for event in model.stream([])]
+
+    events = asyncio.run(collect())
+    chain = settings.model_chain_for("primary")
+    assert asked == chain[:2]
+    assert events == [{"answered_by": chain[1]}]
+    assert chain[0] in models._throttled_at

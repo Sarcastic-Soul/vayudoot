@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 import uuid
 from contextlib import asynccontextmanager, contextmanager
 from datetime import UTC, datetime
@@ -434,6 +435,24 @@ def get_feed() -> HotspotFeed:
     return federation.publish(hotspots.current())
 
 
+@app.get("/feed.geojson")
+def get_feed_geojson() -> JSONResponse:
+    """The same feed as `/feed`, as an RFC 7946 GeoJSON FeatureCollection.
+
+    `/feed` is this project's own contract; GeoJSON is everybody's. Any GIS a
+    state pollution board, a municipal corporation or another country's agency
+    already runs — QGIS, ArcGIS, Leaflet, Google Earth — opens it with no code.
+    Each hotspot is a polygon at its published radius rather than a point, for
+    hard constraint 7's reason: a point is an address.
+    """
+    if not settings.vayudoot_publish_feed:
+        raise HTTPException(status_code=404, detail="This node does not publish a feed")
+    return JSONResponse(
+        federation.publish_geojson(hotspots.current()),
+        media_type="application/geo+json",
+    )
+
+
 @app.get("/neighbours")
 def get_neighbours() -> dict:
     """What this node's configured neighbours are currently reporting.
@@ -458,6 +477,22 @@ def get_neighbours() -> dict:
     }
 
 
+#: Forecasts served from memory, keyed by what was asked. A corridor outlook is
+#: one fast-tier call per waypoint on a free tier metered per request, and a
+#: page that re-renders or a second viewer should not buy the same answer twice.
+#: Per process and lost on restart, which is fine for something this cheap to
+#: recompute. Failures are never cached: a quota trip should be retried.
+_forecast_cache: dict[str, tuple[float, AirQualityForecast | CorridorForecast]] = {}
+
+
+def _cached_forecast(key: str):
+    hit = _forecast_cache.get(key)
+    ttl = settings.vayudoot_forecast_cache_minutes * 60
+    if hit is None or time.monotonic() - hit[0] > ttl:
+        return None
+    return hit[1]
+
+
 @app.get("/forecast", response_model=AirQualityForecast)
 async def get_forecast(lat: float, lon: float, place: str = "") -> AirQualityForecast:
     """Where air quality is heading at one location, and why.
@@ -471,14 +506,19 @@ async def get_forecast(lat: float, lon: float, place: str = "") -> AirQualityFor
     explanation of a Delhi morning, and a node that can only see its own reports
     learns about it when the smoke arrives.
     """
+    key = f"point:{round(lat, 3)}:{round(lon, 3)}"
+    if (cached := _cached_forecast(key)) is not None:
+        return cached
     context = hotspots.current() + federation.as_context(federation.neighbour_hotspots())
     try:
-        return await forecast_location(
+        result = await forecast_location(
             latitude=lat, longitude=lon, location_name=place, nearby_hotspots=context
         )
     except Exception as exc:
         # The forecast stage is a fast-tier call, so a quota trip reports as one.
         raise HTTPException(status_code=502, detail=errors.describe(exc, "fast")) from exc
+    _forecast_cache[key] = (time.monotonic(), result)
+    return result
 
 
 @app.get("/corridors", response_model=list[Corridor])
@@ -509,11 +549,16 @@ async def get_corridor_forecast(corridor_id: str) -> CorridorForecast:
     if corridor is None:
         raise HTTPException(status_code=404, detail=f"Unknown corridor: {corridor_id}")
 
+    key = f"corridor:{corridor_id}"
+    if (cached := _cached_forecast(key)) is not None:
+        return cached
     context = hotspots.current() + federation.as_context(federation.neighbour_hotspots())
     try:
-        return await forecast_corridor(corridor, hotspots=context)
+        result = await forecast_corridor(corridor, hotspots=context)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=errors.describe(exc, "fast")) from exc
+    _forecast_cache[key] = (time.monotonic(), result)
+    return result
 
 
 @app.post("/sensors/readings", response_model=Signal, status_code=201)

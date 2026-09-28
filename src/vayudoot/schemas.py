@@ -384,6 +384,30 @@ class Hotspot(BaseModel):
     #: cites. Zero is normal for a hotspot the satellites found first.
     case_ids: list[str] = Field(default_factory=list)
     signals: list[Signal] = Field(default_factory=list)
+    #: Who lives near it. None when the population table has nothing in reach,
+    #: which is not the same as nobody living there; see `Exposure`.
+    exposure: Exposure | None = None
+
+
+class Exposure(BaseModel):
+    """How many people live close enough to a hotspot to be breathing it.
+
+    A lower bound, and labelled as one. It counts the population of settlements
+    in a gazetteer whose centre lies within `radius_km` of the hotspot's centre,
+    so villages below the gazetteer's size floor, and people between settlements,
+    are not counted. The brief's own framing is that these events threaten public
+    health, and a number of people is what turns a circle on a map into a
+    priority — but an overstated number would be a public claim the data cannot
+    support, so the field says exactly what was counted.
+    """
+
+    population: int = Field(ge=0)
+    radius_km: float
+    #: Largest settlements counted, largest first. Places, never facilities or
+    #: operators: hard constraint 7.
+    towns: list[str] = Field(default_factory=list)
+    settlement_count: int = 0
+    basis: str = ""
 
 
 class SensorReading(BaseModel):
@@ -526,6 +550,11 @@ class NodeIdentity(BaseModel):
     node_id: str
     name: str
     region: str = Field(description="The administrative region this node covers")
+    #: ISO 3166-1 alpha-2. Smoke crosses national borders as readily as state
+    #: ones, and a network that can only federate inside one country cannot
+    #: follow it; the field is what lets a neighbour tell a cross-border feed
+    #: from a domestic one.
+    country: str = "IN"
     instance_url: str = ""
     contact: str = ""
 
