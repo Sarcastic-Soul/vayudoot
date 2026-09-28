@@ -5,6 +5,7 @@ from __future__ import annotations
 import httpx
 from strands import tool
 
+from ..standards import for_country as air_standard
 from .geo import upwind_point
 
 _URL = "https://api.open-meteo.com/v1/forecast"
@@ -74,8 +75,8 @@ def get_air_quality_forecast(latitude: float, longitude: float, hours: int = 72)
 
     Returns:
         The peak forecast PM2.5 and PM10 with the hours they occur, the hours
-        spent above the Indian 24-hour standard, and the wind direction the air
-        is expected to arrive from.
+        spent above the 24-hour standard of this node's country, which it names,
+        and the wind direction the air is expected to arrive from.
     """
     span = max(1, min(hours, 120))
     try:
@@ -106,11 +107,17 @@ def get_air_quality_forecast(latitude: float, longitude: float, hours: int = 72)
         "window_end": times[-1],
     }
 
-    # Indian NAAQS 24-hour standards. The same numbers `config.py` carries, and
-    # for the same reason: a forecast is raised so an Indian authority acts on
-    # it, so it is measured against the standard that authority is bound by.
-    standards = {"pm2_5": 60.0, "pm10": 100.0}
-    for parameter, standard in standards.items():
+    # The node country's own standard, the same one station readings are scored
+    # against in `standards.py`, and for the same reason: a forecast is raised
+    # so that country's authority acts on it, so it is measured against the
+    # number that authority is bound by. Named in the output so the model can
+    # say which standard it means.
+    standard_used = air_standard()
+    out["standard"] = f"{standard_used.name}: {standard_used.source}"
+    limits = {"pm2_5": standard_used.limits.get("pm25"), "pm10": standard_used.limits.get("pm10")}
+    for parameter, standard in limits.items():
+        if standard is None:
+            continue
         series = [v for v in (hourly.get(parameter) or [])[:span] if v is not None]
         if not series:
             continue

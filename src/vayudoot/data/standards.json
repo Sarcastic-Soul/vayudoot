@@ -1,0 +1,71 @@
+{
+  "_comment": [
+    "Ambient air quality standards a station reading is measured against, one table",
+    "per ISO 3166-1 alpha-2 country, plus WHO for a country with none. See",
+    "standards.py for the rules; the short version:",
+    "EVERY VALUE IS µg/m³, CO INCLUDED. Where the source writes mg/m³ or ppm, the",
+    "value here is converted and `note` says from what.",
+    "One number per pollutant: the 24-hour limit where the standard sets one, else",
+    "the 8-hour, else the 1-hour. `averaging` records which.",
+    "Adding a country is an edit here, never a change to Python."
+  ],
+  "standards": {
+    "IN": {
+      "name": "National Ambient Air Quality Standards (India)",
+      "phrase": "the Indian standard (NAAQS 2009)",
+      "source": "CPCB notification S.O. 384(E) of 18 November 2009",
+      "national": true,
+      "pollutants": {
+        "pm25": { "value": 60, "averaging": "24 hours" },
+        "pm10": { "value": 100, "averaging": "24 hours" },
+        "no2": { "value": 80, "averaging": "24 hours" },
+        "so2": { "value": 80, "averaging": "24 hours" },
+        "o3": { "value": 100, "averaging": "8 hours" },
+        "co": { "value": 2000, "averaging": "8 hours", "note": "2 mg/m³ in the notification" },
+        "nh3": { "value": 400, "averaging": "24 hours" }
+      }
+    },
+    "ZA": {
+      "name": "National Ambient Air Quality Standards (South Africa)",
+      "phrase": "the South African standard (NAAQS, GN 1210 of 2009 and GN 486 of 2012)",
+      "source": "GN 1210 of 24 December 2009 (Government Gazette 32816), https://www.gov.za/sites/default/files/gcis_document/201409/328161210.pdf, and GN 486 of 29 June 2012 (Government Gazette 35463) for PM2.5, https://www.gov.za/sites/default/files/gcis_document/201409/35463gon486.pdf, both under section 9(1) of the National Environmental Management: Air Quality Act 39 of 2004",
+      "national": true,
+      "pollutants": {
+        "pm25": { "value": 40, "averaging": "24 hours", "note": "in force 1 January 2016 to 31 December 2029; 25 from 1 January 2030" },
+        "pm10": { "value": 75, "averaging": "24 hours", "note": "in force from 1 January 2015" },
+        "no2": { "value": 200, "averaging": "1 hour", "note": "the standard sets no 24-hour limit" },
+        "so2": { "value": 125, "averaging": "24 hours" },
+        "o3": { "value": 120, "averaging": "8 hours", "note": "8-hour running average" },
+        "co": { "value": 10000, "averaging": "8 hours", "note": "10 mg/m³ in the notice" }
+      }
+    },
+    "BR": {
+      "name": "Padrões de qualidade do ar (Brazil)",
+      "phrase": "the Brazilian standard (CONAMA Resolution 506 of 2024, interim stage PI-2)",
+      "source": "CONAMA Resolução 506 of 5 July 2024, Anexo I, interim standard PI-2 in force from 1 January 2025, https://conama.mma.gov.br/?option=com_sisconama&task=arquivo.download&id=827",
+      "national": true,
+      "pollutants": {
+        "pm25": { "value": 50, "averaging": "24 hours" },
+        "pm10": { "value": 100, "averaging": "24 hours" },
+        "no2": { "value": 240, "averaging": "1 hour", "note": "highest hourly mean of the day; the resolution sets no 24-hour limit" },
+        "so2": { "value": 50, "averaging": "24 hours" },
+        "o3": { "value": 130, "averaging": "8 hours", "note": "highest moving 8-hour average of the day" },
+        "co": { "value": 10310, "averaging": "8 hours", "note": "9 ppm in the resolution, converted at its reference conditions of 25 °C and 760 mmHg" }
+      }
+    },
+    "WHO": {
+      "name": "WHO global air quality guidelines (2021)",
+      "phrase": "the WHO 2021 guideline (no national standard is configured for this country)",
+      "source": "World Health Organization, WHO global air quality guidelines, 2021, https://www.who.int/publications/i/item/9789240034228",
+      "national": false,
+      "pollutants": {
+        "pm25": { "value": 15, "averaging": "24 hours" },
+        "pm10": { "value": 45, "averaging": "24 hours" },
+        "no2": { "value": 25, "averaging": "24 hours" },
+        "so2": { "value": 40, "averaging": "24 hours" },
+        "o3": { "value": 100, "averaging": "8 hours" },
+        "co": { "value": 4000, "averaging": "24 hours", "note": "4 mg/m³ in the guideline" }
+      }
+    }
+  }
+}
