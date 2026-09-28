@@ -1,0 +1,426 @@
+/* Voice notes: the recorder in the report form, and the heard account on a case.
+ *
+ * The recorder borrows the photograph well's shape — same radius, same dashed
+ * edge that turns solid once it holds something — so the two read as two
+ * ways of giving the same report. Recording is the one state drawn in red:
+ * a red dot and a running clock are what every phone's recorder shows, and
+ * nothing else in the form uses that colour for anything but an error, so it
+ * cannot be mistaken for one. It pulses; with reduced motion it does not.
+ *
+ * The heard account uses the model-derived vocabulary from forecast.css — the
+ * info-blue spark mark and the disclaimer band — because a transcript is a
+ * model's hearing, and should look like the other things a model produced. */
+
+.voice svg[viewBox="0 0 24 24"],
+.voice-account svg[viewBox="0 0 24 24"] {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.voice { display: grid; gap: var(--s2); }
+
+.voice-lang {
+  padding: 2px var(--s2);
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ok);
+  background: var(--ok-tint);
+  border: 1px solid var(--ok-line);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.voice-well {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s3);
+  background: var(--surface);
+  border: 2px dashed var(--field-line);
+  border-radius: var(--radius-lg);
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.voice[data-state="recorded"] .voice-well {
+  border-style: solid;
+  border-color: var(--ok-line);
+  background: var(--surface-2);
+}
+
+.voice[data-state="recording"] .voice-well {
+  border-style: solid;
+  border-color: var(--danger-line);
+  background: var(--danger-tint);
+}
+
+.voice[data-state="denied"] .voice-well {
+  border-style: solid;
+  border-color: var(--attention-line);
+  background: var(--attention-tint);
+}
+
+/* ── idle: the whole well is the button ─────────────────────────────── */
+
+.voice-record, .voice-row, .voice-take-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--s2);
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+}
+
+.voice-take-head { min-height: 0; padding: 0; }
+
+.voice-record { cursor: pointer; transition: background-color .15s ease; }
+.voice-record:hover { background: var(--ok-tint); }
+.voice:has(.voice-record:hover) .voice-well { border-color: var(--ok); }
+
+.voice-disc {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  color: var(--ok-on);
+  background: var(--ok);
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px var(--ok-tint), var(--shadow-1);
+  transition: transform .15s ease;
+}
+
+.voice-disc svg { width: 26px; height: 26px; }
+.voice-record:hover .voice-disc { transform: scale(1.05); }
+.voice-record:active .voice-disc { transform: scale(.97); }
+
+.voice-disc.is-waiting { animation: voice-breathe 1.6s ease-in-out infinite; }
+
+.voice-disc.is-done {
+  width: 44px;
+  height: 44px;
+  color: var(--ok);
+  background: var(--ok-tint);
+  box-shadow: none;
+  border: 1px solid var(--ok-line);
+}
+
+.voice-disc.is-done svg { width: 22px; height: 22px; }
+
+.voice-disc.is-off {
+  width: 44px;
+  height: 44px;
+  color: var(--attention);
+  background: var(--surface);
+  box-shadow: none;
+  border: 1px solid var(--attention-line);
+}
+
+.voice-disc.is-off svg { width: 22px; height: 22px; }
+
+.voice-cta { display: grid; gap: 2px; min-width: 0; }
+.voice-cta strong { font-size: var(--t-lead); font-weight: var(--w-semi); line-height: var(--lh-tight); }
+.voice-cta span { font-size: var(--t-meta); line-height: var(--lh-snug); color: var(--ink-soft); }
+
+.voice-message { margin: 0; padding: var(--s2); font-size: var(--t-meta); color: var(--ink-soft); }
+
+/* ── recording ─────────────────────────────────────────────────────────
+   Dot, clock, level, stop — one line, the way a phone's recorder draws it. */
+
+.voice-live {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 56px;
+  padding: 0 var(--s1);
+}
+
+.voice-rec {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--danger);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 var(--danger);
+  animation: voice-pulse 1.2s ease-out infinite;
+}
+
+.voice-clock {
+  flex: none;
+  min-width: 3.2em;
+  font-size: var(--t-title);
+  font-weight: var(--w-semi);
+  line-height: 1;
+  color: var(--ink);
+}
+
+.voice-clock.is-near { color: var(--danger); }
+
+.voice-meter {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  overflow: hidden;
+}
+
+.voice-meter i {
+  flex: 1;
+  min-width: 2px;
+  max-width: 6px;
+  height: calc(var(--level) * 100%);
+  background: var(--danger);
+  border-radius: 2px;
+  opacity: calc(.35 + var(--level) * .65);
+  transition: height .1s linear;
+}
+
+.voice-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: none;
+  min-height: 48px;
+  padding: 0 var(--s4);
+  font: inherit;
+  font-weight: var(--w-semi);
+  color: var(--danger-tint);   /* light on dark red, dark on the dark theme's coral */
+  background: var(--danger);
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  box-shadow: var(--shadow-1);
+}
+
+.voice-stop svg[viewBox] { width: 18px; height: 18px; fill: currentColor; stroke: none; }
+.voice-stop:hover { filter: brightness(1.08); box-shadow: var(--shadow-2); }
+
+.voice-progress {
+  height: 4px;
+  overflow: hidden;
+  background: var(--danger-line);
+  border-radius: var(--radius-pill);
+}
+
+.voice-progress span {
+  display: block;
+  height: 100%;
+  background: var(--danger);
+  transition: width .1s linear;
+}
+
+.voice[data-state="recording"] .help { margin: 0; color: var(--ink); }
+
+/* ── recorded ────────────────────────────────────────────────────────── */
+
+.voice-take { display: grid; gap: var(--s3); }
+
+.voice-take audio {
+  width: 100%;
+  height: 44px;
+  border-radius: var(--radius-pill);
+}
+
+.voice-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+.voice-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s4);
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  color: var(--ok);
+  background: var(--surface);
+  border: 1px solid var(--ok-line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.voice-ghost svg { width: 17px; height: 17px; }
+.voice-ghost:hover { background: var(--ok-tint); border-color: var(--ok); }
+.voice-ghost.is-quiet { color: var(--ink-soft); border-color: var(--line-strong); }
+.voice-ghost.is-quiet:hover { color: var(--danger); background: var(--danger-tint); border-color: var(--danger-line); }
+
+/* ── denied ──────────────────────────────────────────────────────────── */
+
+.voice-denied {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s1);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+}
+
+.voice-denied strong { display: block; font-size: var(--t-body); font-weight: var(--w-semi); }
+.voice-denied p { margin: var(--s1) 0 var(--s2); color: var(--ink-soft); }
+
+.voice-attach { margin: 0; }
+
+/* ── the heard account, on a case ──────────────────────────────────────── */
+
+.voice-account {
+  display: grid;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+
+.voice-account-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+}
+
+.voice-account-head .section-label { margin: 0; }
+
+.voice-quote { display: grid; gap: var(--s2); margin: 0; }
+
+.voice-quote figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--t-meta);
+}
+
+.voice-lang-chip {
+  padding: 1px var(--s2);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.voice-quote blockquote {
+  margin: 0;
+  padding: var(--s1) 0 var(--s1) var(--s4);
+  font-size: var(--t-lead);
+  line-height: var(--lh-body);
+  color: var(--ink);
+  border-left: 3px solid var(--ok);
+  overflow-wrap: anywhere;
+}
+
+.voice-quote.is-translation blockquote {
+  font-size: var(--t-body);
+  color: var(--ink);
+  border-left-color: var(--info-line);
+}
+
+.voice-empty { margin: 0; color: var(--ink-soft); }
+
+.voice-facts {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  padding: var(--s3) 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.voice-fact {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--s3);
+}
+
+.voice-fact dt {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.voice-fact dd { display: flex; flex-wrap: wrap; gap: var(--s1); margin: 0; }
+
+.voice-chip {
+  padding: 2px var(--s2);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.voice-prose { font-size: var(--t-meta); line-height: var(--lh-snug); color: var(--ink); }
+
+/* A removed name, drawn as a gap rather than as bracketed words. */
+.voice-gap {
+  display: inline-block;
+  padding: 0 .45em;
+  font-size: .72em;
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  line-height: 1.6;
+  vertical-align: .12em;
+  color: var(--ink-soft);
+  background: repeating-linear-gradient(-45deg, var(--surface-sunk) 0 4px, var(--surface) 4px 8px);
+  border: 1px dashed var(--line-strong);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.voice-names {
+  margin: 0;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.voice-names .voice-gap { margin-right: var(--s1); font-size: .68rem; }
+
+.voice-account .disclaimer { margin-top: 0; }
+.voice-account .disclaimer p { margin: 0; }
+.voice-account .disclaimer p + p { margin-top: var(--s1); }
+
+@media (max-width: 520px) {
+  .voice-fact { grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
+  .voice-live { gap: var(--s2); }
+  .voice-clock { font-size: var(--t-lead); }
+  .voice-stop { padding: 0 var(--s3); }
+}
+
+@keyframes voice-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent); }
+  100% { box-shadow: 0 0 0 10px transparent; }
+}
+
+@keyframes voice-breathe {
+  50% { transform: scale(.94); opacity: .75; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-rec, .voice-disc.is-waiting { animation: none; }
+  .voice-meter i, .voice-progress span { transition: none; }
+}
+
+@media (forced-colors: active) {
+  .voice-well, .voice-account { border-color: CanvasText; }
+  .voice-rec, .voice-meter i, .voice-progress span { background: Highlight; }
+}

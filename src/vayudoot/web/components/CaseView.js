@@ -23,6 +23,7 @@ import { CoverageWarning } from "./CoverageWarning.js";
 import { RTIPanel } from "./RTIPanel.js";
 import { StatusBanner } from "./CaseStatus.js";
 import { Timeline } from "./Timeline.js";
+import { VoiceAccount } from "./VoiceAccount.js";
 
 const FILED = ["filed", "escalated"];
 
@@ -90,6 +91,8 @@ export function CaseView({ caseId }) {
                 <p class="photo-note">All ${photoCount(record)} were read together as one
                   event.</p>`}
             <//>`}
+
+          <${VoiceAccount} voice=${record.voice} />
 
           <${Timeline} record=${record} />
         </div>
