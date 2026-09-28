@@ -36,6 +36,7 @@ from .config import settings
 from .schemas import (
     Case,
     CaseStatus,
+    Exposure,
     Hotspot,
     PollutionType,
     Signal,
@@ -381,13 +382,14 @@ def _summarise(members: Sequence[Signal]) -> Hotspot:
 
     corroborated = any(s.is_independent for s in ordered)
     first, last = _observed(ordered[0]), _observed(ordered[-1])
+    radius = _radius(ordered, centre_lat, centre_lon)
 
     return Hotspot(
         hotspot_id=hotspot_id(pollution_type, seed.signal_id),
         pollution_type=pollution_type,
         centre_latitude=centre_lat,
         centre_longitude=centre_lon,
-        radius_km=_radius(ordered, centre_lat, centre_lon),
+        radius_km=radius,
         confidence=_confidence(ordered, corroborated),
         severity=_severity(ordered),
         corroborated=corroborated,
@@ -398,7 +400,26 @@ def _summarise(members: Sequence[Signal]) -> Hotspot:
         span_days=max((last - first).days, 0),
         case_ids=[s.signal_id for s in ordered if s.source is SignalSource.CITIZEN_REPORT],
         signals=list(ordered),
+        exposure=_exposure(centre_lat, centre_lon, radius),
     )
+
+
+def _exposure(centre_lat: float, centre_lon: float, radius_km: float) -> Exposure | None:
+    """Who lives in reach of a hotspot. See `exposure.py` for what is counted.
+
+    Measured from the centre out to the configured exposure radius, or to the
+    hotspot's own radius when that is wider: a hotspot spread over twelve
+    kilometres has people breathing it at its edge, and counting only the inner
+    ten would drop them.
+
+    Computed after confidence and severity, and read by neither. How many people
+    live near a fire says how much it matters if it is real, never whether it is
+    real; `exposure.py` explains why letting it lift confidence would be wrong.
+    """
+    from .exposure import exposure_for
+
+    reach = max(radius_km, settings.vayudoot_exposure_radius_km)
+    return exposure_for(centre_lat, centre_lon, reach)
 
 
 def _radius(members: Sequence[Signal], centre_lat: float, centre_lon: float) -> float:

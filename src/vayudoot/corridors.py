@@ -14,6 +14,12 @@ file also carries the name of the place it sits on, which `Corridor` does not
 keep. That is deliberate rather than lossy: nothing downstream needs the label,
 but forty bare coordinate pairs are unreviewable, and a name is what lets
 somebody check a number against a map before trusting a forecast built on it.
+
+A corridor may cross an international border, because smoke does. Nothing here
+treats that as a special case: the waypoints are coordinates and a forecast at
+Lahore is computed the same way as one at Ludhiana. The data file names a foreign
+province distinctly in `states` and lists `countries`, which `Corridor` does not
+yet carry and this loader therefore drops; see the note in `corridors.json`.
 """
 
 from __future__ import annotations

@@ -28,6 +28,22 @@ no shared training data, no central authority, no agreement beyond a URL and a
 JSON schema. A node publishes what it found. A neighbour reads it. The
 forecasting stage is handed both.
 
+### The border does not stop it either
+
+The two Punjabs are one paddy belt split by an international border. Pakistan's
+Punjab burns the same stubble on the same calendar, Lahore is fifty kilometres
+from Amritsar, and the autumn north-westerly that carries Ludhiana's smoke to
+Delhi carries Lahore's with it. It is the best-documented trans-boundary smog
+event in South Asia, and a network that federates only inside one country sees
+half of it.
+
+Nothing in the contract is Indian. A node says which country it is in
+(`country`, ISO 3166-1 alpha-2, on `/node` and in every feed), and a Delhi node
+reads a feed from Lahore exactly as it reads one from Ludhiana — as forecasting
+context under the rules below, never as its own detection. The corridor table
+carries the route as data: `lahore-delhi-transboundary` runs Lahore → Amritsar →
+Jalandhar → Ludhiana → Ambala → New Delhi.
+
 ## The contract
 
 ### `GET /node`
@@ -39,10 +55,14 @@ Who this instance is.
   "node_id": "punjab-node",
   "name": "Punjab State Air Quality Cell",
   "region": "punjab",
+  "country": "IN",
   "instance_url": "https://punjab.example.org",
   "contact": "airquality@punjab.example.org"
 }
 ```
+
+`country` was added inside feed version 1.0 because it defaults to `IN`: a feed
+from a node running an older build, which does not send it, still validates.
 
 ### `GET /feed`
 
@@ -91,6 +111,66 @@ as the strong ones, and the flag is what lets it decide.
 **It is versioned.** A second state standing up its own instance is what this is
 for, and a feed without a version is a feed nobody can safely change.
 
+**Population exposure is not in it.** Our hotspots carry an `exposure` figure —
+how many people live in towns within reach — but it is our gazetteer's
+arithmetic over the centre and radius, which are already published. A neighbour
+can compute it from its own population data, and a node across a border may
+well hold a better table for its own side than we do. Publishing ours would
+invite a neighbour to cite our estimate as if it were part of the detection.
+
+### `GET /feed.geojson`
+
+The same feed as an RFC 7946 GeoJSON FeatureCollection. `/feed` is this
+project's own contract; GeoJSON is everybody's. QGIS, ArcGIS, Leaflet and Google
+Earth open it with no code, which is what lets a pollution control board or
+another country's environment agency look at what a node found without adopting
+anything of ours first. Served as `application/geo+json`, and withheld with a
+404 whenever `/feed` is.
+
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "VDH-1A2B3C4D",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[75.8573, 30.938771], [75.848709, 30.938045], "...",
+                         [75.8573, 30.938771]]]
+      },
+      "properties": {
+        "hotspot_id": "VDH-1A2B3C4D", "node_id": "punjab-node",
+        "pollution_type": "crop_residue_burning",
+        "centre_latitude": 30.901, "centre_longitude": 75.8573, "radius_km": 4.2,
+        "confidence": 0.93, "severity": "severe", "corroborated": true,
+        "signal_count": 7,
+        "first_seen_at": "2026-09-13T22:10:00Z", "last_seen_at": "2026-09-15T03:40:00Z",
+        "node_country": "IN", "feed_version": "1.0"
+      }
+    }
+  ],
+  "feed_version": "1.0",
+  "node": { "node_id": "punjab-node", "country": "IN", "...": "..." },
+  "generated_at": "2026-09-15T04:00:00Z",
+  "hotspot_count": 1
+}
+```
+
+**Every hotspot is a polygon, never a point.** A point is an address, and a
+point on a public map is an accusation against whoever sits under it — hard
+constraint 7. The ring is a 32-vertex approximation of the hotspot's circle at
+its published radius, placed geodesically, closed and counter-clockwise as the
+RFC requires, so the area on the map is exactly the area the feed claims.
+
+**The properties are `/feed`'s allowlist, produced by the same function.**
+`publish_geojson()` calls `publish()` and reshapes its output rather than
+projecting `Hotspot` a second time, so the two serialisations cannot drift and
+the GeoJSON cannot leak a field the feed withholds. The node rides on the
+collection as a foreign member (RFC 7946 §6.1), and each feature repeats the node
+id and country, because GIS layers are split and merged routinely and a feature
+that has lost its collection must still say whose detection it is.
+
 ### `GET /neighbours`
 
 What this node's configured peers are currently reporting, and which of them
@@ -136,6 +216,7 @@ throughout.
 VAYUDOOT_NODE_ID=punjab-node              # unique across the network
 VAYUDOOT_NODE_NAME="Punjab State Air Quality Cell"
 VAYUDOOT_NODE_REGION=punjab               # the region you cover
+VAYUDOOT_NODE_COUNTRY=IN                  # ISO 3166-1 alpha-2
 VAYUDOOT_NODE_URL=https://punjab.example.org
 VAYUDOOT_NODE_CONTACT=airquality@punjab.example.org
 VAYUDOOT_PUBLISH_FEED=true
@@ -182,6 +263,67 @@ VAYUDOOT_SCAN_INTERVAL_MINUTES=60
 Off by default on purpose: it is a loop calling two external APIs unattended, and
 it should start because somebody watching the quota decided so.
 
+## Standing up a node in another country
+
+The detection layer is already global. FIRMS, OpenAQ and Open-Meteo cover the
+planet, the hotspot rules are geometry and arithmetic, and the feed contract has
+no field that assumes India. What changes between countries is what a country
+*is*: its authorities, its routes, its air quality standards and its towns. All
+of those are data or configuration.
+
+**What is data or configuration, and changes:**
+
+- **Node identity.** `VAYUDOOT_NODE_COUNTRY` and the rest of step 2 above.
+- **Authorities.** `src/vayudoot/data/authorities.example.json` is keyed by
+  administrative region, with the statute each complaint cites. A new country
+  replaces the table; the committed copy keeps every address on `.invalid`
+  (hard constraint 1).
+- **Corridors.** `src/vayudoot/data/corridors.json`. A corridor may cross a
+  border — name a foreign province distinctly in `states` and list `countries`.
+- **Exceedance standards.** The thresholds a station reading must pass to become
+  a signal are `naaqs_standards` in `config.py`, the Indian NAAQS by default. They
+  are a settings field, so a deployment overrides them with one environment
+  variable holding the whole table, in µg/m³:
+  `NAAQS_STANDARDS='{"pm25": 25, "pm10": 50, "no2": 200, "so2": 125, "o3": 100}'`.
+  Measure against the numbers your own authority is bound by, for the reason the
+  comment in `config.py` gives.
+- **Towns for exposure.** `src/vayudoot/data/settlements.csv` is GeoNames
+  `cities15000` filtered to India and the neighbours whose smoke reaches it.
+  `scripts/build_settlements.py --countries ...` rebuilds it for another air
+  shed.
+- **Neighbours.** `VAYUDOOT_NEIGHBOUR_FEEDS`, which may point across a border.
+
+**What stays the same:** the code, the container, the two-tier model setup, the
+feed contract and its version, the hotspot rules (minimum radius, corroboration
+cap), the human confirmation before anything is filed, and the rule that a
+neighbour's hotspots are forecasting context — carried with their origin node,
+never stored, detected against or republished as ours. A foreign node is a
+neighbour like any other; being foreign earns it neither more trust nor less.
+
+**Two examples.**
+
+- *Brazil.* `VAYUDOOT_NODE_COUNTRY=BR`; an authorities table for IBAMA and the
+  state environment agencies with the statutes they enforce; corridors along the
+  arc of deforestation, where the August–October burning season sends smoke
+  south toward São Paulo; `NAAQS_STANDARDS` set to the CONAMA limits; settlements
+  rebuilt with `--countries BR,BO,PY,AR`, because Bolivian and Paraguayan fire
+  smoke crosses into Brazil too.
+- *South Africa.* `VAYUDOOT_NODE_COUNTRY=ZA`; authorities for the provincial
+  departments and the air quality officers under the National Environmental
+  Management: Air Quality Act; a corridor across the Mpumalanga Highveld coal and
+  power belt into Gauteng; `NAAQS_STANDARDS` set to South Africa's national
+  ambient standards; settlements rebuilt with `--countries ZA,MZ,ZW,BW`.
+
+**Not yet data, and would need a code change.** Honest about the edges:
+
+- The forecast disclaimer (`FORECAST_DISCLAIMER` in `schemas.py`) names CPCB and
+  IMD, and the forecast prompt says the location is in India. Both should take
+  the national agencies from configuration.
+- The RTI stage drafts under India's Right to Information Act, 2005. Another
+  country's freedom-of-information route would be a new prompt, not a new table.
+- The drafting prompt is written for Indian complaint practice. The statute it
+  cites comes from the authorities table, but the register does not.
+
 ## Trying it locally
 
 `scripts/federation_demo.py` runs the whole thing on one machine: it starts a
@@ -191,7 +333,21 @@ neighbour. Two real processes, the real HTTP contract, no mocking.
 
 ```bash
 .venv/bin/python scripts/federation_demo.py
+.venv/bin/python scripts/federation_demo.py --cross-border
+.venv/bin/python scripts/federation_demo.py --cross-border --no-forecast
 ```
+
+`--cross-border` adds a third node, configured as `country=PK`, with burning
+seeded around Kasur, Raiwind and Sheikhupura in Pakistan's Punjab. Delhi
+subscribes to both Punjabs and forecasts with both in hand. It shows the
+contract working across a border — a Delhi instance consuming a Pakistani one
+with no code changed. It does not claim that any Pakistani agency runs a node or
+has been approached; the node is this application with `PK` in its
+configuration, which is exactly what one would be.
+
+For that run the Delhi node's `VAYUDOOT_FORECAST_UPWIND_KM` is raised to 500 km,
+and the demo says so on screen. The shipped 400 km was tuned on Ludhiana, 286 km
+from Delhi, and stops short of Lahore at 428 km.
 
 ## What this is not
 

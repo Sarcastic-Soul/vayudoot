@@ -9,6 +9,7 @@ is the failure that would silently manufacture corroboration out of nothing.
 
 from __future__ import annotations
 
+import itertools
 import json
 from datetime import UTC, datetime, timedelta
 
@@ -18,6 +19,7 @@ import pytest
 from vayudoot import federation
 from vayudoot.config import settings
 from vayudoot.schemas import FeedHotspot, Hotspot, HotspotFeed, PollutionType
+from vayudoot.tools.geo import haversine_km
 
 NOW = datetime(2026, 9, 14, 6, 0, tzinfo=UTC)
 
@@ -46,11 +48,13 @@ def hotspot(
     )
 
 
-def feed_payload(node_id: str = "punjab-node", hotspots: list | None = None) -> dict:
+def feed_payload(
+    node_id: str = "punjab-node", hotspots: list | None = None, country: str = "IN"
+) -> dict:
     return json.loads(
         HotspotFeed(
             node=federation.NodeIdentity(
-                node_id=node_id, name="Punjab node", region="punjab"
+                node_id=node_id, name="Punjab node", region="punjab", country=country
             ),
             hotspot_count=len(hotspots or []),
             hotspots=hotspots or [],
@@ -104,6 +108,105 @@ def test_an_empty_feed_is_still_a_valid_feed():
     published = federation.publish([])
     assert published.hotspot_count == 0
     assert published.node.node_id == settings.vayudoot_node_id
+
+
+def test_the_node_says_which_country_it_is_in(monkeypatch):
+    """Smoke crosses national borders as readily as state ones; the field is what
+    lets a neighbour tell a cross-border feed from a domestic one."""
+    monkeypatch.setattr(settings, "vayudoot_node_country", "pk")
+
+    assert federation.identity().country == "PK"
+    assert federation.publish([]).node.country == "PK"
+
+
+def test_an_unconfigured_node_is_in_india():
+    assert federation.identity().country == "IN"
+
+
+# --------------------------------------------------------------------------- #
+# GeoJSON
+# --------------------------------------------------------------------------- #
+
+
+def test_the_geojson_feed_is_a_feature_collection_of_polygons():
+    collection = federation.publish_geojson([hotspot(), hotspot("VDH-BBBB2222")])
+
+    assert collection["type"] == "FeatureCollection"
+    assert len(collection["features"]) == 2
+    for feature in collection["features"]:
+        assert feature["type"] == "Feature"
+        assert feature["geometry"]["type"] == "Polygon"
+
+
+def test_a_hotspot_is_never_published_as_a_point():
+    """PROPERTY. A point is an address; a point on a public map is an accusation
+    against whoever sits under it. Hard constraint 7."""
+    raw = json.dumps(federation.publish_geojson([hotspot()]))
+    assert '"Point"' not in raw
+    assert '"MultiPoint"' not in raw
+
+
+def test_the_ring_is_closed_counter_clockwise_and_longitude_first():
+    """RFC 7946 section 3.1.6: closed, exterior ring counter-clockwise, [lon, lat]."""
+    [ring] = federation.publish_geojson([hotspot()])["features"][0]["geometry"]["coordinates"]
+
+    assert ring[0] == ring[-1]
+    assert len(ring) == federation.GEOJSON_RING_VERTICES + 1
+    # Longitude first: Ludhiana is at 75.9 E, 30.9 N, so a transposed ring would
+    # put every first coordinate near 30.
+    assert all(70 < lon < 80 and 28 < lat < 33 for lon, lat in ring)
+    # Shoelace formula: positive signed area is counter-clockwise.
+    area = sum(a[0] * b[1] - b[0] * a[1] for a, b in itertools.pairwise(ring))
+    assert area > 0
+
+
+def test_every_vertex_sits_at_the_published_radius():
+    """The area on the map is exactly the area the feed claims and no tighter."""
+    spot = hotspot()
+    [ring] = federation.publish_geojson([spot])["features"][0]["geometry"]["coordinates"]
+
+    for lon, lat in ring:
+        km = haversine_km(spot.centre_latitude, spot.centre_longitude, lat, lon)
+        assert km == pytest.approx(spot.radius_km, rel=0.01)
+
+
+def test_geojson_properties_are_exactly_the_feed_allowlist(monkeypatch):
+    """The properties come from `publish()`, so the two projections cannot drift."""
+    monkeypatch.setattr(settings, "vayudoot_node_country", "PK")
+    [feature] = federation.publish_geojson([hotspot()])["features"]
+
+    allowlist = set(FeedHotspot.model_fields)
+    assert set(feature["properties"]) == allowlist | {"node_country", "feed_version"}
+    assert feature["properties"]["node_country"] == "PK"
+    assert feature["id"] == feature["properties"]["hotspot_id"]
+
+
+def test_geojson_never_carries_a_signal_or_a_case_id():
+    """The allowlist, asserted again for the second serialisation."""
+    raw = json.dumps(federation.publish_geojson([hotspot()]))
+
+    assert "VD-SECRET01" not in raw
+    assert "case_ids" not in raw
+    assert '"signals"' not in raw
+
+
+def test_the_node_rides_on_the_collection_as_a_foreign_member(monkeypatch):
+    monkeypatch.setattr(settings, "vayudoot_node_id", "lahore-node")
+    monkeypatch.setattr(settings, "vayudoot_node_country", "PK")
+
+    collection = federation.publish_geojson([hotspot()])
+
+    assert collection["node"]["node_id"] == "lahore-node"
+    assert collection["node"]["country"] == "PK"
+    assert collection["feed_version"] == "1.0"
+    assert collection["hotspot_count"] == 1
+    json.dumps(collection)  # serialisable as it stands
+
+
+def test_an_empty_geojson_feed_is_still_valid():
+    collection = federation.publish_geojson([])
+    assert collection["type"] == "FeatureCollection"
+    assert collection["features"] == []
 
 
 # --------------------------------------------------------------------------- #
@@ -161,6 +264,49 @@ def test_a_feed_reporting_our_own_node_id_is_refused(respx_mock, monkeypatch):
 
     assert "error" in result
     assert "own node id" in result["error"]
+
+
+def test_a_feed_from_across_a_national_border_is_read_like_any_other(respx_mock, monkeypatch):
+    """Nothing in the contract is Indian. A Pakistani Punjab node's feed is read
+    by a Delhi node exactly as an Indian Punjab node's is, and its hotspots are
+    context for the forecast like any neighbour's."""
+    monkeypatch.setattr(settings, "vayudoot_node_id", "delhi-node")
+    monkeypatch.setattr(settings, "vayudoot_neighbour_feeds", "https://lahore.example.invalid/feed")
+    lahore = hotspot("VDH-LAHORE01", at=(31.5497, 74.3436))
+    respx_mock.get("https://lahore.example.invalid/feed").mock(
+        return_value=httpx.Response(
+            200,
+            json=feed_payload(
+                node_id="lahore-node",
+                country="PK",
+                hotspots=federation.publish([lahore]).hotspots,
+            ),
+        )
+    )
+
+    result = federation.fetch_neighbour("https://lahore.example.invalid/feed")
+    assert result["feed"].node.country == "PK"
+
+    [context] = federation.as_context(federation.neighbour_hotspots())
+    assert context.hotspot_id == "VDH-LAHORE01"
+    assert context.case_ids == []
+    # And still never ours.
+    assert federation.publish([]).hotspot_count == 0
+
+
+def test_a_feed_from_before_country_existed_is_still_read(respx_mock):
+    """A node running an older build publishes no `country`. The field defaults,
+    so adding it did not break the 1.0 contract."""
+    payload = feed_payload()
+    del payload["node"]["country"]
+    respx_mock.get("https://old.example.invalid/feed").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+
+    result = federation.fetch_neighbour("https://old.example.invalid/feed")
+
+    assert "error" not in result
+    assert result["feed"].node.country == "IN"
 
 
 def test_neighbour_hotspots_skips_the_peers_that_failed(respx_mock, monkeypatch):
@@ -270,6 +416,31 @@ async def test_a_node_publishes_who_it_is(client, monkeypatch):
 
     assert body["node_id"] == "punjab-node"
     assert body["region"] == "punjab"
+
+
+async def test_the_node_endpoint_says_which_country(client, monkeypatch):
+    monkeypatch.setattr(settings, "vayudoot_node_country", "PK")
+    assert (await client.get("/node")).json()["country"] == "PK"
+
+
+async def test_the_geojson_feed_is_served_as_geojson(client, monkeypatch):
+    from vayudoot import hotspots as hotspot_module
+
+    monkeypatch.setattr(hotspot_module, "current", lambda: [hotspot()])
+
+    response = await client.get("/feed.geojson")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/geo+json")
+    body = response.json()
+    assert body["type"] == "FeatureCollection"
+    assert body["features"][0]["geometry"]["type"] == "Polygon"
+    assert "VD-SECRET01" not in response.text
+
+
+async def test_the_geojson_feed_is_withheld_when_the_feed_is(client, monkeypatch):
+    monkeypatch.setattr(settings, "vayudoot_publish_feed", False)
+    assert (await client.get("/feed.geojson")).status_code == 404
 
 
 async def test_the_feed_is_served_as_a_versioned_document(client):

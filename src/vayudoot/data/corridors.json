@@ -11,7 +11,12 @@
     "Each waypoint names the place it sits on. The Corridor schema keeps only the",
     "coordinate pair, but forty bare numbers are unreviewable — the name is what",
     "lets somebody check a number against a map before trusting a forecast built on",
-    "it."
+    "it.",
+    "A corridor that crosses an international border names the foreign province",
+    "distinctly in `states` (e.g. 'Punjab (Pakistan)') and lists its countries as",
+    "ISO 3166-1 alpha-2 codes in `countries`. The Corridor schema does not carry",
+    "`countries` yet, so the loader ignores it; it is here so the data says what",
+    "it is, and a test reads it straight from this file."
   ],
   "corridors": {
     "ncr": {
@@ -54,6 +59,20 @@
         { "place": "Ambala", "latitude": 30.3782, "longitude": 76.7767 },
         { "place": "Karnal", "latitude": 29.6857, "longitude": 76.9905 },
         { "place": "Panipat", "latitude": 29.3909, "longitude": 76.9635 }
+      ]
+    },
+    "lahore-delhi-transboundary": {
+      "name": "Lahore-Delhi trans-boundary smoke corridor",
+      "states": ["Punjab (Pakistan)", "Punjab", "Haryana", "Delhi"],
+      "countries": ["PK", "IN"],
+      "description": "The two Punjabs are one paddy belt split by an international border. Residue burning around Lahore, Kasur and Sheikhupura in Pakistan's Punjab rides the same autumn north-westerly as India's own, crossing at Attari-Wagah and running down the Grand Trunk Road through Amritsar, Jalandhar and Ludhiana into the National Capital Region. The best-documented trans-boundary smog event in South Asia, and one no single-country monitoring network can see whole.",
+      "waypoints": [
+        { "place": "Lahore, Punjab (Pakistan)", "latitude": 31.5497, "longitude": 74.3436 },
+        { "place": "Amritsar", "latitude": 31.634, "longitude": 74.8723 },
+        { "place": "Jalandhar", "latitude": 31.326, "longitude": 75.5762 },
+        { "place": "Ludhiana", "latitude": 30.901, "longitude": 75.8573 },
+        { "place": "Ambala", "latitude": 30.3782, "longitude": 76.7767 },
+        { "place": "New Delhi", "latitude": 28.6139, "longitude": 77.209 }
       ]
     },
     "mumbai-pune": {
