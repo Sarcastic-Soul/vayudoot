@@ -14,7 +14,7 @@
  *
  * Hard constraint 7 governs every word here, and the header says so before any
  * corridor is opened: these are a model's reasoning over public data, stated as
- * conditions, and never a CPCB or IMD advisory. `CorridorOutlook.js` carries
+ * conditions, and never an official advisory. `CorridorOutlook.js` carries
  * the detail of how each outlook is labelled.
  */
 
@@ -117,7 +117,7 @@ export function ForecastView({ corridorId }) {
           <p class="forecast-label">
             <${ModelMark}>Model-derived<//>
             <span>Conditions, not instructions. Not an official forecast, and not issued by
-              CPCB, IMD or any government authority.</span>
+              IMD, CPCB, SAWS, DFFE, INMET, IBAMA or any other government authority.</span>
           </p>
         </header>`}
 

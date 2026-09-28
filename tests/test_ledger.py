@@ -18,7 +18,7 @@ import httpx
 import pytest
 
 from fakes import StubAgent
-from vayudoot import ledger, store
+from vayudoot import ledger, standards, store
 from vayudoot.agents import forecast
 from vayudoot.config import settings
 from vayudoot.schemas import AirQualityForecast, ForecastOutcome, ForecastRecord
@@ -152,8 +152,16 @@ def test_low_is_anchored_to_the_standard_the_model_is_shown():
     """The prompt defines no numbers; its one anchor is "the standard", which
     the tool prints beside every value. Low must mean within that standard, or
     the score is judging the model against bands it was never told about."""
-    assert ledger.BAND_LIMITS["pm25"][0] == settings.naaqs_standards["pm25"]
-    assert ledger.BAND_LIMITS["pm10"][0] == settings.naaqs_standards["pm10"]
+    assert ledger.band_limits()["pm25"][0] == standards.limit("pm25")
+    assert ledger.band_limits()["pm10"][0] == standards.limit("pm10")
+
+
+def test_low_follows_the_node_country(monkeypatch):
+    """A South African node scores against 40, the limit its forecast tool shows."""
+    monkeypatch.setattr(settings, "vayudoot_node_country", "ZA")
+    assert ledger.band_limits()["pm25"][0] == 40.0
+    assert ledger.band_for("pm25", 50.0) == "elevated"
+    assert "40" in ledger.band_basis()
 
 
 def test_the_bands_are_the_forecasts_own_bands_in_the_same_order():

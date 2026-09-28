@@ -151,7 +151,7 @@ def forecaster_spec() -> ForecasterSpec:
         provider=settings.provider_for("fast"),
         model_ids=settings.model_chain_for("fast"),
         bands=ledger.band_definitions(),
-        band_basis=ledger.BAND_BASIS,
+        band_basis=ledger.band_basis(),
         skill=ForecasterSkillSummary(
             window_days=measured.window_days,
             scored=measured.scored,

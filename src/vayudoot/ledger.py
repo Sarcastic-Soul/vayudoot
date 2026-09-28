@@ -57,6 +57,7 @@ from .schemas import (
     ForecastRecord,
     ForecastSkill,
 )
+from .standards import for_country as air_standard
 
 log = logging.getLogger(__name__)
 
@@ -89,23 +90,46 @@ log = logging.getLogger(__name__)
 #: The 24-hour mean is the averaging period the standard and the AQI breakpoints
 #: are both defined over. Hourly peaks run far higher and would put every Delhi
 #: evening in "severe".
-BAND_LIMITS: dict[str, tuple[float, float, float]] = {
-    "pm25": (60.0, 120.0, 250.0),
-    "pm10": (100.0, 350.0, 430.0),
+#:
+#: Low is anchored to the node country's own 24-hour standard (`standards.py`),
+#: because that is the number the forecast tool prints beside every value and
+#: the only anchor the prompt gives. India's is 60, South Africa's 40, Brazil's
+#: 50. The upper boundaries stay on the CPCB scale for every country: no other
+#: served country publishes a comparable index, and one fixed scale above the
+#: standard keeps "severe" meaning the same air everywhere a peer is scored.
+AQI_UPPER_LIMITS: dict[str, tuple[float, float]] = {
+    "pm25": (120.0, 250.0),
+    "pm10": (350.0, 430.0),
 }
 
-BAND_BASIS = (
-    "Worst 24-hour mean over the forecast window, from reference stations within "
-    "25 km. PM2.5: low up to 60 µg/m³ (the Indian 24-hour standard), elevated up to "
-    "120, high up to 250, severe above 250. PM10 where no PM2.5 is reported: 100, "
-    "350, 430. Boundaries are CPCB National AQI breakpoints; the bands are this "
-    "system's, not the AQI's."
-)
+
+def band_limits() -> dict[str, tuple[float, float, float]]:
+    """Each pollutant's band boundaries on this node: the standard, then the AQI's."""
+    standard = air_standard()
+    out: dict[str, tuple[float, float, float]] = {}
+    for pollutant, (high, severe) in AQI_UPPER_LIMITS.items():
+        low = standard.limits.get(pollutant, high)
+        out[pollutant] = (min(low, high), high, severe)
+    return out
+
+
+def band_basis() -> str:
+    """The bands in words, naming the standard low is measured against."""
+    limits = band_limits()
+    pm25, pm10 = limits["pm25"], limits["pm10"]
+    return (
+        "Worst 24-hour mean over the forecast window, from reference stations within "
+        f"25 km. PM2.5: low up to {pm25[0]:g} µg/m³ ({air_standard().phrase}, 24-hour), "
+        f"elevated up to {pm25[1]:g}, high up to {pm25[2]:g}, severe above {pm25[2]:g}. "
+        f"PM10 where no PM2.5 is reported: {pm10[0]:g}, {pm10[1]:g}, {pm10[2]:g}. The upper "
+        "boundaries are CPCB National AQI breakpoints; the bands are this system's, not "
+        "the AQI's."
+    )
 
 
 def band_for(pollutant: str, value: float) -> str:
     """The risk band a 24-hour mean falls in. Boundaries belong to the lower band."""
-    for band, limit in zip(RISK_ORDER, BAND_LIMITS[pollutant], strict=False):
+    for band, limit in zip(RISK_ORDER, band_limits()[pollutant], strict=False):
         if value <= limit:
             return band
     return RISK_ORDER[-1]
@@ -117,7 +141,7 @@ def band_definitions() -> list[dict]:
     lower = {"pm25": 0.0, "pm10": 0.0}
     for index, band in enumerate(RISK_ORDER):
         row: dict = {"risk": band}
-        for pollutant, limits in BAND_LIMITS.items():
+        for pollutant, limits in band_limits().items():
             upper = limits[index] if index < len(limits) else None
             row[f"{pollutant}_from"] = lower[pollutant]
             row[f"{pollutant}_to"] = upper
@@ -565,7 +589,7 @@ def skill(
                 lambda r: r.outcome.cams_band,
             ),
         ],
-        band_basis=BAND_BASIS,
+        band_basis=band_basis(),
         caveat=caveat,
     )
 

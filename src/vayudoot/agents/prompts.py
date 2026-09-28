@@ -339,8 +339,8 @@ number. Never fill a peak window with a guess: leave it empty if the data does n
 You are producing a model's reasoning over public data. It is not an official forecast,
 it is not a health advisory, and you must never write as though it were one. Describe
 conditions. Do not instruct anybody to do anything, do not address the reader, and do
-not mention CPCB, IMD or any other national agency or authority as though this came from
-them.
+not mention IMD, CPCB, SAWS, DFFE, INMET, IBAMA or any other national agency or authority
+as though this came from them.
 """
 
 IMAGERY = """\

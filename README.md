@@ -154,9 +154,9 @@ Kolkata–Durgapur, each a line of sampling points across several states.
 
 This is a model reasoning over public data, not a trained predictor, and it says
 so on every object it produces. It states conditions rather than instructions
-and must never be confusable with a CPCB or IMD advisory — people act on air
-quality predictions, which is the point of making them, so an unlabelled wrong
-one does real harm to real lungs. Vertex AI would be the obvious tool and needs
+and must never be confusable with an official advisory from IMD, CPCB, SAWS,
+INMET or any other agency — people act on air quality predictions, which is the
+point of making them, so an unlabelled wrong one does real harm to real lungs. Vertex AI would be the obvious tool and needs
 a billing account; there is no card. See
 [`agents/forecast.py`](src/vayudoot/agents/forecast.py).
 

@@ -199,7 +199,7 @@ It is Gemini reading an Open-Meteo pollutant forecast, an Open-Meteo wind foreca
 hotspots this instance has detected, and saying what it thinks follows.
 `AirQualityForecast` carries `basis` so a reader can check the work and `disclaimer` so
 nobody mistakes it for an advisory, and hard constraint 7 requires both to survive every
-rendering. It must never present itself as, or be confusable with, a CPCB or IMD forecast.
+rendering. It must never present itself as, or be confusable with, an official forecast from IMD, CPCB, SAWS, INMET or any other agency.
 
 The stage runs on the `fast` tier like every other tool-calling stage. It reads three
 payloads of numbers and writes a short structured judgement, which is the work flash-lite is
