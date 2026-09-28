@@ -123,8 +123,17 @@ async def forecast_corridor(
     corridor is a population strip and a supply line: the segment in trouble is
     what an authority needs to see, and averaging it away would hide exactly the
     thing worth acting on.
+
+    **Each waypoint gets an agent of its own.** A Strands `Agent` refuses a
+    second invocation while one is in flight and raises `ConcurrencyException`,
+    and it keeps its conversation between calls. Sharing one across the gather
+    made every waypoint but the first fail, the failures were then dropped as
+    ordinary provider errors, and a live corridor reported "1 of 5 waypoints"
+    with the worst risk taken from whichever one happened to win the lock.
+    Sequential reuse would be wrong too: the second waypoint would read the
+    first waypoint's tool results in its own context. An `agent` passed in is
+    shared, which is only for tests whose stub tolerates it.
     """
-    agent = agent or build_forecast_agent()
     pool = hotspots or []
 
     outlooks = await asyncio.gather(
@@ -134,7 +143,7 @@ async def forecast_corridor(
                 longitude=lon,
                 location_name=_waypoint_label(corridor, index),
                 nearby_hotspots=pool,
-                agent=agent,
+                agent=agent or build_forecast_agent(),
             )
             for index, (lat, lon) in enumerate(corridor.waypoints)
         ),
