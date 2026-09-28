@@ -28,6 +28,7 @@ import { CaseView } from "./CaseView.js";
 import { CasesView } from "./CasesView.js";
 import { ClusterView } from "./ClusterView.js";
 import { CoverageView } from "./CoverageView.js";
+import { ForecastView } from "./ForecastView.js";
 
 export function App() {
   const route = useRoute();
@@ -44,7 +45,7 @@ export function App() {
     // A map that was hidden has no size; it needs telling once it is shown.
     const timer = setTimeout(resizeMaps, 80);
     return () => clearTimeout(timer);
-  }, [route.view, route.caseId, route.clusterId, route.hotspotId]);
+  }, [route.view, route.caseId, route.clusterId, route.hotspotId, route.corridorId]);
 
   useEffect(() => {
     let timer = null;
@@ -74,6 +75,10 @@ export function App() {
           <section class=${viewClass("hotspot")}>
             ${route.view === "hotspot"
               && html`<${HotspotView} key=${route.hotspotId} hotspotId=${route.hotspotId} />`}
+          </section>
+          <section class=${viewClass("forecast")}>
+            ${route.view === "forecast"
+              && html`<${ForecastView} corridorId=${route.corridorId} />`}
           </section>
           <section class=${viewClass("report")}>
             ${intakeOpened && html`<${ReportForm} />`}

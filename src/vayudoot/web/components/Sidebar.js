@@ -4,16 +4,22 @@
 
 import { html } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
-import { CameraIcon, ListIcon, PinIcon, ChevronIcon, WindMark, HotspotIcon } from "./Icons.js";
+import {
+  CameraIcon, ListIcon, PinIcon, ChevronIcon, WindMark, HotspotIcon, ForecastIcon,
+} from "./Icons.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 
-/* Live first, because it is the landing surface and the unit of work. Report
- * second rather than buried: it is the intake channel the whole detection layer
- * is fed by, and it has to stay one thumb-reach away on a phone held in front
- * of the problem. */
+/* Live first, because it is the landing surface and the unit of work. Forecast
+ * beside it, because "what is happening" and "where it is about to get worse"
+ * are the same question at two times. Report sits in the middle rather than
+ * buried: it is the intake channel the whole detection layer is fed by, and
+ * the centre of a five-item bar under the thumb is the easiest reach on a
+ * phone held in front of the problem. */
 const SECTIONS = [
   { view: "ops", target: "", label: "Live", hint: "Hotspots detected right now",
     Icon: HotspotIcon },
+  { view: "forecast", target: "forecast", label: "Forecast",
+    hint: "Corridor outlooks and the network", Icon: ForecastIcon },
   { view: "report", target: "report", label: "Report", hint: "Photograph a pollution event",
     Icon: CameraIcon },
   { view: "cases", target: "cases", label: "Cases", hint: "Complaints drafted and filed",

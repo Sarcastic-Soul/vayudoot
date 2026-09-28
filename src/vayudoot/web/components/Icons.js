@@ -168,3 +168,50 @@ export const UnverifiedIcon = icon(html`
 
 export const SourceIcon = { satellite: SatelliteIcon, ground_station: StationIcon,
   citizen_sensor: SensorIcon, citizen_report: CameraIcon };
+
+/* ── forecasting and the network ──────────────────────────────────────── */
+
+/* The forecast view: a line that is solid up to now and broken after it. The
+   break is the point — what is to the right of it has not happened, and the
+   glyph should not draw it with the same confidence as what has. */
+export const ForecastIcon = icon(html`
+  <path d="M3 17.5 7.5 13l3.5 2.5 3.5-5" />
+  <path d="M16.2 8.2 17.4 6.6M19 4.6l1.2-1.5" />
+  <path d="M3 21h18" />`);
+
+/* Model-derived: a four-point spark. It marks everything predictive, so a
+   reader learns to see it as "this is a model's reasoning" before reading a
+   word. Deliberately nothing like a seal, a shield or a crest. */
+export const ModelIcon = icon(html`
+  <path d="M12 3.5c.6 4.3 2.2 5.9 6.5 6.5-4.3.6-5.9 2.2-6.5 6.5-.6-4.3-2.2-5.9-6.5-6.5 4.3-.6 5.9-2.2 6.5-6.5z" />
+  <path d="M18.5 15.5v4M16.5 17.5h4" />`);
+
+/* A network of nodes: three instances, each linked to the others. No centre,
+   because a federation of state instances has none. */
+export const NetworkIcon = icon(html`
+  <circle cx="12" cy="5.5" r="2.3" /><circle cx="5.5" cy="17.5" r="2.3" />
+  <circle cx="18.5" cy="17.5" r="2.3" />
+  <path d="M10.9 7.5 6.6 15.5M13.1 7.5l4.3 8M7.8 17.5h8.4" />`);
+
+/* A published feed: a file with lines going out of it. */
+export const FeedIcon = icon(html`
+  <path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5H6.5A.5.5 0 0 1 6 20z" />
+  <path d="M14 3.5V8h4M9 12.5h6M9 15.5h6M9 18h3.5" />`);
+
+/* A globe, for the GIS format that every mapping tool opens. */
+export const GlobeIcon = icon(html`
+  <circle cx="12" cy="12" r="8.5" />
+  <path d="M3.5 12h17M12 3.5c2.4 2.4 3.6 5.2 3.6 8.5S14.4 18.1 12 20.5M12 3.5C9.6 5.9 8.4 8.7 8.4 12s1.2 6.1 3.6 8.5" />`);
+
+/* A border being crossed: a dashed line, and an arrow going over it. */
+export const BorderIcon = icon(html`
+  <path d="M12 3v2.5M12 9v2.5M12 15v2.5M12 20.5V21" />
+  <path d="M4 12.5c2.5-3 5.5-4 9-3.5 2.4.4 4.3 1.6 6 3.5m0 0-.5-3.6m.5 3.6-3.6.3" />`);
+
+export const RetryIcon = icon(html`
+  <path d="M4 12.5a8 8 0 1 0 2.6-5.9" />
+  <path d="M3.6 3.8v4.6h4.6" />`);
+
+export const OutIcon = icon(html`
+  <path d="M14 4.5h5.5V10M19.5 4.5 11 13" />
+  <path d="M18 14v5a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 5 19V7a.5.5 0 0 1 .5-.5H10" />`);

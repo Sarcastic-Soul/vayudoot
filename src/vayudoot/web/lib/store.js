@@ -192,3 +192,117 @@ export function useHotspot(hotspotId) {
 
   return state;
 }
+
+/* Corridors — the economic corridors this instance forecasts along.
+ *
+ * Data, not code, on the server: a JSON edit adds one. It does not change while
+ * the page is open, so it is fetched once per session like the authority table. */
+let corridorCache = null;
+
+export function useCorridors() {
+  const [state, setState] = useState(() => ({ data: corridorCache, error: null }));
+  useEffect(() => {
+    if (corridorCache) return undefined;
+    let live = true;
+    api("/corridors")
+      .then((data) => { corridorCache = data; if (live) setState({ data, error: null }); })
+      .catch((e) => { if (live) setState({ data: [], error: e.message }); });
+    return () => { live = false; };
+  }, []);
+  return state;
+}
+
+/* One corridor's outlook.
+ *
+ * This is the expensive call in the interface: one model call per waypoint, on
+ * a free tier metered per request, and 20 to 60 seconds of waiting. Two things
+ * follow. An answer is kept for as long as the server keeps it (30 minutes), so
+ * walking back to the list and in again costs nothing. And a request that is
+ * already in flight is *joined*, never repeated — a reader who leaves a
+ * corridor after ten seconds and comes back must not buy the same answer twice.
+ *
+ * Failures are not kept, exactly as on the server: a quota trip should be
+ * retryable, and `retry` is what asks again. */
+const FORECAST_KEEP_MS = 30 * 60 * 1000;
+const forecastDone = new Map();     // id -> { data, at }
+const forecastFlight = new Map();   // id -> { promise, startedAt }
+
+function askForecast(corridorId) {
+  const flying = forecastFlight.get(corridorId);
+  if (flying) return flying;
+  const flight = {
+    startedAt: Date.now(),
+    promise: api(`/corridors/${encodeURIComponent(corridorId)}/forecast`)
+      .then((data) => {
+        forecastDone.set(corridorId, { data, at: Date.now() });
+        return data;
+      })
+      .finally(() => forecastFlight.delete(corridorId)),
+  };
+  forecastFlight.set(corridorId, flight);
+  return flight;
+}
+
+/* The outlook already in hand for a corridor, if any — for the list, which
+   shows a band on a card only when it has one and never asks for it. */
+export function knownForecast(corridorId) {
+  const kept = forecastDone.get(corridorId);
+  return kept && Date.now() - kept.at < FORECAST_KEEP_MS ? kept.data : null;
+}
+
+export function useCorridorForecast(corridorId) {
+  const [state, setState] = useState(() => ({
+    data: knownForecast(corridorId), error: null, status: 0, startedAt: null,
+  }));
+  const [asked, setAsked] = useState(0);
+
+  useEffect(() => {
+    if (!corridorId) return undefined;
+    const kept = knownForecast(corridorId);
+    if (kept) {
+      setState({ data: kept, error: null, status: 0, startedAt: null });
+      return undefined;
+    }
+    let live = true;
+    const flight = askForecast(corridorId);
+    setState({ data: null, error: null, status: 0, startedAt: flight.startedAt });
+    flight.promise
+      .then((data) => { if (live) setState({ data, error: null, status: 0, startedAt: null }); })
+      .catch((e) => {
+        if (!live) return;
+        setState({ data: null, error: e.message, status: e.status || 0, startedAt: null });
+      });
+    return () => { live = false; };
+  }, [corridorId, asked]);
+
+  return [state, () => setAsked((n) => n + 1)];
+}
+
+/* Federation: who this node is, who it reads, and what it publishes.
+ *
+ * Three small reads, fetched together and independently — a neighbour being
+ * down is ordinary on a federated network, so one failure must not blank the
+ * panel. `/neighbours` is read live on the server, so it is re-asked on each
+ * visit rather than cached here. */
+export function useNetwork() {
+  const [state, setState] = useState({ node: null, neighbours: null, feed: null,
+    errors: {} });
+
+  useEffect(() => {
+    let live = true;
+    const read = (key, path) => api(path)
+      .then((data) => { if (live) setState((was) => ({ ...was, [key]: data })); })
+      .catch((e) => {
+        if (live) {
+          setState((was) => ({ ...was, [key]: false,
+            errors: { ...was.errors, [key]: e.message } }));
+        }
+      });
+    read("node", "/node");
+    read("neighbours", "/neighbours");
+    read("feed", "/feed");
+    return () => { live = false; };
+  }, []);
+
+  return state;
+}

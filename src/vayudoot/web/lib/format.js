@@ -368,3 +368,136 @@ export const percent = (value) => `${Math.round((value || 0) * 100)}%`;
 /* How long a hotspot has been running. `span_days` of zero is real — several
  * signals in one afternoon — and "0 days" reads as missing data. */
 export const activeFor = (days) => spanLabel(days);
+
+/* ── forecasts ───────────────────────────────────────────────────────────
+ *
+ * A forecast's risk has four bands, and the server's order is the only order:
+ * `RISK_ORDER` in agents/forecast.py. The bands borrow the severity ramp's
+ * tokens because both answer "how bad", but they are named differently on
+ * purpose — a detection is *severe*, an outlook carries a *risk* — so a reader
+ * can never mistake a model's expectation for something that was measured. */
+export const RISK_BANDS = ["low", "elevated", "high", "severe"];
+
+export const riskRank = (risk) => Math.max(0, RISK_BANDS.indexOf(risk));
+
+/* One sentence per band, stating a condition rather than an instruction. Hard
+   constraint 7: these must never read as advice to stay indoors, which is what
+   an official advisory would say and what this is not. */
+export const RISK_BLURB = {
+  low: "The model expects no notable build-up of pollution here.",
+  elevated: "The model expects conditions that let pollution build up.",
+  high: "The model expects conditions that let pollution build up substantially.",
+  severe: "The model expects conditions that favour a sharp build-up of pollution.",
+};
+
+/* Worst first, and most confident first within a band — the segment in trouble
+   is the thing a corridor outlook exists to point at. */
+export const worstFirst = (forecasts) => [...forecasts].sort((a, b) =>
+  riskRank(b.risk) - riskRank(a.risk) || (b.confidence || 0) - (a.confidence || 0));
+
+/* Which of a corridor's waypoints a forecast belongs to, by position rather
+   than by name. The server drops a waypoint whose call failed, so the index of
+   a forecast in the list is not the waypoint's index on the corridor; the
+   coordinate is. Returns -1 when nothing matches. */
+export function waypointIndex(corridor, forecast) {
+  if (!corridor) return -1;
+  let best = -1;
+  let bestGap = 0.02;   // degrees; a couple of kilometres of rounding at most
+  corridor.waypoints.forEach(([lat, lon], i) => {
+    const gap = Math.abs(lat - forecast.latitude) + Math.abs(lon - forecast.longitude);
+    if (gap < bestGap) { best = i; bestGap = gap; }
+  });
+  return best;
+}
+
+/* The waypoint's own name when the server gave it one, otherwise its number.
+   The server labels a corridor waypoint "<corridor name> waypoint N", and the
+   corridor name is already the heading above it, so only the tail is kept. */
+export function waypointName(forecast, corridor, index) {
+  const raw = (forecast.location_name || "").trim();
+  const tail = corridor && raw.startsWith(corridor.name) ? raw.slice(corridor.name.length).trim()
+    : raw;
+  if (tail && !/^waypoint \d+$/i.test(tail)) return tail;
+  return index >= 0 ? `Waypoint ${index + 1}` : tail || "Waypoint";
+}
+
+export const coordLabel = (lat, lon) =>
+  `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? "N" : "S"}, `
+  + `${Math.abs(lon).toFixed(2)}°${lon >= 0 ? "E" : "W"}`;
+
+/* When the model expects the worst of it, in the reader's own time. A null
+   window is a real and common answer and is said as one — it must never be
+   filled in with a guess. */
+export function peakWindow(start, end) {
+  const from = Date.parse(start);
+  const to = Date.parse(end);
+  if (!start || Number.isNaN(from)) return null;
+  const day = { weekday: "short", day: "numeric", month: "short" };
+  const time = { hour: "2-digit", minute: "2-digit" };
+  const fromText = `${new Date(from).toLocaleDateString(undefined, day)}, `
+    + new Date(from).toLocaleTimeString(undefined, time);
+  if (!end || Number.isNaN(to)) return `from ${fromText}`;
+  const sameDay = new Date(from).toDateString() === new Date(to).toDateString();
+  const toText = sameDay ? new Date(to).toLocaleTimeString(undefined, time)
+    : `${new Date(to).toLocaleDateString(undefined, day)}, `
+      + new Date(to).toLocaleTimeString(undefined, time);
+  return `${fromText} – ${toText}`;
+}
+
+/* The range of confidence across a corridor's waypoints. A corridor has no
+   single confidence of its own, and inventing one by averaging would be a
+   number the model never produced. */
+export function confidenceRange(forecasts) {
+  const values = forecasts.map((f) => f.confidence).filter((v) => typeof v === "number");
+  if (!values.length) return null;
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  return Math.round(lo * 100) === Math.round(hi * 100) ? percent(lo)
+    : `${Math.round(lo * 100)}–${Math.round(hi * 100)}%`;
+}
+
+/* Every input the corridor's waypoints read, once each, in first-seen order. */
+export function basisOf(forecasts) {
+  const seen = new Set();
+  for (const f of forecasts) for (const item of f.basis || []) seen.add(item.trim());
+  return [...seen].filter(Boolean);
+}
+
+/* ── federation ──────────────────────────────────────────────────────── */
+
+/* A country's flag from its ISO 3166-1 alpha-2 code, as regional-indicator
+   characters. The code is always shown beside it: a system without an emoji
+   font renders these as two letters, and a flag is never the only label. */
+export function flagOf(code) {
+  const iso = String(code || "").trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(iso)) return "";
+  return String.fromCodePoint(...[...iso].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}
+
+/* Whether a corridor crosses a national border, read from the data rather than
+   from a list of ids. An explicit `countries` list of ISO codes wins when the
+   server sends one (the data file carries it ahead of the schema). Otherwise a
+   state written with its country in brackets —
+   "Punjab (Pakistan)" — names a second country; a description that says the
+   corridor crosses a border says so in words. Returns the countries named, in
+   corridor order, with `home` standing in for states that name none. */
+const BORDER_WORDS = new RegExp("\\b(cross[- ]border|trans[- ]?boundary|transnational"
+  + "|international border|crosses the border)\\b", "i");
+
+export function borderCrossing(corridor, home = "India") {
+  if (Array.isArray(corridor.countries) && corridor.countries.length > 1) {
+    return corridor.countries.map((code) => {
+      const flag = flagOf(code);
+      return flag ? `${flag} ${code.toUpperCase()}` : code;
+    });
+  }
+  const countries = [];
+  for (const state of corridor.states || []) {
+    const named = /\(([^)]+)\)\s*$/.exec(state);
+    const country = named ? named[1].trim() : home;
+    if (!countries.includes(country)) countries.push(country);
+  }
+  if (countries.length > 1) return countries;
+  if (BORDER_WORDS.test(corridor.description || "")) return countries.length ? countries : [];
+  return null;
+}

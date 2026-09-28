@@ -1,0 +1,1108 @@
+/* The forecast view and the network panel.
+ *
+ * Two visual languages sit side by side here and must not blur. The risk ramp
+ * borrows the severity tokens, because both answer "how bad"; everything that
+ * says *this is a model's reasoning* is drawn in the information colour with a
+ * small spark — the model mark, the disclaimer, the waiting state. That blue is
+ * never used for risk, so a reader learns within one corridor that blue means
+ * "predicted, by a model" and the warm ramp means "how bad it is expected to be".
+ *
+ * Hard constraint 7 shapes what is absent as much as what is present: no red
+ * banner, no seal or crest, no "ALERT" in capitals. The loudest thing on an
+ * outlook is its band, and the second loudest is the label saying who made it.
+ *
+ * Shared vocabulary comes from elsewhere and is not redefined: `.card`,
+ * `.page-head`, `.section-label`, `.eyebrow`, `.note`, `.timeline-head`,
+ * `.legend*`, `button.secondary`, `button.link.back`, `.skeleton`. */
+
+/* ── the risk ramp ───────────────────────────────────────────────────────
+   Four bands onto the four severity token families. `elevated` takes the
+   moderate family: it is the second step of the same ladder. */
+[data-risk="low"] { --sev: var(--sev-low); --sev-tint: var(--sev-low-tint);
+  --sev-line: var(--sev-low-line); }
+[data-risk="elevated"] { --sev: var(--sev-moderate); --sev-tint: var(--sev-moderate-tint);
+  --sev-line: var(--sev-moderate-line); }
+[data-risk="high"] { --sev: var(--sev-high); --sev-tint: var(--sev-high-tint);
+  --sev-line: var(--sev-high-line); }
+[data-risk="severe"] { --sev: var(--sev-severe); --sev-tint: var(--sev-severe-tint);
+  --sev-line: var(--sev-severe-line); }
+
+/* Every icon from Icons.js is a stroked 24-unit outline. Matched by its
+   viewBox, not by `svg`, because Leaflet's overlay inside the map is an svg
+   too and must keep the fills it sets on its own paths. */
+.forecast svg[viewBox="0 0 24 24"] {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.forecast code,
+.forecast .mono {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+.forecast code {
+  padding: 1px 5px;
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  overflow-wrap: anywhere;
+}
+
+/* ── the model mark ──────────────────────────────────────────────────────
+   On every panel that says anything predictive. Small, blue, a spark: it
+   labels authorship, it does not warn. */
+.model-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-snug);
+  white-space: nowrap;
+  color: var(--info);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-radius: var(--radius-pill);
+}
+
+.model-mark svg { width: 15px; height: 15px; }
+
+.forecast-head { margin-bottom: var(--s5); }
+
+.forecast-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  margin-top: var(--s1);
+  font-size: var(--t-meta) !important;
+  line-height: var(--lh-snug) !important;
+}
+
+.forecast-label > span:last-child { flex: 1 1 300px; }
+
+/* ── layout ──────────────────────────────────────────────────────────────
+   The operations view's shape: map first and large, the column beside it on
+   anything wide enough and under it on a phone. The map is sticky, because the
+   column is what gets scrolled. */
+.forecast-layout { display: grid; gap: var(--s5); align-items: start; }
+.forecast-map-col, .forecast-side { min-width: 0; }
+
+.corridor-map {
+  height: 42vh;
+  min-height: 260px;
+  max-height: 360px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  z-index: 0;
+  background: var(--surface-sunk);
+}
+
+.map-wrap.is-full .corridor-map {
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+@media (min-width: 900px) {
+  .forecast-layout { grid-template-columns: minmax(0, 1.25fr) minmax(330px, 1fr); }
+  .forecast-map-col { position: sticky; top: var(--s4); }
+  .corridor-map { height: min(60vh, 580px); max-height: none; }
+}
+
+/* The dashed rule in the legend is the line on the map, drawn the same way,
+   so the sentence beside it has something to point at. */
+.corridor-legend .legend-note { display: flex; gap: var(--s2); align-items: baseline; }
+
+.legend-dash {
+  flex: none;
+  width: 26px;
+  height: 0;
+  margin-bottom: 3px;
+  border-top: 3px dotted var(--ink-soft);
+}
+
+/* Leaflet's own tooltip, retuned for the two uses here. */
+.leaflet-tooltip.corridor-tip {
+  padding: 4px 8px;
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  color: #191917;
+  border: 1px solid #c9c8c0;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+}
+
+/* A waypoint: a numbered disc in its band, with a white ring so it holds up
+   on any tile. Fixed hexes for the reason in CorridorMap.js. */
+.waypoint-disc span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font: 700 11px/1 ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+  border: 2.5px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+  cursor: pointer;
+}
+
+.waypoint-disc.is-focus span { font-size: 13px; box-shadow: 0 0 0 3px #191917; }
+.waypoint-disc.is-pending span { animation: waypoint-breathe 1.6s ease-in-out infinite; }
+
+/* While the model is being asked, the waypoints breathe and the segments
+   drift. Motion is the only honest progress indicator available: nothing is
+   known between "asked" and "answered". Reduced motion stops both, via the
+   global rule in tokens.css. */
+.corridor-pending { animation: corridor-drift 1.2s linear infinite; }
+
+@keyframes waypoint-breathe {
+  50% { opacity: 0.45; transform: scale(0.88); }
+}
+
+@keyframes corridor-drift {
+  to { stroke-dashoffset: -20; }
+}
+
+/* ── the corridor list ───────────────────────────────────────────────── */
+
+.corridor-list,
+.corridor-skeleton { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
+
+.corridor-skeleton li { height: 132px; border-radius: var(--radius); }
+
+.corridor-card {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: var(--s3) var(--s4);
+  width: 100%;
+  padding: var(--s4);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.corridor-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-2); }
+.corridor-card:active { transform: translateY(1px); }
+
+.corridor-glyph {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.route-glyph polyline {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1.6;
+  stroke-dasharray: 1.5 3;
+  stroke-linecap: round;
+}
+
+.route-glyph circle {
+  fill: var(--surface);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+
+.corridor-card:hover .route-glyph polyline { stroke: var(--ok); }
+
+.corridor-main { display: grid; gap: 6px; min-width: 0; }
+
+.corridor-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+}
+
+.corridor-name {
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--track-display);
+}
+
+.corridor-states { font-size: var(--t-meta); line-height: var(--lh-snug); color: var(--ink-soft); }
+
+.corridor-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+}
+
+.corridor-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-top: var(--s1);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.corridor-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: var(--w-semi);
+  color: var(--ok);
+}
+
+/* The shared chevron points back; here it points on. */
+.corridor-ask svg { width: 16px; height: 16px; transform: rotate(180deg); }
+.corridor-card:hover .corridor-ask svg { transform: rotate(180deg) translateX(-2px); }
+
+/* A corridor that crosses a national border. Drawn with a dashed outline —
+   a border, literally — in plain ink: this is a fact about geography, not a
+   warning and not a model's claim, so it borrows neither the risk ramp nor
+   the model blue. */
+.border-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  line-height: var(--lh-snug);
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1.5px dashed var(--field-line);
+  border-radius: var(--radius-pill);
+}
+
+.border-badge svg { width: 14px; height: 14px; }
+
+.border-route {
+  margin-left: 4px;
+  padding-left: 6px;
+  font-weight: var(--w-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-soft);
+  border-left: 1px solid var(--line-strong);
+}
+
+.corridor-card.is-cross-border { border-left: 3px dashed var(--field-line); }
+
+/* A risk band as a chip: a dot carries the hue, the word stays readable. */
+.risk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-snug);
+  white-space: nowrap;
+  text-transform: capitalize;
+  color: var(--sev, var(--ink));
+  background: var(--sev-tint, var(--surface-2));
+  border: 1px solid var(--sev-line, var(--line));
+  border-radius: var(--radius-pill);
+}
+
+.risk-chip svg { width: 14px; height: 14px; }
+
+.risk-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: currentColor; }
+
+/* ── one corridor: the head ──────────────────────────────────────────── */
+
+.corridor-head { display: grid; gap: var(--s2); margin-bottom: var(--s5); }
+
+.corridor-head h2 { font-size: var(--t-title); letter-spacing: var(--track-display); }
+
+.corridor-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.corridor-lead { max-width: var(--measure); color: var(--ink-soft); }
+
+/* On a phone the description would push the map below the fold, so it is cut
+   to three lines with a control to read the rest. Wider screens show it all. */
+.lead-more { justify-self: start; font-size: var(--t-meta); }
+
+@media (max-width: 699.98px) {
+  .corridor-lead.is-clamped {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 700px) {
+  .lead-more { display: none; }
+}
+
+/* The phone shell has a sticky brand bar on top and a nav bar at the bottom;
+   anything scrolled into view has to clear both. */
+@media (max-width: 699.98px) {
+  .forecast .outlook-hero,
+  .forecast .wp-card,
+  .forecast .network { scroll-margin: 128px 0 96px; }
+}
+
+@media (min-width: 1080px) {
+  .corridor-head h2 { font-size: var(--t-display); }
+}
+
+/* ── waiting ─────────────────────────────────────────────────────────── */
+
+.outlook-pending {
+  display: grid;
+  gap: var(--s4);
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--info-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+
+.pending-head {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: start;
+}
+
+.pending-head h3 { font-size: var(--t-lead); margin-bottom: var(--s1); }
+
+.pending-head p {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.pending-spark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--info);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-radius: 50%;
+}
+
+.pending-spark svg { width: 22px; height: 22px; animation: spark-turn 2.4s ease-in-out infinite; }
+
+@keyframes spark-turn {
+  0% { transform: rotate(0) scale(1); }
+  50% { transform: rotate(90deg) scale(0.86); }
+  100% { transform: rotate(180deg) scale(1); }
+}
+
+.pending-clock {
+  padding: 2px 10px;
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  color: var(--info);
+  background: var(--info-tint);
+  border-radius: var(--radius-pill);
+}
+
+.pending-list { display: grid; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
+
+.pending-list li {
+  display: grid;
+  grid-template-columns: 26px auto minmax(40px, 1fr);
+  gap: var(--s3);
+  align-items: center;
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.pending-list .skeleton { height: 10px; }
+
+/* The skeletons go in a stagger so the list reads as "several things being
+   waited on", not as one bar copied down the page. */
+.pending-list li:nth-child(2) .skeleton { animation-delay: -.3s; }
+.pending-list li:nth-child(3) .skeleton { animation-delay: -.6s; }
+.pending-list li:nth-child(4) .skeleton { animation-delay: -.9s; }
+.pending-list li:nth-child(5) .skeleton { animation-delay: -1.2s; }
+.pending-list li:nth-child(6) .skeleton { animation-delay: -1.5s; }
+
+.pending-note {
+  padding-top: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+}
+
+/* The waypoint number, in a disc. Neutral until there is a band to wear. */
+.wp-num {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  font-size: var(--t-eyebrow);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--surface);
+  background: var(--sev, var(--ink-soft));
+  border-radius: 50%;
+}
+
+/* ── failing ─────────────────────────────────────────────────────────── */
+
+.outlook-failed {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: var(--s3);
+  padding: var(--s4);
+  background: var(--danger-tint);
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius-lg);
+}
+
+.outlook-failed > svg { width: 26px; height: 26px; color: var(--danger); }
+.outlook-failed h3 { font-size: var(--t-lead); margin-bottom: var(--s2); }
+
+.failed-detail {
+  padding: var(--s3);
+  margin-bottom: var(--s2);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.failed-hint {
+  margin-bottom: var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.outlook-failed button.secondary { flex: none; display: inline-flex; padding-inline: var(--s5); }
+
+/* ── reading: the band ───────────────────────────────────────────────────
+   The one large thing on the page. The band word is set above the type scale
+   on purpose — it is the answer, and it has to be legible from arm's length
+   on a phone — and it is always followed by "risk" and by a sentence, so the
+   colour is never the only carrier. */
+.outlook-hero {
+  display: grid;
+  gap: var(--s4);
+  padding: var(--s4);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--sev-tint) 0%, transparent 62%),
+    var(--surface);
+  border: 1px solid var(--sev-line);
+  border-top: 4px solid var(--sev);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+
+.hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.hero-when { font-size: var(--t-meta); color: var(--ink-soft); }
+
+.hero-main { display: grid; gap: var(--s4); }
+
+.hero-band { display: grid; gap: var(--s1); }
+
+.hero-risk {
+  font-size: 2.75rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: capitalize;
+  color: var(--sev);
+}
+
+.hero-risk small {
+  font-size: var(--t-lead);
+  font-weight: var(--w-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-soft);
+}
+
+.hero-band p { font-size: var(--t-body); line-height: var(--lh-snug); max-width: 44ch; }
+
+.hero-figs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s3);
+  margin: 0;
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+
+.hero-figs dt {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.hero-figs dd { margin: 2px 0 0; font-size: var(--t-lead); font-weight: var(--w-semi); }
+
+.hero-figs dd.hero-sub {
+  font-size: var(--t-meta);
+  font-weight: var(--w-normal);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.hero-summary {
+  padding-top: var(--s3);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  border-top: 1px solid var(--line);
+}
+
+@media (min-width: 560px) {
+  .outlook-hero { padding: var(--s5); }
+  .hero-risk { font-size: 3.25rem; }
+}
+
+/* ── the disclaimer ──────────────────────────────────────────────────────
+   Verbatim from the object, in the model blue, right under the band — above
+   the fold, never at the bottom of a long page. */
+.disclaimer {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: var(--s3);
+  margin: var(--s3) 0 0;
+  padding: var(--s3) var(--s4);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-radius: var(--radius);
+}
+
+.disclaimer > svg { width: 20px; height: 20px; margin-top: 1px; color: var(--info); }
+.disclaimer strong { display: block; margin-bottom: 2px; font-weight: var(--w-semi); }
+.disclaimer.is-compact { margin-top: var(--s3); padding: var(--s2) var(--s3); }
+
+.forecast .note.is-limit { margin: var(--s3) 0 0; }
+
+/* ── the ribbon ──────────────────────────────────────────────────────────
+   The corridor, first waypoint to last, as a strip. A waypoint that did not
+   answer is hatched — unknown, not low. */
+.ribbon-wrap { display: grid; gap: 6px; }
+
+.ribbon { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.ribbon li { flex: 1; min-width: 0; }
+
+.ribbon-cell {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 44px;
+  padding: 0;
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: 700;
+  color: var(--surface);
+  background: var(--sev);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform .12s ease, filter .12s ease;
+}
+
+.ribbon li:first-child .ribbon-cell { border-radius: var(--radius-sm) 4px 4px var(--radius-sm); }
+.ribbon li:last-child .ribbon-cell { border-radius: 4px var(--radius-sm) var(--radius-sm) 4px; }
+
+.ribbon-cell:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+.ribbon-cell.is-focus { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.ribbon-cell[data-risk="none"] {
+  color: var(--ink-soft);
+  background: repeating-linear-gradient(
+    -45deg, var(--surface-sunk) 0 5px, var(--line) 5px 7px);
+}
+
+.ribbon-ends {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.wp-list-head { margin-top: var(--s5); }
+
+/* ── one waypoint ────────────────────────────────────────────────────── */
+
+.wp-list { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
+
+.wp-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--sev);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  scroll-margin: var(--s4);
+}
+
+.wp-card summary {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-areas: "num head" "num figs";
+  gap: var(--s2) var(--s3);
+  align-items: center;
+  padding: var(--s3) var(--s4);
+  list-style: none;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+
+.wp-card summary::-webkit-details-marker { display: none; }
+.wp-card summary:hover { background: var(--surface-2); }
+.wp-card summary .wp-num { grid-area: num; align-self: start; margin-top: 2px; }
+
+.wp-head { grid-area: head; display: grid; gap: 2px; min-width: 0; }
+
+.wp-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-tight);
+}
+
+.wp-where { font-size: var(--t-meta); color: var(--ink-soft); }
+
+.worst-tag {
+  padding: 1px 8px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--sev);
+  background: var(--sev-tint);
+  border: 1px solid var(--sev-line);
+  border-radius: var(--radius-pill);
+}
+
+.wp-figs {
+  grid-area: figs;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+}
+
+.wp-conf {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-weight: var(--w-semi);
+}
+
+.wp-conf small { font-size: var(--t-meta); font-weight: var(--w-normal); color: var(--ink-soft); }
+
+/* Wide enough, the figures move up beside the name. */
+@media (min-width: 560px) {
+  .wp-card summary {
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    grid-template-areas: "num head figs";
+  }
+  .wp-card summary .wp-num { align-self: center; margin-top: 0; }
+}
+
+/* On a split desktop column the side is narrow again, so the stacked shape
+   comes back rather than squeezing the name to a word per line. */
+@media (min-width: 900px) and (max-width: 1239.98px) {
+  .wp-card summary {
+    grid-template-columns: 26px minmax(0, 1fr);
+    grid-template-areas: "num head" "num figs";
+  }
+}
+
+.wp-body {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4) var(--s4);
+  border-top: 1px solid var(--line);
+}
+
+.wp-body .eyebrow { margin-top: var(--s2); }
+
+.wp-blurb { font-size: var(--t-body); line-height: var(--lh-snug); }
+
+.wp-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--s3);
+  margin: var(--s1) 0 0;
+  padding: var(--s3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.wp-facts dt {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.wp-facts dd { margin: 2px 0 0; font-size: var(--t-meta); line-height: var(--lh-snug); }
+
+/* Confidence as a length, in plain ink — never on the risk ramp. */
+.conf-meter {
+  display: block;
+  height: 5px;
+  margin-top: 5px;
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.conf-meter span { display: block; height: 100%; background: var(--ink-soft); }
+
+.drivers, .basis { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+
+.drivers li {
+  position: relative;
+  padding-left: var(--s4);
+  font-size: var(--t-body);
+  line-height: var(--lh-snug);
+}
+
+.drivers li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.5em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sev, var(--ink-soft));
+}
+
+.wp-reasoning {
+  font-size: var(--t-meta);
+  line-height: var(--lh-body);
+  color: var(--ink);
+  max-width: var(--measure);
+}
+
+/* What the model read, set like a citation list: smaller, recessed, with a
+   rule down the side in the model blue, since these are its sources. */
+.basis li {
+  padding: 4px 0 4px var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  border-left: 2px solid var(--info-line);
+  overflow-wrap: anywhere;
+}
+
+.wp-none { font-size: var(--t-meta); }
+
+.inputs-all {
+  margin-top: var(--s4);
+  padding: var(--s3) var(--s4);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.inputs-all summary {
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  cursor: pointer;
+}
+
+.inputs-all[open] summary { margin-bottom: var(--s3); }
+
+.outlook-foot {
+  margin-top: var(--s4);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+}
+
+/* ── the network ─────────────────────────────────────────────────────── */
+
+.network {
+  margin-top: var(--s7);
+  padding-top: var(--s6);
+  border-top: 1px solid var(--line);
+}
+
+.network-head {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: var(--s3);
+  align-items: start;
+  margin-bottom: var(--s5);
+}
+
+.network-head h2 { font-size: var(--t-title); margin-bottom: var(--s2); }
+
+.network-head p { color: var(--ink-soft); max-width: var(--measure); }
+
+.network-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--ok);
+  background: var(--ok-tint);
+  border: 1px solid var(--ok-line);
+  border-radius: 50%;
+}
+
+.network-mark svg { width: 22px; height: 22px; }
+
+.network-grid { display: grid; gap: var(--s3); }
+
+.net-card {
+  display: grid;
+  gap: var(--s3);
+  align-content: start;
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+
+.net-skeleton { min-height: 180px; border: 0; }
+
+.net-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s3);
+}
+.net-count { font-size: var(--t-meta); color: var(--ink-soft); }
+
+.self-id { display: flex; align-items: center; gap: var(--s3); }
+.self-id h4 { font-size: var(--t-lead); line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.self-id p { font-size: var(--t-meta); }
+
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+
+.self-id .flag {
+  flex-direction: column;
+  gap: 0;
+  width: 52px;
+  padding: 6px 0 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.flag-emoji { font-size: 1.1em; line-height: 1; }
+.self-id .flag-emoji { font-size: 1.75rem; }
+
+.flag-code {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  color: var(--ink-soft);
+}
+
+.net-facts { display: grid; gap: 0; margin: 0; }
+
+.net-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: 6px 0;
+  font-size: var(--t-meta);
+  border-bottom: 1px dashed var(--line);
+}
+
+.net-facts div:last-child { border-bottom: 0; }
+.net-facts dt { color: var(--ink-soft); }
+.net-facts dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+
+.net-hint, .net-empty p {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.net-empty {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s4);
+  background: var(--surface-2);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.net-empty svg { width: 28px; height: 28px; color: var(--ink-soft); }
+.net-empty p strong { color: var(--ink); font-weight: var(--w-semi); }
+
+.neighbour-list { display: grid; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
+
+.neighbour-list li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: start;
+  padding: var(--s3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.nb-dot { width: 10px; height: 10px; margin-top: 6px; border-radius: 50%; background: var(--ok); }
+.is-down .nb-dot { background: none; border: 2px solid var(--danger); }
+
+.nb-main { display: grid; gap: 2px; min-width: 0; }
+.nb-name { font-weight: var(--w-semi); overflow-wrap: anywhere; }
+.nb-meta { font-size: var(--t-meta); color: var(--ink-soft); display: grid; }
+
+.nb-url {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: var(--t-eyebrow);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nb-error { font-size: var(--t-meta); color: var(--danger); overflow-wrap: anywhere; }
+
+.nb-count {
+  display: grid;
+  justify-items: end;
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  line-height: 1.1;
+}
+
+.nb-count small {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-normal);
+  color: var(--ink-soft);
+}
+
+.feed-links { display: grid; gap: var(--s3); margin-top: var(--s3); }
+
+.feed-link {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 16px;
+  gap: var(--s3);
+  align-items: start;
+  padding: var(--s4);
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.feed-link:hover { border-color: var(--ok); box-shadow: var(--shadow-2); }
+.feed-link > svg { width: 16px; height: 16px; color: var(--ink-soft); margin-top: 4px; }
+.feed-link:hover > svg { color: var(--ok); }
+
+.feed-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--ok);
+  background: var(--ok-tint);
+  border-radius: var(--radius-sm);
+}
+
+.feed-icon svg { width: 20px; height: 20px; }
+
+.feed-text { display: grid; gap: var(--s1); min-width: 0; }
+
+.feed-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+
+.feed-title code {
+  padding: 0;
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  background: none;
+  border: 0;
+}
+
+.feed-format {
+  padding: 1px 8px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.feed-what { font-size: var(--t-meta); line-height: var(--lh-snug); color: var(--ink-soft); }
+
+@media (min-width: 760px) {
+  .network-grid, .feed-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (prefers-contrast: more) {
+  .ribbon-cell { outline: 1px solid var(--ink); }
+  .model-mark, .disclaimer { border-color: var(--info); }
+}

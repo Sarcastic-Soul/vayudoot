@@ -13,9 +13,11 @@
 
 import { useEffect, useState } from "../vendor/hooks.mjs";
 
-const NAMED = ["ops", "report", "cases", "coverage"];
+const NAMED = ["ops", "forecast", "report", "cases", "coverage"];
 
-const HOME = { view: "ops", caseId: null, clusterId: null, hotspotId: null };
+const HOME = {
+  view: "ops", caseId: null, clusterId: null, hotspotId: null, corridorId: null,
+};
 const listeners = new Set();
 
 export function currentRoute() {
@@ -26,12 +28,17 @@ export function currentRoute() {
   if (hash.startsWith("VDC-")) return { ...HOME, view: "cluster", clusterId: hash };
   if (hash.startsWith("VDH-")) return { ...HOME, view: "hotspot", hotspotId: hash };
   if (hash.startsWith("VD-")) return { ...HOME, view: "case", caseId: hash };
+  // One corridor's outlook is `#forecast/{corridor_id}`, so it can be linked to
+  // and the back button returns to the list. The id is data, not a view name.
+  if (hash.startsWith("forecast/")) {
+    return { ...HOME, view: "forecast", corridorId: hash.slice("forecast/".length) || null };
+  }
   if (NAMED.includes(hash)) return { ...HOME, view: hash };
   return HOME;
 }
 
 /* `target` is what goes after the "#": "" for the operations view, a view
- * name, or a case, cluster or hotspot id. */
+ * name, a case, cluster or hotspot id, or `forecast/{corridor_id}`. */
 export function navigate(target) {
   if (location.hash.slice(1) === target) return notify();
   const url = target ? `#${target}` : location.pathname + location.search;
