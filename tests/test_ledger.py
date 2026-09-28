@@ -410,6 +410,13 @@ def test_a_small_sample_says_so():
     assert "anecdote" in result.caveat
 
 
+def test_nothing_scored_yet_does_not_read_as_a_count_of_zero():
+    result = ledger.skill([a_record()], days=3650, now=T0 + timedelta(days=1))
+    assert result.scored == 0
+    assert "Only 0" not in result.caveat
+    assert "No forecast has been scored yet" in result.caveat
+
+
 # --------------------------------------------------------------------------- #
 # The live ledger
 # --------------------------------------------------------------------------- #

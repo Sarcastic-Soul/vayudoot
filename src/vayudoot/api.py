@@ -837,8 +837,12 @@ def _score_in_background() -> None:
         _spawn(asyncio.to_thread(ledger.score_due))
 
 
+# Both ledger reads are `async def` although nothing in them awaits: they may
+# start a scoring pass through `_spawn`, which needs the running event loop, and
+# a plain `def` handler runs on a worker thread that has none. The reads are a
+# local file and a count, so holding the loop for them costs nothing.
 @app.get("/forecasts/ledger", response_model=list[ForecastRecord])
-def get_forecast_ledger(limit: int = 50, status: str = "") -> list[ForecastRecord]:
+async def get_forecast_ledger(limit: int = 50, status: str = "") -> list[ForecastRecord]:
     """The forecasts this node has made, newest first, with outcomes where known.
 
     `status` is `pending`, `scored` or `unscorable`, or empty for all. Reading
@@ -855,7 +859,7 @@ def get_forecast_ledger(limit: int = 50, status: str = "") -> list[ForecastRecor
 
 
 @app.get("/forecasts/skill", response_model=ForecastSkill)
-def get_forecast_skill(days: int | None = None, all_versions: bool = False) -> ForecastSkill:
+async def get_forecast_skill(days: int | None = None, all_versions: bool = False) -> ForecastSkill:
     """How this node's forecasts compared with what the stations recorded.
 
     Exact-band and within-one-band rates, a confusion matrix, and the same for
@@ -1136,6 +1140,8 @@ def _not_due(case: Case) -> str:
     """Why this case cannot be escalated, which is not always a matter of time."""
     if case.status not in filing.ESCALATION_CLOCK:
         return f"Case is {case.status.value}; only a filed or acknowledged case can be escalated"
+    if case.jurisdiction is not None and not case.jurisdiction.response_window_statutory:
+        return "The follow-up interval has not yet passed"
     return "The statutory response window has not yet lapsed"
 
 
@@ -1206,9 +1212,14 @@ def _rti_not_available(case: Case) -> str:
                else " This system does not draft that country's access-to-information request.")
         )
     days = case.jurisdiction.response_window_days
+    window = (
+        f"{days}-day statutory window"
+        if case.jurisdiction.response_window_statutory
+        else f"{days}-day follow-up interval"
+    )
     return (
-        f"The {days}-day statutory window since filing has not lapsed. Ask what was done "
-        "only once the authority is actually late."
+        f"The {window} since filing has not lapsed. Ask what was done only once the "
+        "authority is actually late."
     )
 
 

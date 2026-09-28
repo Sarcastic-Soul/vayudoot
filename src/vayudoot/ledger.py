@@ -559,7 +559,12 @@ def skill(
         "independent. Scored against reference stations within 25 km, which cover cities "
         "far better than countryside."
     )
-    if len(scored) < SMALL_SAMPLE:
+    if not scored:
+        caveat = (
+            "No forecast has been scored yet: a forecast is scored once the stations have "
+            f"reported the days it covered. {caveat}"
+        )
+    elif len(scored) < SMALL_SAMPLE:
         caveat = (
             f"Only {len(scored)} scored forecast(s): every rate here is anecdote, not "
             f"evidence. {caveat}"

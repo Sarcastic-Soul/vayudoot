@@ -12,6 +12,7 @@ import pytest
 from google.genai.errors import ClientError
 from httpx import ASGITransport, AsyncClient
 
+import fakes
 from fakes import image_bytes, patch_stages
 from vayudoot import api, pipeline, store
 from vayudoot.config import settings
@@ -127,6 +128,46 @@ async def test_escalation_is_refused_before_the_window_lapses(client, monkeypatc
     await client.post(f"/cases/{case_id}/confirm")
 
     assert (await client.post(f"/cases/{case_id}/escalate")).status_code == 409
+
+
+def test_escalation_refusal_does_not_call_a_follow_up_interval_statutory():
+    """Outside India the window is this system's follow-up, and no statute sets it.
+
+    Telling a South African citizen a statutory window has not lapsed would be a
+    legal claim that is false.
+    """
+    case = Case(
+        case_id="VD-ZATEST",
+        report=Report(report_id="r-za", latitude=-26.2, longitude=28.04),
+        status=CaseStatus.FILED,
+        jurisdiction=fakes.jurisdiction(),
+    )
+    case.jurisdiction.response_window_statutory = False
+    assert "statutory" not in api._not_due(case)
+
+    case.jurisdiction.response_window_statutory = True
+    assert "statutory" in api._not_due(case)
+
+
+async def test_reading_the_ledger_can_start_a_scoring_pass(client, monkeypatch):
+    """A read that claims a scoring pass must not 500 for want of an event loop.
+
+    Both reads schedule the pass with `asyncio.create_task`. As plain `def`
+    handlers they ran on a worker thread with no loop, and the first read after
+    each scoring interval failed.
+    """
+    from vayudoot import ledger
+
+    passes: list[bool] = []
+    monkeypatch.setattr(settings, "vayudoot_forecast_ledger", True)
+    monkeypatch.setattr(ledger, "score_due", lambda: passes.append(True))
+    for path in ("/forecasts/skill", "/forecasts/ledger"):
+        ledger.reset_scoring_clock()
+        resp = await client.get(path)
+        assert resp.status_code == 200, resp.text
+        await _drain()
+    ledger.reset_scoring_clock()
+    assert passes == [True, True]
 
 
 async def test_cases_are_listed_newest_first(client, monkeypatch):
