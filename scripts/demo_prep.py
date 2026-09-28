@@ -250,9 +250,12 @@ class Prep:
         print(f"  [{'warm' if warm else 'COLD'}] {name}: {detail}")
 
     def _rerun(self, *steps: str) -> str:
-        return (
+        command = (
             f".venv/bin/python scripts/demo_prep.py --url {self.node.url} --only {' '.join(steps)}"
         )
+        if "seed" in steps and self.data_dir is not None:
+            command += f" --data-dir {self.data_dir}"
+        return command
 
     def _retry(self, call, landed=None):
         return _with_retry(
@@ -314,7 +317,12 @@ class Prep:
             return
         signals_dir = self.data_dir / "signals"
         if self.dry_run:
-            self._add("demo hotspots", False, f"missing: {names}; would seed into {signals_dir}")
+            self._add(
+                "demo hotspots",
+                False,
+                f"missing: {names}; would seed into {signals_dir}",
+                self._rerun("seed"),
+            )
             return
 
         signals_dir.mkdir(parents=True, exist_ok=True)
@@ -395,7 +403,16 @@ class Prep:
             f"{reading.get('plume_visible')}, cloud {reading.get('cloud_obscured')}"
         )
 
-    def alert(self, hotspot_id: str) -> None:
+    def alert(self, hotspot_id: str, hold: bool = False) -> None:
+        """Draft the alert, unless one is already awaiting confirmation.
+
+        `hold` is set when the satellite reading was asked for in this run and
+        is still cold. The draft is then left for later rather than made
+        without it: an existing draft is what the server returns from then on,
+        so drafting now would mean the on-camera alert never cites the image,
+        or a `redraft` — a second paid call — to fix it.
+        """
+
         def pending():
             response = self.node.get("/alerts", hotspot_id=hotspot_id)
             if response.status_code != 200:
@@ -409,6 +426,14 @@ class Prep:
             return
         if self.dry_run:
             self._add("alert draft", False, "none awaiting confirmation; would draft (1 fast call)")
+            return
+        if hold:
+            self._add(
+                "alert draft",
+                False,
+                "held until the satellite reading is warm, so the draft can cite it",
+                f"{self._rerun('imagery', 'alert')}   (or --only alert to draft without it)",
+            )
             return
         print(f"  drafting the alert for {hotspot_id} (one fast-tier call)...")
         path = f"/hotspots/{hotspot_id}/alert"
@@ -517,10 +542,12 @@ class Prep:
             spot = self.demo_hotspot()
             if spot is not None:
                 # Imagery first, so the alert drafted after it cites the reading.
+                hold = False
                 if "imagery" in self.steps:
                     self.imagery(spot["hotspot_id"])
+                    hold = not self.items[-1].warm
                 if "alert" in self.steps:
-                    self.alert(spot["hotspot_id"])
+                    self.alert(spot["hotspot_id"], hold=hold)
         # Forecasts last: they live in memory and the clock starts when they land.
         if "forecast" in self.steps:
             self.forecast()

@@ -261,6 +261,19 @@ def test_a_call_that_landed_despite_the_error_is_not_paid_for_again(isolated_sto
     assert len(node.calls("POST")) == 1
 
 
+def test_the_alert_waits_for_a_cold_reading_instead_of_being_drafted_without_it(isolated_storage):
+    """A draft made now is the one the server keeps returning; it would never cite the image."""
+    _seed_all(isolated_storage)
+    hotspot_id = _demo_hotspot_id()
+    node = FakeNode(imagery_posts=(503,) * 10)
+    prep, _ = _prep(node, isolated_storage, steps=("imagery", "alert"), attempts=2)
+
+    assert prep.run() == 1
+    assert node.calls("POST") == [f"/hotspots/{hotspot_id}/imagery"] * 2
+    held = next(i for i in prep.items if i.name == "alert draft")
+    assert not held.warm and "--only imagery alert" in held.next_command
+
+
 def test_a_refusal_is_an_answer_and_is_not_retried(isolated_storage):
     _seed_all(isolated_storage)
     node = FakeNode(alert_posts=(409,))
