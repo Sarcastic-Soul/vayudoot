@@ -15,3 +15,6 @@ outbox/
 node_modules/
 dist/
 build/
+
+# Agent worktrees made by Claude Code
+.claude/worktrees/

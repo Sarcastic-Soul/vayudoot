@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "ruff>=0.7", "respx>=0.21"]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "ruff>=0.7", "respx>=0.21", "sqlglot>=25"]
 # Loading exports into the BigQuery sandbox. Optional: `scripts/export_bigquery.py`
 # writes the files and prints `bq` commands without it.
 bigquery = ["google-cloud-bigquery>=3.25"]
@@ -36,6 +36,7 @@ packages = ["src/vayudoot"]
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+extend-exclude = [".claude"]
 
 [tool.ruff.lint]
 # E501 is not on by default; without it the declared line length is decorative.
