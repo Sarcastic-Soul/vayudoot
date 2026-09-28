@@ -32,8 +32,10 @@ across stations, hour by hour). That value is put in a band:
 The prompt gives no numbers for its bands. Its only anchor is "the standard",
 which the tool prints next to every value. So `low` means within the Indian
 24-hour standard (60 for PM2.5), and the higher edges follow the CPCB AQI
-breakpoints. The reasoning is in `ledger.BAND_LIMITS`. Every case in the
-backtest had PM2.5, so PM10 was never used.
+breakpoints. The reasoning is in `ledger.band_limits()`. On a node in another
+country `low` follows that country's standard instead (40 in South Africa, 50 in
+Brazil); every case here is Indian. Every case in the backtest had PM2.5, so PM10
+was never used.
 
 A day needs 16 measured hours to count. A window needs at least two of its three
 days. A case with no active reference monitor within 25 km, or too few hours, is
