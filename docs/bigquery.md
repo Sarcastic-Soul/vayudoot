@@ -176,6 +176,15 @@ required.
 (repeated strings), `waypoint_count`, `path` (GEOGRAPHY line through the
 waypoints).
 
+**`forecast_ledger`** — `node_id`, `country`, `forecast_id`, `made_at`,
+`location_name`, `corridor_id`, `latitude` and `longitude` (two decimals),
+`horizon_hours`, `window_start`, `window_end`, `risk`, `confidence`,
+`forecaster_version`, `prompt_sha256`, `model_id`, then the outcome once the
+window has closed: `outcome_status` (`scored`, `unscorable`, or null while
+pending), `pollutant`, `observed_value`, `observed_band`, `band_error`, and the
+two no-model baselines `persistence_band` and `cams_band`. Partitioned on
+`made_at`.
+
 ### Views
 
 | View | What it holds |
@@ -188,14 +197,14 @@ waypoints).
 | `signals_latest` | every signal, once |
 | `alerts_current` | every alert, once, at its latest status |
 | `corridors_current` | every corridor, once |
+| `forecast_ledger_latest` | every forecast, once, at its latest state (pending ones turn scored in a later export) |
 
 ### Adding a table
 
 `export.register(Table(...))` adds a table to every export: the writer, the
 schema check, the manifest, the load and the `bq` commands all read the
-registry. The forecast ledger is meant to be the first to use it — a `Table`
-whose `rows` reads the ledger's store API, partitioned on the forecast's
-`generated_at`, is all it takes.
+registry. The forecast ledger went straight into `TABLES`; a `Table` whose
+`rows` reads the snapshot is all a new one takes.
 
 ## Ready queries
 
@@ -363,6 +372,29 @@ FROM vayudoot.neighbour_hotspots_current
 WHERE reader_country != source_country
 GROUP BY reader_country, source_country, reader_node_id, source_node_id
 ORDER BY hotspots_offered DESC;
+```
+
+### 7. Forecast skill per country, against the two baselines
+
+Whether the model beats simply carrying yesterday forward, or reading the raw
+CAMS number, on the same forecasts — per country and per forecaster version, so
+two nodes are compared only when they ran the same prompt. A handful of scored
+forecasts says little; the count is there so nobody reads a rate off three.
+
+```sql
+SELECT
+  country,
+  forecaster_version,
+  prompt_sha256,
+  COUNT(*) AS scored,
+  AVG(IF(band_error = 0, 1, 0)) AS model_exact,
+  AVG(IF(ABS(band_error) <= 1, 1, 0)) AS model_within_one,
+  AVG(IF(persistence_band = observed_band, 1, 0)) AS persistence_exact,
+  AVG(IF(cams_band = observed_band, 1, 0)) AS cams_exact
+FROM vayudoot.forecast_ledger_latest
+WHERE outcome_status = 'scored'
+GROUP BY country, forecaster_version, prompt_sha256
+ORDER BY country, scored DESC;
 ```
 
 ### How these were checked

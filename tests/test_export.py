@@ -22,6 +22,8 @@ from vayudoot.schemas import (
     CaseStatus,
     EvidencePacket,
     FeedHotspot,
+    ForecastOutcome,
+    ForecastRecord,
     HotspotAlert,
     HotspotSnapshot,
     Jurisdiction,
@@ -100,7 +102,36 @@ def seeded():
     store.save(_citizen_case(28.623456, 77.328765))
     spot = next(h for h in hotspots.current() if h.corroborated)
     store.save_alert(_alert(spot))
+    store.save_forecast_record(_forecast())
     return spot
+
+
+def _forecast() -> ForecastRecord:
+    return ForecastRecord(
+        forecast_id="VDF-00000001",
+        made_at=NOW - timedelta(days=4),
+        latitude=30.901034,
+        longitude=75.857312,
+        location_name="Ludhiana",
+        corridor_id="punjab-delhi",
+        horizon_hours=72,
+        window_start=NOW - timedelta(days=4),
+        window_end=NOW - timedelta(days=1),
+        risk="high",
+        confidence=0.6,
+        forecaster_version="2",
+        prompt_sha256="ab" * 32,
+        model_id="gemini-3.5-flash-lite",
+        outcome=ForecastOutcome(
+            status="scored",
+            pollutant="pm25",
+            observed_value=140.0,
+            observed_band="high",
+            band_error=0,
+            persistence_band="elevated",
+            cams_band="elevated",
+        ),
+    )
 
 
 def _neighbour() -> export.NeighbourFeed:
@@ -138,7 +169,10 @@ def test_export_writes_every_table_with_a_schema_and_a_manifest(tmp_path, seeded
     manifest, out = _write(tmp_path, [_neighbour()])
 
     names = {t["name"] for t in manifest.tables}
-    assert names == {"exports", "signals", "hotspots", "neighbour_hotspots", "alerts", "corridors"}
+    assert names == {
+        "exports", "signals", "hotspots", "neighbour_hotspots", "alerts", "corridors",
+        "forecast_ledger",
+    }
     for entry in manifest.tables:
         assert (out / entry["data"]).exists()
         assert (out / entry["schema"]).exists()
@@ -259,6 +293,16 @@ def test_register_adds_a_table_to_every_export(tmp_path, monkeypatch):
     assert any("vayudoot.forecasts" in line for line in export.bq_commands(manifest, "p"))
 
 
+def test_forecasts_export_with_their_outcome_and_a_coarse_point(tmp_path, seeded):
+    """Skill can be compared across nodes in SQL only if every forecast carries its score."""
+    _, out = _write(tmp_path)
+    (row,) = _rows(out, "forecast_ledger")
+    assert row["risk"] == "high" and row["observed_band"] == "high"
+    assert row["band_error"] == 0 and row["cams_band"] == "elevated"
+    assert (row["latitude"], row["longitude"]) == (30.9, 75.86)
+    assert row["country"] == "IN"
+
+
 def test_bq_commands_use_load_jobs_never_streaming(tmp_path, seeded):
     manifest, _ = _write(tmp_path)
     lines = export.bq_commands(manifest)
@@ -368,6 +412,7 @@ _VIEW_BASE = {
     "signals_latest": "signals",
     "alerts_current": "alerts",
     "corridors_current": "corridors",
+    "forecast_ledger_latest": "forecast_ledger",
 }
 
 

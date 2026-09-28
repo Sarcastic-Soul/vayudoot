@@ -156,14 +156,22 @@ This is a model reasoning over public data, not a trained predictor, and it says
 so on every object it produces. It states conditions rather than instructions
 and must never be confusable with an official advisory from IMD, CPCB, SAWS,
 INMET or any other agency — people act on air quality predictions, which is the
-point of making them, so an unlabelled wrong one does real harm to real lungs. Vertex AI would be the obvious tool and needs
-a billing account; there is no card. See
+point of making them, so an unlabelled wrong one does real harm to real lungs.
+Vertex AI would be the obvious tool and needs a billing account; there is no
+card. See
 [`agents/forecast.py`](src/vayudoot/agents/forecast.py).
 
 When a tool fails, the forecast says so rather than guessing. A live run whose
 wind lookup returned `429` reported the rate limit in its own `basis`, dropped
 its confidence, and explicitly declined to claim the upwind hotspots were
 contributing without wind data to check them against.
+
+**Every forecast is scored.** Each one served is written to a ledger before
+anything about its window is known, then checked against OpenAQ reference
+stations within 25 km once the window closes, next to two forecasts that use no
+model at all: yesterday carried forward, and the raw CAMS number. If the model
+does not beat those, the ledger says so. Scoring spends no model call. See
+[`ledger.py`](src/vayudoot/ledger.py).
 
 ### Federation — because smoke does not stop at a state line
 
@@ -175,6 +183,12 @@ What is shared is a **detection layer, not trained weights**. That is the honest
 reading of "share predictive models", and the dishonest one was available.
 Federated training across state instances is a real idea, it is not what this
 does, and claiming it would cost more than it earns.
+
+Nodes also publish **which forecaster they run** — its version, a hash of its
+prompt, its bands and its measured skill — so two nodes can tell whether their
+accuracy figures are comparable. The prompt itself is never shared or run
+elsewhere: a prompt taken from a feed would let any node tell every other
+node's model what to say.
 
 A neighbour's hotspots are forecasting context and are never republished as
 ours: a node that laundered a neighbour's detection would let one bad instance
@@ -516,6 +530,9 @@ Punjab detecting while Delhi forecasts.
 | `GET` | `/node` | Who this instance is |
 | `GET` | `/feed` | This node's hotspots, as a versioned document |
 | `GET` | `/feed.geojson` | The same hotspots as RFC 7946 GeoJSON, for any GIS tool |
+| `GET` | `/forecaster` | Which forecaster this node runs (version, prompt hash, bands) and its measured skill. Never the prompt |
+| `GET` | `/forecasts/ledger` | Every forecast this node served, with what the stations recorded once its window closed |
+| `GET` | `/forecasts/skill` | How those forecasts scored, against two no-model baselines |
 | `GET` | `/neighbours` | What each configured peer is reporting, and which failed |
 
 **Reporting**

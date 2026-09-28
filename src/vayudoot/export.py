@@ -55,9 +55,9 @@ latest state of each alert, each signal once. Queries go through the views.
 
 Adding a table
 --------------
-`register()` takes a `Table`. The forecast ledger is the intended first user:
-when a store API for past forecasts exists, a `Table` whose `rows` reads it is
-all that exporting it takes — the writer, the schema check, the manifest, the
+`register()` takes a `Table`, or a new entry goes straight into `TABLES` as the
+forecast ledger's did. A `Table` whose `rows` reads the snapshot is all that
+exporting something takes — the writer, the schema check, the manifest, the
 upload and the `bq` commands all work from the registry.
 """
 
@@ -74,6 +74,7 @@ from . import __version__
 from .config import settings
 from .schemas import (
     FeedHotspot,
+    ForecastRecord,
     Hotspot,
     HotspotAlert,
     NodeIdentity,
@@ -128,6 +129,7 @@ class Snapshot:
     neighbours: list[NeighbourFeed] = field(default_factory=list)
     neighbour_errors: list[str] = field(default_factory=list)
     corridors: list = field(default_factory=list)
+    forecasts: list[ForecastRecord] = field(default_factory=list)
 
     @property
     def export_id(self) -> str:
@@ -165,6 +167,7 @@ def collect(include_neighbours: bool = True) -> Snapshot:
         neighbours=neighbours,
         neighbour_errors=errors,
         corridors=corridors.all_corridors(),
+        forecasts=store.forecast_records(),
     )
 
 
@@ -514,6 +517,79 @@ def corridor_rows(snapshot: Snapshot) -> Iterable[dict]:
         }
 
 
+# -- forecast ledger -------------------------------------------------------- #
+
+FORECASTS_SCHEMA = [
+    *_EXPORT_COLUMNS,
+    _f("node_id", "STRING", "REQUIRED"),
+    _f("country", "STRING", "REQUIRED"),
+    _f("forecast_id", "STRING", "REQUIRED"),
+    _f("made_at", "TIMESTAMP", "REQUIRED", "When the forecast was served"),
+    _f("location_name", "STRING", "NULLABLE"),
+    _f("corridor_id", "STRING", "NULLABLE"),
+    _f("latitude", "FLOAT", "REQUIRED", "Rounded to two decimals"),
+    _f("longitude", "FLOAT", "REQUIRED", "Rounded to two decimals"),
+    _f("horizon_hours", "INTEGER", "REQUIRED"),
+    _f("window_start", "TIMESTAMP", "REQUIRED"),
+    _f("window_end", "TIMESTAMP", "REQUIRED"),
+    _f("risk", "STRING", "REQUIRED", "The band the model called"),
+    _f("confidence", "FLOAT", "REQUIRED"),
+    _f("forecaster_version", "STRING", "NULLABLE"),
+    _f("prompt_sha256", "STRING", "NULLABLE"),
+    _f("model_id", "STRING", "NULLABLE"),
+    _f("outcome_status", "STRING", "NULLABLE", "scored, unscorable, or null while pending"),
+    _f("pollutant", "STRING", "NULLABLE"),
+    _f("observed_value", "FLOAT", "NULLABLE", "Worst 24-hour mean in the window, µg/m³"),
+    _f("observed_band", "STRING", "NULLABLE"),
+    _f("band_error", "INTEGER", "NULLABLE", "Forecast band minus observed, in steps"),
+    _f("persistence_band", "STRING", "NULLABLE", "Baseline: yesterday carried forward"),
+    _f("cams_band", "STRING", "NULLABLE", "Baseline: raw CAMS number, no model"),
+]
+
+
+def forecast_rows(snapshot: Snapshot) -> Iterable[dict]:
+    """Every forecast in the ledger, with its outcome where the window has closed.
+
+    The point is rounded to two decimals, about a kilometre: a forecast is made
+    for a town or a waypoint, never for a building, and the table should not
+    suggest otherwise. Plain coordinates, not a GEOGRAPHY: that type is kept for
+    areas and lines here, so nothing exported can be drawn as a pin.
+    """
+    node = snapshot.node
+    for record in snapshot.forecasts:
+        outcome = record.outcome
+        yield {
+            **_stamp(snapshot),
+            "node_id": node.node_id,
+            "country": node.country,
+            "forecast_id": record.forecast_id,
+            "made_at": _ts(record.made_at),
+            "location_name": record.location_name or None,
+            "corridor_id": record.corridor_id or None,
+            "latitude": round(record.latitude, 2),
+            "longitude": round(record.longitude, 2),
+            "horizon_hours": record.horizon_hours,
+            "window_start": _ts(record.window_start),
+            "window_end": _ts(record.window_end),
+            "risk": _value(record.risk),
+            "confidence": float(record.confidence),
+            "forecaster_version": record.forecaster_version or None,
+            "prompt_sha256": record.prompt_sha256 or None,
+            "model_id": record.model_id or None,
+            "outcome_status": outcome.status if outcome else None,
+            "pollutant": outcome.pollutant if outcome else None,
+            "observed_value": outcome.observed_value if outcome else None,
+            "observed_band": (
+                _value(outcome.observed_band) if outcome and outcome.observed_band else None
+            ),
+            "band_error": outcome.band_error if outcome else None,
+            "persistence_band": (
+                _value(outcome.persistence_band) if outcome and outcome.persistence_band else None
+            ),
+            "cams_band": _value(outcome.cams_band) if outcome and outcome.cams_band else None,
+        }
+
+
 # -- export runs ------------------------------------------------------------ #
 
 EXPORTS_SCHEMA = [
@@ -617,6 +693,14 @@ TABLES: list[Table] = [
         partition_field=None,
         clustering=("corridor_id",),
     ),
+    Table(
+        "forecast_ledger",
+        "Every forecast served, and what the stations recorded once its window closed.",
+        FORECASTS_SCHEMA,
+        forecast_rows,
+        partition_field="made_at",
+        clustering=("country", "node_id", "outcome_status"),
+    ),
 ]
 
 
@@ -689,6 +773,13 @@ QUALIFY ROW_NUMBER() OVER (PARTITION BY node_id, signal_id ORDER BY exported_at 
 SELECT * FROM `{ds}.alerts`
 WHERE TRUE
 QUALIFY ROW_NUMBER() OVER (PARTITION BY node_id, alert_id ORDER BY exported_at DESC) = 1
+""",
+    # Each forecast once, at its latest state: pending forecasts become scored
+    # ones in a later export, and the later copy is the one that counts.
+    "forecast_ledger_latest": """
+SELECT * FROM `{ds}.forecast_ledger`
+WHERE TRUE
+QUALIFY ROW_NUMBER() OVER (PARTITION BY node_id, forecast_id ORDER BY exported_at DESC) = 1
 """,
     "corridors_current": """
 SELECT * FROM `{ds}.corridors`

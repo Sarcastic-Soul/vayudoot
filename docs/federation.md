@@ -70,8 +70,9 @@ The hotspots this node has detected, as a versioned document.
 
 ```json
 {
-  "feed_version": "1.0",
+  "feed_version": "1.1",
   "node": { "node_id": "punjab-node", "...": "..." },
+  "forecaster": { "forecaster_version": "...", "prompt_sha256": "...", "...": "..." },
   "generated_at": "2026-09-15T04:00:00Z",
   "hotspot_count": 12,
   "hotspots": [
@@ -171,11 +172,69 @@ collection as a foreign member (RFC 7946 §6.1), and each feature repeats the no
 id and country, because GIS layers are split and merged routinely and a feature
 that has lost its collection must still say whose detection it is.
 
+### `GET /forecaster` (feed 1.1)
+
+Which forecaster this node runs, and how well it has done. Also carried on
+`/feed` as `forecaster` from feed version 1.1; a 1.0 feed simply has no such
+field and is read as before.
+
+```json
+{
+  "forecaster_version": "3",
+  "prompt_sha256": "9f2c...",
+  "horizon_hours": 72,
+  "upwind_km": 500.0,
+  "tier": "fast",
+  "provider": "gemini",
+  "model_ids": ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"],
+  "bands": [{ "risk": "low", "pm25_from": 0, "pm25_to": 60, "...": "..." }],
+  "band_basis": "Worst 24-hour mean over the forecast window ...",
+  "skill": {
+    "window_days": 30, "scored": 41, "unscorable": 6,
+    "exact_rate": 0.49, "within_one_rate": 0.9,
+    "persistence_exact_rate": 0.44, "cams_exact_rate": 0.39,
+    "caveat": "..."
+  }
+}
+```
+
+**The forecaster is shared by description, never by execution.** A peer reading
+the spec can tell whether two nodes run the same forecaster, and so whether
+their skill numbers can be compared. That is "sharing predictive models" in the
+one form that can be checked.
+
+A peer's prompt text is never fetched and never run here. A prompt is
+instructions to our model, with our tools and our keys behind it; taking one
+from a feed would let any node on the network, or anyone who took one over,
+tell every other node's model what to say — including that a smoggy week is
+safe, which is the harm hard constraint 7 is written against. So the contract
+has no prompt field, only its SHA-256; `ForecasterSpec` drops any unknown field
+when it is parsed; and `federation.compare_forecaster` only reports
+differences. Where a peer's horizon or upwind reach differs, the comparison
+names the environment variable a person would set to adopt it. Nothing on this
+node changes by itself.
+
+The bands are part of the comparison because low is anchored to each node's own
+national standard (60 µg/m³ PM2.5 in India, 40 in South Africa, 50 in Brazil).
+An Indian and a South African node therefore never report "the same
+forecaster", even with the same prompt: their skill figures score different
+bands, and saying otherwise would invite comparing them.
+
+Skill comes from the **forecast ledger** (`ledger.py`). Every forecast served
+is written down when it is made, before anything about its window is known, and
+scored against OpenAQ reference stations within 25 km once the window closes,
+alongside two no-model baselines (yesterday carried forward, and the raw CAMS
+number). Scoring costs no model call. `GET /forecasts/ledger` lists the
+records and `GET /forecasts/skill` summarises them.
+
 ### `GET /neighbours`
 
 What this node's configured peers are currently reporting, and which of them
 failed. Read live rather than cached: a peer being unreachable is ordinary on a
-federated network, and an operator needs to see which ones answered.
+federated network, and an operator needs to see which ones answered. From feed
+1.1 each peer entry also carries its `forecaster` spec and a
+`forecaster_match`: whether it runs the same forecaster as this node, and which
+fields differ.
 
 ## What a neighbour's hotspots are used for, and what they are not
 
