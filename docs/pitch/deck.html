@@ -486,7 +486,7 @@
     <div>
       <p style="font-size:15.5px">Gemini reads the Open-Meteo pollutant and wind forecasts and every
       hotspot within <strong>500 km upwind</strong> — this node's and its
-      neighbours'. Seven corridors, 46 sampling points; a corridor takes the
+      neighbours'. Thirteen corridors, 86 sampling points; a corridor takes the
       <em>worst</em> point, not the average.</p>
       <div class="card" style="background:#fff;padding:14px 16px">
         <h3>Real output, Delhi, earlier live run</h3>
@@ -500,8 +500,12 @@
         carries its inputs and a disclaimer on the object itself, and is never
         presented as a CPCB or IMD advisory.</p>
       </div>
-      <!-- [TODO pending: forecast accuracy measurement] When it lands, add one line here:
-           how outlooks are scored against what stations later measured, and the score. -->
+      <p style="font-size:13.5px;margin-top:12px"><strong>Scored, and not yet better than no model.</strong>
+      Every outlook is recorded, then checked against reference stations once its window closes.
+      On 21 past days the band was exactly right 38% of the time; yesterday carried forward managed
+      67%, raw CAMS 52%. It over-calls clean days, and the cause is in the prompt. Too few cases for
+      the gap to be significant — and we publish it anyway.</p>
+      <span class="cite">docs/forecast-evaluation.md · backtest, 20 Indian cities, Oct 2025 – Aug 2026</span>
     </div>
   </div>
   <span class="num">08</span>
@@ -642,7 +646,7 @@
         <li>Detection from satellites that already pass overhead, with no citizen needed</li>
         <li>A hotspot-to-authority alert with a human gate, sandboxed</li>
         <li>Gemini reading the satellite picture of a hotspot, labelled as an annotation</li>
-        <li>72-hour outlooks on seven corridors, one of them across the India–Pakistan border</li>
+        <li>72-hour outlooks on thirteen corridors in four countries, one of them across the India–Pakistan border</li>
         <li>An open feed and GeoJSON that a node in another country can read</li>
         <li>Complaints and RTI applications drafted with the right statute and deadline</li>
       </ul>

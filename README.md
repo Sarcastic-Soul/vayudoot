@@ -173,6 +173,14 @@ model at all: yesterday carried forward, and the raw CAMS number. If the model
 does not beat those, the ledger says so. Scoring spends no model call. See
 [`ledger.py`](src/vayudoot/ledger.py).
 
+So far it does not beat them. A backtest on 21 past days in 20 Indian cities
+found the model's band exactly right 38% of the time, against 67% for yesterday
+carried forward and 52% for raw CAMS. It called every clean day in the sample
+worse than it was. The sample is too small for the gaps to be significant, and
+the cause of the over-calling is in the prompt.
+[`docs/forecast-evaluation.md`](docs/forecast-evaluation.md) has the method,
+the numbers with their intervals, and the limits.
+
 ### Federation — because smoke does not stop at a state line
 
 Each deployment is a node with a region. It publishes the hotspots it detected

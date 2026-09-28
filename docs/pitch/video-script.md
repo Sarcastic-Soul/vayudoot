@@ -235,8 +235,10 @@ corridor**.
 > with its reasons. It is labelled as a model's reasoning, never as an official
 > forecast — and when a lookup fails, it says so instead of guessing.
 
-<!-- [TODO pending: forecast accuracy measurement] When it lands, one sentence
-here on how outlooks are scored against what stations later measured. -->
+> Every outlook is scored against what the stations later measured, next to
+> two forecasts that use no model. On twenty-one past days, ours has not beaten
+> them yet — it calls clean days too dirty — and the node says so on its own
+> forecast page.
 
 *If you prefer the terminal, `python scripts/federation_demo.py --cross-border`
 tells the same story in about the same time.*

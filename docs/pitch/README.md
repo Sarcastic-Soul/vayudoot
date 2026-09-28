@@ -51,7 +51,7 @@ no longer used by the deck.
 7. Alert — from a hotspot to the board, once a person confirms; sandboxed
 8. Forecast — corridor outlooks with the work shown; never official
 9. Interoperability — Pakistan's Punjab detects, Delhi forecasts, no shared weights
-10. Depth and reach — 36 states and UTs, 7 corridors, 2 countries, all as data
+10. Depth and reach — 36 states and UTs plus ZA and BR tables, 13 corridors, all as data
 11. Deployability — one container, free tier, no card, model fallback
 12. Impact, and what is honestly not claimed
 
@@ -75,7 +75,11 @@ includes the commands that start the three demo nodes.
 
 ## Not yet in the pitch
 
-These are marked in the files as `[TODO pending: ...]` comments and must not be
-claimed until they are merged and working: South Africa and Brazil nodes,
-forecast accuracy measurement, sharing the forecaster between nodes, voice
-reports, and BigQuery export.
+Nothing is pending. South Africa and Brazil nodes, forecast accuracy, sharing
+the forecaster between nodes, voice reports and the BigQuery export are all
+merged and in the pitch.
+
+The forecast accuracy figures are not flattering: on 21 past days the model did
+not beat yesterday carried forward. The deck and the video say so plainly. Do
+not round them up, and do not drop them — a scored forecast that admits it is
+behind is a stronger claim than an unscored one.
