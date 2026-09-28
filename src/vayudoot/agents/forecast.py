@@ -44,7 +44,8 @@ RISK_ORDER: list[str] = ["low", "elevated", "high", "severe"]
 #:
 #: 1 — everything up to September 2026.
 #: 2 — tool windows start at the current hour rather than midnight, the dominant
-#:     wind is a vector mean, and each corridor waypoint has its own agent.
+#:     wind is a vector mean, each corridor waypoint has its own agent, and
+#:     every hotspot in reach is counted by direction, not only the nearest ten.
 FORECASTER_VERSION = "2"
 
 
@@ -218,13 +219,43 @@ def upwind_hotspots(
     return [h for km, h in sorted(within, key=lambda pair: pair[0]) if km <= reach]
 
 
+#: How many hotspots are described one by one. The rest are counted by direction.
+LISTED_HOTSPOTS = 10
+
+
 def _describe_hotspots(latitude: float, longitude: float, hotspots: list[Hotspot]) -> str:
+    """The hotspots in reach, for the prompt: a count by direction, then the nearest.
+
+    **The count is not optional.** Only the nearest ten are described, and in
+    version 1 nothing said how many there were. Found building the backtest: on
+    2 November 2025 Ludhiana had 1,113 satellite hotspots within reach and Delhi
+    574 on 5 November, and the model was shown ten in each case — the same
+    picture as a quiet week with ten fires. Whether the air arriving on the
+    forecast wind crosses a burning district is the question the forecast turns
+    on, so every hotspot is counted by the direction it lies in, and the wind
+    tool's direction can be read against it.
+    """
     near = upwind_hotspots(latitude, longitude, hotspots)
     if not near:
         return "Active pollution hotspots within reach of this location: none detected."
 
-    lines = ["Active pollution hotspots within reach of this location:"]
-    for spot in near[:10]:
+    by_direction: dict[str, int] = {}
+    for spot in near:
+        side = _compass(latitude, longitude, spot.centre_latitude, spot.centre_longitude)
+        by_direction[side] = by_direction.get(side, 0) + 1
+    counts = ", ".join(
+        f"{count} to the {side}"
+        for side, count in sorted(by_direction.items(), key=lambda kv: -kv[1])
+    )
+    reach = settings.vayudoot_forecast_upwind_km
+    lines = [
+        (
+            f"Active pollution hotspots within {reach:.0f} km of this location: "
+            f"{len(near)} in total ({counts})."
+        ),
+        f"The {min(len(near), LISTED_HOTSPOTS)} nearest:",
+    ]
+    for spot in near[:LISTED_HOTSPOTS]:
         km = haversine_km(latitude, longitude, spot.centre_latitude, spot.centre_longitude)
         bearing = _compass(latitude, longitude, spot.centre_latitude, spot.centre_longitude)
         corroboration = (

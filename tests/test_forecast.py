@@ -152,6 +152,23 @@ async def test_the_corroboration_state_travels_into_the_prompt():
     assert "not independently corroborated" in agent.prompts[0]
 
 
+async def test_every_hotspot_in_reach_is_counted_not_only_the_ten_listed():
+    """A burning season with hundreds of fires must not read like a quiet week
+    with ten. Found building the backtest: Ludhiana had 1,113 hotspots in reach
+    on 2 November 2025, and the model was shown ten with no count."""
+    west = [hotspot(f"VDH-W{i:03d}", at=(28.6139, 76.5 - i * 0.01)) for i in range(40)]
+    east = [hotspot(f"VDH-E{i:03d}", at=(28.6139, 78.2 + i * 0.01)) for i in range(3)]
+    agent = StubAgent(outlook())
+
+    await forecast.forecast_location(*DELHI, nearby_hotspots=west + east, agent=agent)
+
+    prompt = agent.prompts[0]
+    assert "43 in total" in prompt
+    assert "40 to the west" in prompt
+    assert "3 to the east" in prompt
+    assert prompt.count("km to the") == forecast.LISTED_HOTSPOTS
+
+
 async def test_no_hotspots_is_stated_rather_than_left_out():
     """Silence reads as missing data; an explicit "none" reads as a quiet picture."""
     agent = StubAgent(outlook())
