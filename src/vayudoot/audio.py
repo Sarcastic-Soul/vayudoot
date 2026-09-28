@@ -11,14 +11,14 @@ exactly as the citizen recorded them. A file whose leading bytes match none of
 the formats below is refused at the door with a 415, rather than becoming a
 case that fails when the model is handed noise.
 
-Duration is read from the container where the container states it: WAV, Ogg,
-M4A, MP3 and WebM when the recorder wrote a duration. Chrome's MediaRecorder
-does not write one, so for the commonest path the length is not known here.
-That is why the byte cap in `config.py` is the limit that always applies, and
-the duration cap is the one that applies when it can be checked. At the 32-64
-kbit/s a browser records speech at, the byte cap is several minutes of audio,
-so a long WebM costs at most a few thousand audio tokens on the fast tier —
-the recording screen stops at the duration cap anyway.
+Duration is read from the container: WAV, Ogg, M4A and MP3 state it, and so
+does WebM when the recorder wrote a Duration. Chrome's MediaRecorder does not,
+so for WebM without one the clusters are walked to the last audio block. What
+is still unmeasured — a raw AAC stream, a file this cannot parse — falls to
+the byte cap in `config.py`, which always applies; the duration cap applies
+whenever the length is known. At the 32-64 kbit/s a browser records speech at,
+the byte cap is several minutes of audio, so an unmeasured file costs at most
+a few thousand audio tokens on the fast tier.
 """
 
 from __future__ import annotations
@@ -183,13 +183,20 @@ def _mp3(data: bytes) -> float | None:
     return (len(data) - offset) * 8 / (kbps * 1000) if kbps else None
 
 
-def _webm(data: bytes) -> float | None:
-    """The Segment Info `Duration` element, if the recorder wrote one.
+_CLUSTER = b"\x1f\x43\xb6\x75"
 
-    Searched for only in the header, before the first Cluster, so a byte pattern
-    inside the audio itself cannot be mistaken for it.
+
+def _webm(data: bytes) -> float | None:
+    """The Segment Info `Duration` element, or else the time of the last block.
+
+    The header is searched only before the first Cluster, so a byte pattern
+    inside the audio itself cannot be mistaken for it. Chrome's MediaRecorder
+    writes no Duration at all, so when there is none the clusters are walked
+    (`_webm_blocks`) — which is what lets the duration cap apply to the
+    commonest recording there is.
     """
-    header = data[: data.find(b"\x1f\x43\xb6\x75") if b"\x1f\x43\xb6\x75" in data else 4096]
+    first = data.find(_CLUSTER)
+    header = data[: first if first >= 0 else 4096]
     scale = 1_000_000  # TimecodeScale default, in nanoseconds
     at = header.find(b"\x2a\xd7\xb1")
     if at >= 0:
@@ -198,7 +205,8 @@ def _webm(data: bytes) -> float | None:
             scale = int.from_bytes(header[at + 4 : at + 4 + width], "big")
     at = header.find(b"\x44\x89")
     if at < 0:
-        return None
+        ticks = _webm_blocks(data, first) if first >= 0 else None
+        return ticks * scale / 1e9 if ticks is not None else None
     marker = header[at + 2]
     if marker == 0x88:
         ticks = struct.unpack_from(">d", header, at + 3)[0]
@@ -207,3 +215,58 @@ def _webm(data: bytes) -> float | None:
     else:
         return None
     return ticks * scale / 1e9
+
+
+def _vint(data: bytes, pos: int, marker: bool) -> tuple[int, int] | None:
+    """An EBML variable-length integer at `pos`: (value, width), or None.
+
+    `marker` keeps the length bit, which is how element IDs are written; sizes
+    drop it. A size of all ones is "unknown", which Chrome writes for every
+    Cluster it streams; it comes back as -1.
+    """
+    if pos >= len(data) or not data[pos]:
+        return None
+    first = data[pos]
+    width = 9 - first.bit_length()
+    if pos + width > len(data):
+        return None
+    raw = int.from_bytes(data[pos : pos + width], "big")
+    if marker:
+        return raw, width
+    value = raw & ((1 << (7 * width)) - 1)
+    return (-1 if value == (1 << (7 * width)) - 1 else value), width
+
+
+def _webm_blocks(data: bytes, pos: int) -> int | None:
+    """The timecode of the last audio block, in TimecodeScale ticks.
+
+    Walks the elements from the first Cluster in order rather than searching
+    for byte patterns, so nothing inside an audio frame can be read as a
+    timecode. Descends into Clusters and BlockGroups, whose size may be
+    unknown; skips everything else by its stated size. Stops, keeping what it
+    has, at the first thing it cannot parse — a truncated tail is still a
+    clip whose length is known up to there.
+    """
+    cluster, block, blockgroup, simple, timecode = 0x1F43B675, 0xA1, 0xA0, 0xA3, 0xE7
+    base, last = 0, None
+    while pos < len(data):
+        element = _vint(data, pos, marker=True)
+        size = element and _vint(data, pos + element[1], marker=False)
+        if not element or not size:
+            break
+        (ident, id_width), (length, size_width) = element, size
+        body = pos + id_width + size_width
+        if ident in (cluster, blockgroup):
+            pos = body
+            continue
+        if length < 0 or body + length > len(data):
+            break
+        if ident == timecode:
+            base = int.from_bytes(data[body : body + length], "big")
+        elif ident in (simple, block):
+            track = _vint(data, body, marker=False)
+            if track and body + track[1] + 2 <= body + length:
+                (relative,) = struct.unpack_from(">h", data, body + track[1])
+                last = max(last or 0, base + relative)
+        pos = body + length
+    return last

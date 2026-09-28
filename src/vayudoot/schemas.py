@@ -775,8 +775,10 @@ class VoiceAccount(VoiceAccountFields):
     second way.
     """
 
-    #: How many names were taken out. Said, rather than silently dropped, so a
-    #: reader of the case knows the account was edited and why.
+    #: How many name strings were taken out. Said, rather than silently dropped,
+    #: so a reader of the case knows the account was edited and why. The model
+    #: lists a name in each script it was written in, so one business can count
+    #: twice: treat it as "were any removed", not as a count of people.
     names_omitted: int = 0
     #: The model that actually answered, which is not always the configured
     #: one: the fast tier walks a chain when a model is rate limited.

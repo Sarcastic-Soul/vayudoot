@@ -83,6 +83,27 @@ def webm_bytes(seconds: float | None) -> bytes:
     )
 
 
+def chrome_webm_bytes(seconds: float) -> bytes:
+    """What Chrome's MediaRecorder writes: no Duration, unknown-size Clusters, 20 ms blocks.
+
+    Frame payloads are 0xE7 and 0x1F bytes on purpose, so a parser that searched
+    for byte patterns instead of walking elements would read them as timecodes
+    and cluster headers.
+    """
+    unknown = b"\x01\xff\xff\xff\xff\xff\xff\xff"
+    head = b"\x1a\x45\xdf\xa3\x9f\x42\x82\x84webm" + b"\x00" * 16
+    head += b"\x18\x53\x80\x67" + unknown  # Segment, unknown size
+    head += b"\x15\x49\xa9\x66\x87\x2a\xd7\xb1\x83\x0f\x42\x40"  # Info: TimecodeScale 1 ms
+    out = [head]
+    for start in range(0, int(seconds * 1000), 5000):  # a cluster every 5 s
+        out.append(b"\x1f\x43\xb6\x75" + unknown)
+        out.append(b"\xe7\x84" + struct.pack(">I", start))
+        for rel in range(0, min(5000, int(seconds * 1000) - start), 20):
+            frame = b"\x81" + struct.pack(">h", rel) + b"\x80" + b"\xe7\x1f" * 8
+            out.append(b"\xa3" + bytes([0x80 | len(frame)]) + frame)
+    return b"".join(out)
+
+
 def mp3_bytes(seconds: float, kbps: int = 32) -> bytes:
     """CBR MPEG-1 Layer III frames at 32 kbit/s, 44.1 kHz."""
     header = bytes([0xFF, 0xFB, 0x10, 0x00])  # bitrate index 1 = 32 kbit/s
@@ -104,6 +125,7 @@ def mp3_bytes(seconds: float, kbps: int = 32) -> bytes:
         (m4a_bytes(20.0), "m4a", 20.0),
         (webm_bytes(30.0), "webm", 30.0),
         (webm_bytes(None), "webm", None),
+        (chrome_webm_bytes(12.0), "webm", 11.98),  # the last block starts 20 ms from the end
         (mp3_bytes(4.0), "mp3", 4.0),
         (bytes([0xFF, 0xF1, 0x50, 0x80]) + b"\x00" * 60, "aac", None),
     ],
@@ -352,7 +374,8 @@ async def test_the_account_is_heard_and_passed_to_evidence_and_drafting_only(
     assert seen["analyse_evidence"]["voice"] == case.voice
     assert seen["draft_complaint"]["voice"] == case.voice
     assert "voice" not in seen["corroborate"], "a voice note is not independent evidence"
-    assert any("Voice note heard in Hindi; 2 name(s) left out" in h for h in case.history)
+    heard = "Voice note heard in Hindi; the names it mentioned were left out"
+    assert any(heard in h for h in case.history)
     stored = store.load(case.case_id)
     assert stored.voice == case.voice
     assert "sharma" not in stored.model_dump_json().lower()
@@ -500,6 +523,23 @@ async def test_a_voice_note_past_the_length_cap_is_a_413(client, monkeypatch):
     )
     assert resp.status_code == 413
     assert "30 seconds" in resp.json()["detail"]
+
+
+async def test_a_long_chrome_recording_is_measured_and_refused(client, monkeypatch):
+    """Chrome writes no Duration, and Chrome is most of the people who will record.
+
+    Without walking its clusters the length cap would never apply to the
+    commonest clip there is, leaving only the byte cap — minutes of audio.
+    """
+    patch_stages(monkeypatch, pipeline)
+    monkeypatch.setattr(settings, "vayudoot_max_audio_seconds", 5)
+    resp = await client.post(
+        "/reports",
+        data=FORM,
+        files={"audio": ("voice-note.webm", chrome_webm_bytes(20), "audio/webm;codecs=opus")},
+    )
+    assert resp.status_code == 413
+    assert "20 seconds" in resp.json()["detail"]
 
 
 async def test_health_publishes_the_voice_limits(client):

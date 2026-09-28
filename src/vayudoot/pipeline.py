@@ -196,7 +196,7 @@ async def _hear(report: Report, case: Case) -> bool:
             return False
         return True
 
-    omitted = f"; {voice.names_omitted} name(s) left out" if voice.names_omitted else ""
+    omitted = "; the names it mentioned were left out" if voice.names_omitted else ""
     case.log(f"Voice note heard in {voice.language or 'an unidentified language'}{omitted}")
     return True
 

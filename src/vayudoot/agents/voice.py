@@ -118,8 +118,9 @@ def redact(hearing: VoiceHearing, model: str = "") -> VoiceAccount:
     Matching ignores case and runs longest name first, so "Sharma Plastics" is
     removed whole before "Sharma" is looked for. A name the model listed but
     also already replaced is simply not found, which is fine; one it listed and
-    forgot to replace is caught here. `names_omitted` counts the distinct names
-    the model reported, not the places they appeared.
+    forgot to replace is caught here. `names_omitted` counts the distinct strings
+    the model listed, not the places they appeared — and the same name in two
+    scripts is two strings, so it says names were removed, not how many people.
     """
     names = sorted(
         {n.strip() for n in hearing.named_parties if len(n.strip()) >= 2}, key=len, reverse=True
@@ -174,7 +175,6 @@ def spoken_account_block(voice: VoiceAccount | None) -> str:
     lines += [f"  {label}: {value}" for label, value in extras.items() if value]
     if voice.names_omitted:
         lines.append(
-            f"  {voice.names_omitted} name(s) the speaker said were removed and must not be "
-            "guessed at or restored."
+            "  Names the speaker said were removed and must not be guessed at or restored."
         )
     return "\n".join(lines) + "\n"
