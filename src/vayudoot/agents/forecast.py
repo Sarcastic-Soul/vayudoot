@@ -21,6 +21,7 @@ photograph and draft a legal document. Constraint 5.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 
 from strands import Agent
 
@@ -33,6 +34,27 @@ from .prompts import FORECAST
 
 #: Worst-first, so a corridor can be summarised by the segment in trouble.
 RISK_ORDER: list[str] = ["low", "elevated", "high", "severe"]
+
+#: Which revision of the forecaster's *code* this is: what the tools fetch and
+#: summarise for the model, and what is done to its answer afterwards. The
+#: prompt's wording is covered separately by `prompt_sha256()`. Bump this when
+#: either of the first two changes, because a skill score earned by one
+#: revision says nothing about the next, and a peer comparing forecasters needs
+#: to see that they differ.
+#:
+#: 1 — everything up to September 2026.
+#: 2 — tool windows start at the current hour rather than midnight, the dominant
+#:     wind is a vector mean, and each corridor waypoint has its own agent.
+FORECASTER_VERSION = "2"
+
+
+def prompt_sha256() -> str:
+    """SHA-256 of the forecast prompt text, as published to peers.
+
+    The hash, never the text, is what a node shares: see `federation.py` for
+    why a peer's prompt is never fetched or run here.
+    """
+    return hashlib.sha256(FORECAST.encode("utf-8")).hexdigest()
 
 
 def build_forecast_agent() -> Agent:

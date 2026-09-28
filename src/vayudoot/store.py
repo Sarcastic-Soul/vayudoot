@@ -21,7 +21,9 @@ written back at every stage, so saving it upserts. A signal is a record that an
 instrument observed something at a moment, which cannot change afterwards, so
 saving one is an insert that does nothing if the observation is already held —
 see `save_signals`. A hotspot alert is stored exactly like a case: it is drafted,
-held for confirmation and then marked sent, so it too is upserted.
+held for confirmation and then marked sent, so it too is upserted. So is a
+forecast ledger record, which is written when the forecast is made and written
+again when its outcome is scored.
 
 Satellite imagery is the exception to "either backend": see "Imagery" below.
 """
@@ -38,7 +40,7 @@ from psycopg.types.json import Jsonb
 from psycopg_pool import ConnectionPool
 
 from .config import settings
-from .schemas import Case, HotspotAlert, ImageryReading, Signal
+from .schemas import Case, ForecastRecord, HotspotAlert, ImageryReading, Signal
 
 _pool: ConnectionPool | None = None
 _pool_url: str | None = None
@@ -98,6 +100,18 @@ def _pg() -> ConnectionPool:
             )
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS alerts_created_at_idx ON alerts (created_at)"
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS forecasts (
+                    forecast_id TEXT PRIMARY KEY,
+                    data JSONB NOT NULL,
+                    made_at TIMESTAMPTZ NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS forecasts_made_at_idx ON forecasts (made_at)"
             )
     return _pool
 
@@ -385,6 +399,94 @@ def all_alerts() -> list[HotspotAlert]:
         except (json.JSONDecodeError, ValueError):
             continue
     return sorted(alerts, key=lambda a: _aware(a.created_at), reverse=True)
+
+
+# --------------------------------------------------------------------------- #
+# Forecast ledger
+# --------------------------------------------------------------------------- #
+#
+# Every forecast served, and later what the stations recorded over its window.
+# Stored on whichever backend is configured, unlike imagery: a forecast cannot
+# be re-made after the fact, so a lost record is a hole in the skill score that
+# nothing can fill. See `ledger.py`.
+
+
+def _forecast_dir() -> Path:
+    """Its own directory, for the reason alerts have one: never the case glob."""
+    settings.vayudoot_forecast_dir.mkdir(parents=True, exist_ok=True)
+    return settings.vayudoot_forecast_dir
+
+
+def save_forecast_record(record: ForecastRecord) -> None:
+    if _use_postgres():
+        with _pg().connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO forecasts (forecast_id, data, made_at) VALUES (%s, %s, %s)
+                ON CONFLICT (forecast_id) DO UPDATE SET data = EXCLUDED.data
+                """,
+                (
+                    record.forecast_id,
+                    Jsonb(record.model_dump(mode="json")),
+                    _aware(record.made_at),
+                ),
+            )
+        return
+
+    path = _forecast_dir() / f"{_safe_name(record.forecast_id)}.json"
+    path.write_text(record.model_dump_json(indent=2))
+
+
+def load_forecast_record(forecast_id: str) -> ForecastRecord | None:
+    if _use_postgres():
+        with _pg().connection() as conn:
+            row = conn.execute(
+                "SELECT data FROM forecasts WHERE forecast_id = %s", (forecast_id,)
+            ).fetchone()
+        return ForecastRecord.model_validate(row[0]) if row else None
+
+    try:
+        path = _forecast_dir() / f"{_safe_name(forecast_id)}.json"
+    except ValueError:
+        return None
+    if not path.exists():
+        return None
+    return ForecastRecord.model_validate_json(path.read_text())
+
+
+def forecast_records(since: datetime | None = None) -> list[ForecastRecord]:
+    """Ledger records made at or after `since`, newest first.
+
+    Records the current schema rejects are skipped, as everywhere else here.
+    """
+    if _use_postgres():
+        with _pg().connection() as conn:
+            if since is None:
+                rows = conn.execute(
+                    "SELECT data FROM forecasts ORDER BY made_at DESC"
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT data FROM forecasts WHERE made_at >= %s ORDER BY made_at DESC",
+                    (_aware(since),),
+                ).fetchall()
+        records = []
+        for (data,) in rows:
+            try:
+                records.append(ForecastRecord.model_validate(data))
+            except ValueError:
+                continue
+        return records
+
+    records = []
+    for path in _forecast_dir().glob("*.json"):
+        try:
+            record = ForecastRecord.model_validate_json(path.read_text())
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if since is None or _aware(record.made_at) >= _aware(since):
+            records.append(record)
+    return sorted(records, key=lambda r: _aware(r.made_at), reverse=True)
 
 
 # --------------------------------------------------------------------------- #

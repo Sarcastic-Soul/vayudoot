@@ -24,6 +24,11 @@ def isolated_storage(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "vayudoot_sandbox_outbox", tmp_path / "outbox")
     monkeypatch.setattr(settings, "vayudoot_alert_dir", tmp_path / "alerts")
     monkeypatch.setattr(settings, "vayudoot_imagery_dir", tmp_path / "imagery")
+    monkeypatch.setattr(settings, "vayudoot_forecast_dir", tmp_path / "forecasts")
+    # Recording a forecast fetches its no-model baseline from Open-Meteo in the
+    # background, which a test must not do by accident. test_ledger.py turns the
+    # ledger back on with that request mocked.
+    monkeypatch.setattr(settings, "vayudoot_forecast_ledger", False)
     monkeypatch.setattr(settings, "vayudoot_live_filing", False)
     # Force the JSON-file backend regardless of a developer's own shell — a
     # stray DATABASE_URL must never make the suite touch a real database.

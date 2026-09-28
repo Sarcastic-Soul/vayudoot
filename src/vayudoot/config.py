@@ -122,6 +122,9 @@ class Settings(BaseSettings):
     #: and image date. Files only, whatever the backend — see `store.py` under
     #: "Imagery" for why a cache that is lost on redeploy is acceptable here.
     vayudoot_imagery_dir: Path = Path("./data/imagery")
+    #: The forecast ledger for the JSON backend: every forecast served, and what
+    #: the stations recorded once its window passed. See `ledger.py`.
+    vayudoot_forecast_dir: Path = Path("./data/forecasts")
     #: A Postgres connection string (Neon, Supabase, or any other host — the
     #: store is plain SQL, nothing provider-specific). Unprefixed, like the
     #: other external-service credentials above, because it's the name every
@@ -308,6 +311,18 @@ class Settings(BaseSettings):
     #: metered per request, and the inputs — an hourly weather model and a scan
     #: that runs hourly — do not move faster than this.
     vayudoot_forecast_cache_minutes: int = 30
+    #: Whether every forecast served is written to the ledger and scored against
+    #: ground stations once its window has passed. Scoring spends no model call,
+    #: only OpenAQ and Open-Meteo requests. See `ledger.py`.
+    vayudoot_forecast_ledger: bool = True
+    #: Least time between two scoring passes. A pass is started by the scan
+    #: timer or by somebody reading the ledger, and reading it twice in a minute
+    #: must not ask OpenAQ the same question twice.
+    vayudoot_forecast_scoring_interval_minutes: int = 30
+    #: The window a published skill summary covers. Long enough to hold more
+    #: than a handful of scored forecasts, short enough that a forecaster changed
+    #: last month is not still being judged on what it used to be.
+    vayudoot_forecast_skill_days: int = 30
 
     #: How far from a hotspot's centre a settlement counts as exposed. 10 km is
     #: roughly the distance over which a single large fire's smoke stays

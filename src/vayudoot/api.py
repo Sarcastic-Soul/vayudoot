@@ -29,6 +29,7 @@ from . import (
     federation,
     filing,
     hotspots,
+    ledger,
     lifecycle,
     pack,
     register,
@@ -49,6 +50,8 @@ from .schemas import (
     Cluster,
     Corridor,
     CorridorForecast,
+    ForecastRecord,
+    ForecastSkill,
     Hotspot,
     HotspotAlert,
     HotspotFeed,
@@ -129,6 +132,11 @@ async def _scan_loop() -> None:
             # The scan is blocking HTTP; a thread keeps it off the event loop.
             summary = await asyncio.to_thread(scan.run_once)
             log.info("scan complete: %s", summary)
+            # Forecasts whose windows have closed are scored on the same
+            # timer. Station reads only; no model call. See `ledger.py`.
+            if ledger.claim_scoring_pass():
+                scored = await asyncio.to_thread(ledger.score_due)
+                log.info("forecast scoring complete: %s", scored)
         except asyncio.CancelledError:
             raise
         except Exception:  # A failed scan must not end the loop.
@@ -689,7 +697,60 @@ async def get_forecast(lat: float, lon: float, place: str = "") -> AirQualityFor
             raise busy from exc
         raise HTTPException(status_code=502, detail=errors.describe(exc, "fast")) from exc
     _forecast_cache[key] = (time.monotonic(), result)
+    _record_forecasts([result])
     return result
+
+
+def _record_forecasts(outlooks: list[AirQualityForecast], corridor_id: str = "") -> None:
+    """Write served forecasts to the ledger, and fetch their baseline off the request.
+
+    Only forecasts the model has just made reach here; a cached answer is the
+    same forecast and is not recorded twice. A ledger that cannot be written is
+    logged, never allowed to fail the forecast somebody asked for.
+    """
+    try:
+        records = ledger.record(outlooks, corridor_id=corridor_id)
+    except Exception:  # the forecast matters more than its record
+        log.exception("forecast ledger write failed")
+        return
+    if records:
+        _spawn(asyncio.to_thread(ledger.capture_baselines, records))
+
+
+def _score_in_background() -> None:
+    """Start a scoring pass if one is due. Never waits for it."""
+    if ledger.claim_scoring_pass():
+        _spawn(asyncio.to_thread(ledger.score_due))
+
+
+@app.get("/forecasts/ledger", response_model=list[ForecastRecord])
+def get_forecast_ledger(limit: int = 50, status: str = "") -> list[ForecastRecord]:
+    """The forecasts this node has made, newest first, with outcomes where known.
+
+    `status` is `pending`, `scored` or `unscorable`, or empty for all. Reading
+    the ledger may start a scoring pass in the background — station reads only,
+    never a model call, and at most once per configured interval.
+    """
+    _score_in_background()
+    records = store.forecast_records()
+    if status == "pending":
+        records = [r for r in records if r.outcome is None]
+    elif status in ("scored", "unscorable"):
+        records = [r for r in records if r.outcome is not None and r.outcome.status == status]
+    return records[: max(1, min(limit, 500))]
+
+
+@app.get("/forecasts/skill", response_model=ForecastSkill)
+def get_forecast_skill(days: int | None = None, all_versions: bool = False) -> ForecastSkill:
+    """How this node's forecasts compared with what the stations recorded.
+
+    Exact-band and within-one-band rates, a confusion matrix, and the same for
+    two no-model baselines scored on exactly the same forecasts. By default only
+    forecasts from the forecaster now running count; `all_versions` includes
+    earlier prompts and code revisions too.
+    """
+    _score_in_background()
+    return ledger.skill(store.forecast_records(), days=days, current_only=not all_versions)
 
 
 @app.get("/corridors", response_model=list[Corridor])
@@ -732,6 +793,7 @@ async def get_corridor_forecast(corridor_id: str) -> CorridorForecast:
         raise HTTPException(status_code=502, detail=errors.describe(exc, "fast")) from exc
     if len(result.waypoint_forecasts) == len(corridor.waypoints):
         _forecast_cache[key] = (time.monotonic(), result)
+    _record_forecasts(result.waypoint_forecasts, corridor_id=corridor_id)
     return result
 
 
