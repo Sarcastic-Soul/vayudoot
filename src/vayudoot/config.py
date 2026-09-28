@@ -156,6 +156,18 @@ class Settings(BaseSettings):
     #: landmark. Past that the angles repeat and the classification does not
     #: improve, so the marginal image is quota spent for nothing.
     vayudoot_max_images_per_report: int = 4
+    #: Longest voice note accepted, in seconds. Ninety is long enough to say
+    #: what is burning, where, how often and what it does to the children, and
+    #: short enough that nobody has to listen to a speech. Gemini counts audio at
+    #: 32 tokens a second, so the cap is under 3,000 tokens on the fast tier.
+    #: Checked on the server where the file states its length (see `audio.py`)
+    #: and by the recorder in the browser, which stops at it.
+    vayudoot_max_audio_seconds: int = 90
+    #: Largest voice note accepted, in bytes — the limit that always applies,
+    #: because Chrome's recorder writes no duration a server can read. Four
+    #: megabytes is ninety seconds of 16 kHz WAV with room to spare, and many
+    #: minutes of the Opus or AAC a browser or a phone's voice-memo app records.
+    vayudoot_max_audio_bytes: int = 4 * 1024 * 1024
 
     # Repeat-report clustering. Grouping is pure logic over stored cases, so
     # these three numbers are the whole definition of "the same problem" — and

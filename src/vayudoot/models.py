@@ -132,6 +132,43 @@ def _gemini_with_fallback():
             super().__init__(**kwargs)
             self._chain = chain or [self.config["model_id"]]
 
+        def _format_request_content_part(self, content: Any, tool_use_id_to_name: Any) -> Any:
+            """Send an `audio` content block to Gemini as inline data.
+
+            Strands has an `audio` content block — `{"audio": {"format": "ogg",
+            "source": {"bytes": ...}}}`, the same Bedrock-shaped envelope as an
+            image — and its Bedrock provider sends it, but as of strands-agents
+            1.57 its Gemini provider does not: `_format_request_content_part`
+            handles document, image, text and tool blocks and raises `TypeError`
+            on anything else. Gemini itself reads audio as ordinary inline data,
+            exactly as the SDK already sends an image, so this is the one missing
+            branch and nothing more.
+
+            Done here, on the class `build_model()` already returns, so a voice
+            note goes through the same provider, fallback chain and error mapping
+            as every other call, and nothing constructs a Gemini client of its
+            own. A private method, so a Strands upgrade could move it;
+            `tests/test_voice.py` formats a real audio block through this class
+            and fails if the hook stops being reached. If a later Strands handles
+            audio itself, delete this.
+
+            The MIME type is set here rather than looked up by `mimetypes`, which
+            is what the SDK does for images and which has no entry for WebM or
+            M4A audio on most systems.
+            """
+            if "audio" in content:
+                from google.genai import types
+
+                from .audio import mime_type
+
+                block = content["audio"]
+                return types.Part(
+                    inline_data=types.Blob(
+                        data=block["source"]["bytes"], mime_type=mime_type(block["format"])
+                    )
+                )
+            return super()._format_request_content_part(content, tool_use_id_to_name)
+
         def _candidates(self) -> list[str]:
             now = time.monotonic()
             fresh = [
