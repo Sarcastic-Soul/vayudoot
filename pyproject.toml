@@ -22,6 +22,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "ruff>=0.7", "respx>=0.21"]
+# Loading exports into the BigQuery sandbox. Optional: `scripts/export_bigquery.py`
+# writes the files and prints `bq` commands without it.
+bigquery = ["google-cloud-bigquery>=3.25"]
 
 [build-system]
 requires = ["hatchling"]
