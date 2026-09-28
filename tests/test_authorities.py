@@ -29,21 +29,45 @@ def test_every_committed_email_is_non_routable():
 
     path = Path("src/vayudoot/data/authorities.example.json")
     blob = json.loads(path.read_text())
-
-    def emails(node):
-        if isinstance(node, dict):
-            for key, value in node.items():
-                if key == "email":
-                    yield value
-                else:
-                    yield from emails(value)
-        elif isinstance(node, list):
-            for item in node:
-                yield from emails(item)
-
-    found = list(emails(blob))
+    found = list(_emails(blob))
     assert found
     assert all(e.endswith(".invalid") for e in found), found
+
+
+def test_every_committed_email_in_every_country_file_is_non_routable():
+    """Hard constraint 1 holds for every country's table, not only India's.
+
+    Each country is its own committed file, so a check that reads one file by
+    name would pass while a new country's table carried a real address. This
+    globs every example table there is, and requires at least India, South
+    Africa and Brazil so that a rename cannot quietly empty the check.
+    """
+    import json
+    from pathlib import Path
+
+    paths = sorted(Path("src/vayudoot/data").glob("authorities*.example.json"))
+    names = {p.name for p in paths}
+    assert {
+        "authorities.example.json",
+        "authorities.za.example.json",
+        "authorities.br.example.json",
+    } <= names
+    for path in paths:
+        found = list(_emails(json.loads(path.read_text(encoding="utf-8"))))
+        assert found, path.name
+        assert all(e.endswith(".invalid") for e in found), (path.name, found)
+
+
+def _emails(node):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == "email":
+                yield value
+            else:
+                yield from _emails(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _emails(item)
 
 
 def test_an_exact_municipal_match_is_reported_as_exact():

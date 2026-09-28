@@ -125,6 +125,23 @@ RTI_FROM: tuple[CaseStatus, ...] = (
     CaseStatus.ESCALATED,
 )
 
+#: Countries whose information law the RTI stage drafts under. Only India: the
+#: prompt is written for the Right to Information Act, 2005 — its section 2(f)
+#: definition of information, its fee, its section 19 appeals — and none of that
+#: carries over. South Africa's PAIA and Brazil's Lei de Acesso à Informação are
+#: real routes with their own forms, periods and appeals, and a draft that
+#: dressed one in the other's clauses would be refused by the officer it went
+#: to. Another country is a new prompt, not a table row, so it is refused here
+#: until someone writes one. An empty country is a case from before tables were
+#: per country, which was India.
+RTI_COUNTRIES: frozenset[str] = frozenset({"IN"})
+
+
+def rti_supported(case: Case) -> bool:
+    """True when the case's authority is in a country the RTI stage drafts for."""
+    country = (case.jurisdiction.country if case.jurisdiction else "") or "IN"
+    return country.upper() in RTI_COUNTRIES
+
 
 def rti_available(case: Case) -> bool:
     """True when a case has gone unanswered long enough to justify an RTI.
@@ -140,6 +157,8 @@ def rti_available(case: Case) -> bool:
     if case.status not in RTI_FROM:
         return False
     if case.jurisdiction is None or case.complaint is None or case.filed_at is None:
+        return False
+    if not rti_supported(case):
         return False
     window = timedelta(days=case.jurisdiction.response_window_days)
     return datetime.now(UTC) >= case.filed_at + window

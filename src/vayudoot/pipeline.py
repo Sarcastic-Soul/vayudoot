@@ -16,8 +16,13 @@ import uuid
 
 from . import clustering, errors, store
 from .agents import analyse_evidence, corroborate, draft_complaint, resolve_jurisdiction
-from .schemas import Case, CaseStatus, Cluster, Report, Stage
-from .tools.authorities import coverage_is_generic
+from .schemas import Case, CaseStatus, Cluster, Jurisdiction, Report, Stage
+from .tools.authorities import (
+    country_name,
+    coverage_is_generic,
+    lookup_authority,
+    served_countries,
+)
 from .tools.geocode import reverse_geocode
 
 log = logging.getLogger(__name__)
@@ -76,6 +81,32 @@ async def run(report: Report, persist: bool = True, case: Case | None = None) ->
 
 
 async def _run_stages(report: Report, case: Case, checkpoint, persist: bool) -> Case:
+    # Where the report is, before any model is paid for. The country decides
+    # which authority table, which law and which language the complaint gets,
+    # and a report from a country with no table stops here rather than two
+    # model calls later with a complaint addressed to another country's
+    # placeholder board. A geocoder that fails or names no country is not a
+    # refusal: the run goes on as it always did, on this node's own table.
+    geo = reverse_geocode(report.latitude, report.longitude)
+    geo = geo if isinstance(geo, dict) and "error" not in geo else {}
+    case.address = geo.get("display_name", "")
+    country = str(geo.get("country_code", "")).strip().lower()
+    if country and country not in served_countries():
+        case.status = CaseStatus.REJECTED
+        held = ", ".join(country_name(c) for c in sorted(served_countries()))
+        # Rejected, not failed: nothing broke, and retrying would change nothing.
+        # The reason goes in `error` as well as the history because it is the
+        # one thing a person looking at this case needs to read, and a rejected
+        # case has no evidence stage to explain it.
+        case.error = (
+            f"This report is in {geo.get('country') or country.upper()}, and this node holds "
+            f"authority tables for {held} only. It will not address a complaint to an "
+            "authority it does not have. No model was called."
+        )
+        case.log(f"Halted: {case.error}")
+        checkpoint(Stage.HALTED)
+        return case
+
     checkpoint(Stage.EVIDENCE)
     case.evidence = await analyse_evidence(report)
     case.log(
@@ -101,13 +132,15 @@ async def _run_stages(report: Report, case: Case, checkpoint, persist: bool) -> 
     )
 
     checkpoint(Stage.JURISDICTION)
-    case.jurisdiction = await resolve_jurisdiction(report, case.evidence)
+    case.jurisdiction = await resolve_jurisdiction(report, case.evidence, country=country)
 
     # The agent reports its own coverage, so check the one case that can be
     # checked: an address that only exists in the generic fallback entry means
     # the region was not in the table, whatever the model claimed.
     if coverage_is_generic(case.jurisdiction.email):
         case.jurisdiction.coverage = "generic"
+    if country:
+        _settle_table_facts(case.jurisdiction, geo, case.evidence.pollution_type.value)
 
     case.log(
         f"Jurisdiction: {case.jurisdiction.authority_name} under {case.jurisdiction.statute}"
@@ -117,9 +150,6 @@ async def _run_stages(report: Report, case: Case, checkpoint, persist: bool) -> 
             f"Authority match is {case.jurisdiction.coverage}: "
             f"{case.jurisdiction.coverage_note or 'not an exact entry in the authority table'}"
         )
-
-    geo = reverse_geocode(report.latitude, report.longitude)
-    case.address = geo.get("display_name", "") if isinstance(geo, dict) else ""
 
     checkpoint(Stage.DRAFTING)
     cluster = _pattern(case)
@@ -143,6 +173,30 @@ async def _run_stages(report: Report, case: Case, checkpoint, persist: bool) -> 
     if persist:
         store.save(case)
     return case
+
+
+def _settle_table_facts(jurisdiction: Jurisdiction, geo: dict, category: str) -> None:
+    """Overwrite the fields a table decides and a model has no business judging.
+
+    The country, the region's language, and whether the response window is a
+    statute's or only this system's follow-up interval are read straight from
+    the table for the geocoded place. The agent is asked to copy them, and this
+    is what makes the copy not matter: a complaint that called a follow-up
+    interval a statutory deadline would be making a legal claim that is false.
+    """
+    facts = lookup_authority(
+        state=geo.get("state", ""),
+        city=geo.get("city", ""),
+        pollution_type=category,
+        country=str(geo.get("country_code", "")),
+    )
+    if "error" in facts:
+        return
+    jurisdiction.country = facts["country"]
+    jurisdiction.local_language = facts["local_language"]
+    jurisdiction.response_window_days = facts["response_window_days"]
+    jurisdiction.response_window_statutory = facts["response_window_statutory"]
+    jurisdiction.response_window_note = facts["response_window_note"]
 
 
 def _pattern(case: Case) -> Cluster | None:

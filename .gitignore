@@ -15,6 +15,12 @@ outbox/
 node_modules/
 dist/
 build/
+# Authority overrides hold real addresses and are never committed (hard
+# constraint 1). Only the .invalid example tables are.
+src/vayudoot/data/authorities.json
+src/vayudoot/data/authorities.*.json
+!src/vayudoot/data/authorities.*.example.json
+!src/vayudoot/data/authorities.example.json
 
 # Agent worktrees made by Claude Code
 .claude/worktrees/

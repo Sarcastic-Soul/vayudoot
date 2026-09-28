@@ -1,4 +1,13 @@
-"""Stage 4: write the complaint."""
+"""Stage 4: write the complaint.
+
+The prompt is the same for every country. What differs — the authority, the
+statute and section, the country, and the region's language where the authority
+table names it — arrives in the ADDRESSEE block from the jurisdiction stage, and
+the system prompt already says to cite only the statute given and no other. That
+is what lets a Brazilian complaint cite Lei 9.605/1998 without a Brazilian
+prompt, and it leaves the Indian drafting exactly as it was: an Indian
+jurisdiction adds one line, "Country: India".
+"""
 
 from __future__ import annotations
 
@@ -7,7 +16,8 @@ from strands import Agent
 from ..clustering import describe
 from ..models import build_model
 from ..schemas import Cluster, Complaint, Corroboration, EvidencePacket, Jurisdiction, Report
-from .prompts import DRAFTING
+from ..tools.authorities import country_name
+from .prompts import DRAFTING, local_language_line
 
 
 def build_drafting_agent() -> Agent:
@@ -42,6 +52,7 @@ async def draft_complaint(
 ADDRESSEE
   Authority: {jurisdiction.authority_name} ({jurisdiction.authority_tier})
   Office: {jurisdiction.office}
+  Country: {country_name(jurisdiction.country)}{local_language_line(jurisdiction.local_language)}
   Statute: {jurisdiction.statute}
   Section: {jurisdiction.section}
 

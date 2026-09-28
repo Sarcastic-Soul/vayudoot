@@ -31,7 +31,7 @@ import hashlib
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 
-from . import grouping
+from . import grouping, standards
 from .config import settings
 from .schemas import (
     Case,
@@ -222,9 +222,9 @@ def signals_from_stations(payload: dict, observed_fallback: datetime | None = No
     pollutant, which is correct: PM10 and NO2 over standard at one site are two
     observations of the same air.
 
-    Thresholds are the Indian NAAQS 24-hour standards, in `config.py` with the
-    notification cited. A reading at the standard is strength 0 and one at three
-    times it is strength 1.
+    Thresholds are the node country's ambient standard, from `standards.py`
+    with each notification cited. A reading at the standard is strength 0 and
+    one at three times it is strength 1.
     """
     lat, lon = payload.get("latitude"), payload.get("longitude")
     if lat is None or lon is None:
@@ -572,7 +572,7 @@ def _exceedance(parameter: object, value: object, unit: object = None) -> float 
     """
     if parameter is None or value is None:
         return None
-    standard = settings.naaqs_standards.get(str(parameter).lower())
+    standard = standards.limit(parameter)
     if not standard:
         return None
     try:

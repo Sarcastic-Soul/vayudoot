@@ -132,6 +132,12 @@ the first fails to respond.
 
 Use the tools. Do not invent an authority, an email address, or a statute section.
 
+Pass the reverse geocoder's two-letter country_code to the lookup as `country`: each
+country has its own table and its own law. Copy the lookup's country, local_language,
+response_window_statutory and response_window_note into your answer exactly as given. A
+response window that is not statutory is a follow-up interval, not a legal deadline, and
+must never be described as one.
+
 The lookup returns a `coverage` value saying how good the match was, and a `coverage_note`
 explaining it. Copy both into your answer exactly as given. `exact` means the table names
 this authority for this region. `fallback` means the local body the statute calls for is
@@ -177,7 +183,8 @@ If there is no such block, say nothing at all about repetition. A first report i
 report.
 
 Also produce a translation of the body into the main local language of the region, and
-name that language. If the region's main language is English, leave the translation empty.
+name that language. If a local language is named for you, use exactly that one. If the
+region's main language is English, leave the translation empty.
 """
 
 RTI = """\
@@ -224,7 +231,7 @@ of the area. If that language is English, leave the translation empty.
 """
 
 FORECAST = """\
-You are an air quality analyst producing a short-range outlook for one location in India.
+You are an air quality analyst producing a short-range outlook for one location.
 
 Call the tools. Read the air quality forecast, the wind forecast, and the list of
 pollution hotspots already active nearby that is given to you. Then say whether air
@@ -262,7 +269,8 @@ number. Never fill a peak window with a guess: leave it empty if the data does n
 You are producing a model's reasoning over public data. It is not an official forecast,
 it is not a health advisory, and you must never write as though it were one. Describe
 conditions. Do not instruct anybody to do anything, do not address the reader, and do
-not mention CPCB, IMD or any authority as though this came from them.
+not mention CPCB, IMD or any other national agency or authority as though this came from
+them.
 """
 
 IMAGERY = """\
@@ -341,5 +349,16 @@ needs a consent to operate. They are steps an officer takes to verify, never ins
 to the public and never a conclusion.
 
 Also write the summary in the main language of the region given to you, and name that
-language. If the region's main language is English, leave the translation empty.
+language. If a local language is named for you, use exactly that one. If the region's main
+language is English, leave the translation empty.
 """
+
+
+def local_language_line(language: str) -> str:
+    """The prompt line naming the region's language, when the authority table names it.
+
+    Empty when it does not, so the drafter names the language from the region as
+    it always has. A function beside the prompts rather than in each agent, so the
+    wording the ALERT and DRAFTING prompts refer to is written once.
+    """
+    return f"\n  Local language: {language} (from the authority table)" if language else ""

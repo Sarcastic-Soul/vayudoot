@@ -10,6 +10,8 @@ from __future__ import annotations
 import httpx
 from strands import tool
 
+from ..config import settings
+
 _URL = "https://nominatim.openstreetmap.org/reverse"
 _SEARCH_URL = "https://nominatim.openstreetmap.org/search"
 _UA = "vayudoot/0.1 (pollution complaint agent; https://github.com/Sarcastic-Soul)"
@@ -65,9 +67,15 @@ def search_places(query: str, limit: int = 5) -> list[dict]:
 
     Not a tool: the interface uses this so a citizen can name where the pollution
     is instead of typing coordinates. Nobody knows their own latitude.
+
+    The search is limited to this node's own country, the one whose authority
+    table it holds. A Brazilian node asked for "Santa Maria" should find the one
+    in Brazil, and a place abroad could not be reported to anyone here anyway.
     """
     if not query.strip():
         return []
+
+    country = (settings.vayudoot_node_country or "IN").strip().lower()
 
     try:
         resp = httpx.get(
@@ -77,7 +85,7 @@ def search_places(query: str, limit: int = 5) -> list[dict]:
                 "format": "jsonv2",
                 "addressdetails": 1,
                 "limit": max(1, min(limit, 10)),
-                "countrycodes": "in",
+                "countrycodes": country,
             },
             headers={"User-Agent": _UA},
             timeout=20,

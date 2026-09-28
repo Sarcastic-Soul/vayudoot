@@ -11,8 +11,12 @@
     "aliases for a region a geocoder may still name the old way, so the key count is",
     "higher than the region count.",
     "A state absent from this table still resolves, via default_state, to a generic",
-    "state board entry rather than failing."
+    "state board entry rather than failing.",
+    "This is India's table. Other countries have their own files beside it,",
+    "authorities.<cc>.example.json, each naming its country in `country`."
   ],
+  "country": "IN",
+  "country_name": "India",
   "categories": {
     "open_waste_burning": {
       "tier": "municipal",

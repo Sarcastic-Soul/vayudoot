@@ -21,11 +21,20 @@ def build_jurisdiction_agent() -> Agent:
 
 
 async def resolve_jurisdiction(
-    report: Report, evidence: EvidencePacket, agent: Agent | None = None
+    report: Report, evidence: EvidencePacket, agent: Agent | None = None, country: str = ""
 ) -> Jurisdiction:
+    """Resolve the authority for a report.
+
+    `country` is the geocoder's country code when the pipeline already has it.
+    Stated in the prompt so the lookup is asked for the right country's table
+    even if the model reads the geocoder's answer carelessly; the pipeline then
+    checks the answer against the table itself.
+    """
     agent = agent or build_jurisdiction_agent()
+    hint = f"Country code (from reverse geocoding): {country}\n" if country else ""
     prompt = (
         f"Report location: latitude {report.latitude}, longitude {report.longitude}.\n"
+        f"{hint}"
         f"Pollution type: {evidence.pollution_type.value}\n\n"
         "Determine the responsible authority, the statute, and the escalation path."
     )

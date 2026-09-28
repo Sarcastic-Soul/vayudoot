@@ -248,6 +248,9 @@ Both are data, not code:
   *municipal* bodies you know and the demo table does not.
 - `src/vayudoot/data/corridors.json` — the economic corridors you forecast
   along. Waypoints are sampling points, not a route; four to eight per corridor.
+  A node scans and lists only the corridors whose `countries` include its own
+  `VAYUDOOT_NODE_COUNTRY`, so one file holds every country's and a cross-border
+  corridor is watched from both sides.
 
 **Every committed email address must stay on the `.invalid` TLD.** This is hard
 constraint 1 and `tests/test_filing_safety.py` enforces it. Real addresses belong
@@ -273,24 +276,39 @@ of those are data or configuration.
 
 **What is data or configuration, and changes:**
 
-- **Node identity.** `VAYUDOOT_NODE_COUNTRY` and the rest of step 2 above.
-- **Authorities.** `src/vayudoot/data/authorities.example.json` is keyed by
-  administrative region, with the statute each complaint cites. A new country
-  replaces the table; the committed copy keeps every address on `.invalid`
-  (hard constraint 1).
-- **Corridors.** `src/vayudoot/data/corridors.json`. A corridor may cross a
-  border — name a foreign province distinctly in `states` and list `countries`.
+- **Node identity.** `VAYUDOOT_NODE_COUNTRY` and the rest of step 2 above. The
+  country is what picks the standard, the corridors and the place search below.
+- **Authorities.** One table per country, each keyed by administrative region
+  with the statute each complaint cites: `authorities.example.json` is India's,
+  and `authorities.<cc>.example.json` is any other country's (`za`, `br`). Each
+  file names its country in its own `country` field, and **the countries a node
+  serves are exactly the countries it has a table for** — nothing in Python lists
+  them. A report or a hotspot in a country with no table is refused (a 422 for an
+  alert; a rejected case, before any model is called, for a report) rather than
+  addressed to another country's placeholder. An uncommitted
+  `authorities.<cc>.json` overrides the example for that country, and the
+  committed copies keep every address on `.invalid` (hard constraint 1). A table
+  also names the country's access-to-information law, and, per region or for the
+  whole country, the `local_language` a summary for residents is written in.
+- **Response windows.** A table states `response_window_days` only where a
+  statute sets one. Where none does — South Africa and Brazil set no deadline for
+  answering an air pollution complaint — it is `null` with a note, and the case
+  carries the table's `follow_up_days` instead, marked
+  `response_window_statutory: false` so nobody reads it as a legal deadline.
+- **Corridors.** `src/vayudoot/data/corridors.json`, one file for every country.
+  A corridor may cross a border — name a foreign province distinctly in `states`
+  and list `countries`. A node scans and lists the corridors that include its own
+  country.
 - **Exceedance standards.** The thresholds a station reading must pass to become
-  a signal are `naaqs_standards` in `config.py`, the Indian NAAQS by default. They
-  are a settings field, so a deployment overrides them with one environment
-  variable holding the whole table, in µg/m³:
-  `NAAQS_STANDARDS='{"pm25": 25, "pm10": 50, "no2": 200, "so2": 125, "o3": 100}'`.
-  Measure against the numbers your own authority is bound by, for the reason the
-  comment in `config.py` gives.
+  a signal are in `src/vayudoot/data/standards.json`, one table per country with
+  its notification cited, every value in µg/m³. The node's country picks the
+  table; a country without one falls back to the WHO 2021 guidelines, labelled as
+  a guideline everywhere it appears. `NAAQS_STANDARDS` still overrides the whole
+  table from one environment variable, for a deployment that needs other numbers.
 - **Towns for exposure.** `src/vayudoot/data/settlements.csv` is GeoNames
-  `cities15000` filtered to India and the neighbours whose smoke reaches it.
-  `scripts/build_settlements.py --countries ...` rebuilds it for another air
-  shed.
+  `cities15000` filtered to India, the neighbours whose smoke reaches it, South
+  Africa and Brazil. `scripts/build_settlements.py --countries ...` rebuilds it
+  for another air shed.
 - **Neighbours.** `VAYUDOOT_NEIGHBOUR_FEEDS`, which may point across a border.
 
 **What stays the same:** the code, the container, the two-tier model setup, the
@@ -300,29 +318,60 @@ neighbour's hotspots are forecasting context — carried with their origin node,
 never stored, detected against or republished as ours. A foreign node is a
 neighbour like any other; being foreign earns it neither more trust nor less.
 
-**Two examples.**
+**Two countries that ship.** The repository carries both of these, so starting a
+node in either is one environment variable:
 
-- *Brazil.* `VAYUDOOT_NODE_COUNTRY=BR`; an authorities table for IBAMA and the
-  state environment agencies with the statutes they enforce; corridors along the
-  arc of deforestation, where the August–October burning season sends smoke
-  south toward São Paulo; `NAAQS_STANDARDS` set to the CONAMA limits; settlements
-  rebuilt with `--countries BR,BO,PY,AR`, because Bolivian and Paraguayan fire
-  smoke crosses into Brazil too.
-- *South Africa.* `VAYUDOOT_NODE_COUNTRY=ZA`; authorities for the provincial
-  departments and the air quality officers under the National Environmental
-  Management: Air Quality Act; a corridor across the Mpumalanga Highveld coal and
-  power belt into Gauteng; `NAAQS_STANDARDS` set to South Africa's national
-  ambient standards; settlements rebuilt with `--countries ZA,MZ,ZW,BW`.
+- *South Africa.* `VAYUDOOT_NODE_COUNTRY=ZA`. `authorities.za.example.json` names
+  the Department of Forestry, Fisheries and the Environment's National Air Quality
+  Officer as escalation, the environment department of each of the nine
+  provinces, and the metros and districts that are licensing authorities under
+  section 36 of the National Environmental Management: Air Quality Act 39 of
+  2004 — on the Highveld, Nkangala District for eMalahleni and Middelburg and
+  Gert Sibande District for Secunda. Each province carries its most spoken
+  household language (Census 2022): siSwati for Mpumalanga, isiZulu for Gauteng
+  and KwaZulu-Natal, Afrikaans for the Western Cape. The standard is the National
+  Ambient Air Quality Standards (GN 1210 of 2009, GN 486 of 2012 for PM2.5). The
+  corridors are Johannesburg to eMalahleni and Middelburg on the N12 and N4, and
+  Gauteng to Durban on the N3.
+- *Brazil.* `VAYUDOOT_NODE_COUNTRY=BR`. `authorities.br.example.json` names
+  IBAMA as escalation and sixteen state agencies, among them SEMAS in Pará,
+  SEMA in Mato Grosso, SEDAM in Rondônia, IPAAM in Amazonas, CETESB in São Paulo
+  and INEA in Rio de Janeiro, with the municipal secretariats of São Paulo, Rio de
+  Janeiro, Manaus and Porto Velho. A clearing fire is cited under Lei
+  14.944/2024 and article 41 of Lei 9.605/1998; other pollution under Lei
+  6.938/1981, brought as a representation under article 17 of Lei Complementar
+  140/2011. Everything is drafted for residents in Brazilian Portuguese. The
+  standard is CONAMA Resolution 506 of 2024 at interim stage PI-2, in force since
+  January 2025. The corridors are the Via Dutra, BR-163 from Cuiabá to Santarém
+  across the arc of deforestation, BR-364 through Rondônia and BR-319 from Porto
+  Velho to Manaus.
 
-**Not yet data, and would need a code change.** Honest about the edges:
+A node for either would still want its settlements rebuilt with its smoke
+neighbours — `--countries BR,BO,PY,AR`, `--countries ZA,MZ,ZW,BW` — and its own
+neighbour feeds. Both tables' `_comment` blocks say where each name was checked
+and what was left out because it could not be.
 
-- The forecast disclaimer (`FORECAST_DISCLAIMER` in `schemas.py`) names CPCB and
-  IMD, and the forecast prompt says the location is in India. Both should take
-  the national agencies from configuration.
-- The RTI stage drafts under India's Right to Information Act, 2005. Another
-  country's freedom-of-information route would be a new prompt, not a new table.
-- The drafting prompt is written for Indian complaint practice. The statute it
-  cites comes from the authorities table, but the register does not.
+**Be exact about what that is.** No South African or Brazilian government body
+runs a Vayudoot node, has been approached, or has agreed to anything. The
+authority names are real and public, taken from government sources; every
+address is a placeholder on `.invalid`. What the tables show is that the system
+can be pointed at another country's institutions without a code change, not that
+those institutions have been pointed at it.
+
+**What is still not per country.** Honest about the edges:
+
+- The RTI stage drafts under India's Right to Information Act, 2005, and is
+  refused (409) for a case in any other country. South Africa's Promotion of
+  Access to Information Act and Brazil's Lei de Acesso à Informação are real
+  routes, and each table names its law, but a draft for either would be a new
+  prompt with that law's own forms, periods and appeals, not a new table row.
+- The forecast disclaimer (`FORECAST_DISCLAIMER` in `schemas.py`) disowns "CPCB,
+  IMD or any government authority". It is true everywhere but names India's
+  agencies as its example.
+- The complaint drafting prompt is the same for every country. The statute,
+  section, authority, country and local language all come from the table, and the
+  prompt is told to cite nothing else, but its sense of complaint practice was
+  written with Indian complaints in front of it.
 
 ## Trying it locally
 
@@ -335,7 +384,21 @@ neighbour. Two real processes, the real HTTP contract, no mocking.
 .venv/bin/python scripts/federation_demo.py
 .venv/bin/python scripts/federation_demo.py --cross-border
 .venv/bin/python scripts/federation_demo.py --cross-border --no-forecast
+.venv/bin/python scripts/federation_demo.py --brics
+.venv/bin/python scripts/federation_demo.py --brics --no-forecast
 ```
+
+`--brics` starts a South African node seeded with coal belt readings around
+eMalahleni, Middelburg and Secunda, and a Brazilian node seeded with clearing
+fires at Novo Progresso (Pará), Guarantã do Norte (Mato Grosso) and Candeias do
+Jamari (Rondônia). Each shows its hotspots, its own authority table and its own
+corridors, both feeds are shown to have the same shape, and a Delhi node lists
+both as neighbours. With a model provider, each node then drafts one alert to
+its own country's authority — Nkangala District under the Air Quality Act,
+SEMAS under the fire law — and holds it for a person to confirm; nothing is
+sent. `--no-forecast` skips those two model calls. The three processes differ
+only in `VAYUDOOT_NODE_COUNTRY` and their seeded signals, and none of the nodes
+is run by, or has been offered to, any government.
 
 `--cross-border` adds a third node, configured as `country=PK`, with burning
 seeded around Kasur, Raiwind and Sheikhupura in Pakistan's Punjab. Delhi

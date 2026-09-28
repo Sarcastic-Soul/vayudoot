@@ -34,6 +34,21 @@ Delhi instance can consume a Pakistani one without a line of code changing. It
 does not claim that any Pakistani agency runs a node, has been approached, or
 has agreed to anything. The node is this same application started with `PK` in
 its configuration, which is exactly what one would be.
+
+`--brics` runs a different pair: a node in South Africa (`ZA`) seeded with coal
+belt readings on the Mpumalanga Highveld, and a node in Brazil (`BR`) seeded
+with clearing fires along the arc of deforestation in Pará, Mato Grosso and
+Rondônia. Each publishes on the same feed contract, each lists only its own
+country's corridors and carries its own country's authority table, and a Delhi
+node lists both as neighbours. The only difference between the three processes
+is `VAYUDOOT_NODE_COUNTRY`. With a model provider, each of the two drafts one
+alert to its own country's authority, under its own law; `--no-forecast` skips
+those two calls.
+
+The same caveat, more strongly: no South African or Brazilian government body
+runs either node, has been approached, or has agreed to anything. The authority
+names those nodes resolve to are real and public; every address is on the
+reserved `.invalid` domain, and nothing is sent.
 """
 
 from __future__ import annotations
@@ -74,15 +89,43 @@ CROSS_BORDER_SITES = [
     ("Sheikhupura district", 31.7131, 73.9783),
 ]
 
-def seeded_signals(sites: list[tuple[str, float, float]] = BURNING_SITES) -> list[dict]:
+# South Africa's Mpumalanga Highveld, inside the Highveld Priority Area: the
+# towns of the coal belt, each named for the municipality it sits in. Town
+# centres rather than any plant, because a hotspot is an area (constraint 7).
+HIGHVELD_SITES = [
+    ("eMalahleni (Emalahleni Local Municipality)", -25.8713, 29.2332),
+    ("Middelburg (Steve Tshwete Local Municipality)", -25.7751, 29.4648),
+    ("Secunda (Govan Mbeki Local Municipality)", -26.55, 29.1667),
+]
+
+# Brazil's arc of deforestation, one clearing-fire area per state the brief
+# names, each a town on the BR-163 or BR-364 corridor.
+ARC_OF_DEFORESTATION_SITES = [
+    ("Novo Progresso, Pará", -7.1478, -55.3811),
+    ("Guarantã do Norte, Mato Grosso", -9.9505, -54.9082),
+    ("Candeias do Jamari, Rondônia", -8.8097, -63.6956),
+]
+
+ZA_PORT = 8794
+BR_PORT = 8795
+
+
+def seeded_signals(
+    sites: list[tuple[str, float, float]] = BURNING_SITES,
+    *,
+    pollution_type: str = "unclear",
+    reading: str = "pm25 134.0 µg/m³",
+) -> list[dict]:
     """Stubble-burning signals as a satellite pass would have recorded them.
 
     Two per site, hours apart, which is what a real VIIRS overpass pair looks
     like and what makes each site a hotspot with a span rather than a single
-    detection.
+    detection. `pollution_type` and the station `reading` let the same shape
+    stand for a coal belt or a clearing fire.
     """
     now = datetime.now(UTC)
     out: list[dict] = []
+    parameter = reading.split()[0]
     for name, lat, lon in sites:
         for hours, power in ((30, 68.0), (6, 112.0)):
             seen = now - timedelta(hours=hours)
@@ -93,7 +136,7 @@ def seeded_signals(sites: list[tuple[str, float, float]] = BURNING_SITES) -> lis
                     "latitude": lat,
                     "longitude": lon,
                     "observed_at": seen.isoformat(),
-                    "pollution_type": "unclear",
+                    "pollution_type": pollution_type,
                     "strength": 0.85,
                     "magnitude": min(power / 100, 1.0),
                     "summary": f"Satellite thermal detection, {power} MW radiative power",
@@ -102,21 +145,23 @@ def seeded_signals(sites: list[tuple[str, float, float]] = BURNING_SITES) -> lis
         out.append(
             {
                 "source": "ground_station",
-                "signal_id": f"station:{name}:pm25",
+                "signal_id": f"station:{name}:{parameter}",
                 "latitude": lat + 0.01,
                 "longitude": lon + 0.01,
                 "observed_at": (now - timedelta(hours=3)).isoformat(),
-                "pollution_type": "unclear",
+                "pollution_type": pollution_type,
                 "strength": 0.9,
                 "magnitude": 0.62,
-                "summary": f"{name} ground station: pm25 134.0 µg/m³",
+                "summary": f"{name} ground station: {reading}",
             }
         )
     return out
 
 
 def write_signal_store(
-    root: Path, sites: list[tuple[str, float, float]] = BURNING_SITES
+    root: Path,
+    sites: list[tuple[str, float, float]] = BURNING_SITES,
+    **kind: str,
 ) -> int:
     """Seed a node's signal store directly on disk.
 
@@ -125,7 +170,7 @@ def write_signal_store(
     """
     signals = root / "signals"
     signals.mkdir(parents=True, exist_ok=True)
-    seeded = seeded_signals(sites)
+    seeded = seeded_signals(sites, **kind)
     for index, signal in enumerate(seeded):
         (signals / f"seed-{index:03d}.json").write_text(json.dumps(signal), encoding="utf-8")
     return len(seeded)
@@ -198,19 +243,193 @@ def print_hotspots(spots: list[dict]) -> None:
         )
 
 
+def stop(processes: list[subprocess.Popen]) -> None:
+    for process in processes:
+        process.terminate()
+    for process in processes:
+        with contextlib.suppress(Exception):
+            process.wait(timeout=10)
+
+
+def run_brics(no_model: bool) -> int:
+    """South Africa and Brazil publish; Delhi lists both. See the module docstring."""
+    nodes = [
+        # (port, country, node id, name, region, sites, signal kind)
+        (
+            ZA_PORT,
+            "ZA",
+            "highveld-node",
+            # Named for what it is. No South African body runs this node.
+            "Highveld demonstration node (Mpumalanga, South Africa)",
+            "mpumalanga",
+            HIGHVELD_SITES,
+            {"pollution_type": "industrial_emission", "reading": "so2 310.0 µg/m³"},
+        ),
+        (
+            BR_PORT,
+            "BR",
+            "amazonia-node",
+            # Named for what it is. No Brazilian body runs this node.
+            "Arc of deforestation demonstration node (Pará, Mato Grosso, Rondônia, Brazil)",
+            "arco-do-desmatamento",
+            ARC_OF_DEFORESTATION_SITES,
+            {"pollution_type": "crop_residue_burning", "reading": "pm25 142.0 µg/m³"},
+        ),
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        processes: list[subprocess.Popen] = []
+        rule("Starting three nodes: South Africa, Brazil, and Delhi")
+        for port, country, node_id, name, region, sites, kind in nodes:
+            root = Path(tmp) / node_id
+            seeded = write_signal_store(root, sites, **kind)
+            print(f"Seeded the {country} node with {seeded} signals across {len(sites)} sites.")
+            processes.append(
+                start_node(
+                    port=port,
+                    node_id=node_id,
+                    name=name,
+                    region=region,
+                    root=root,
+                    country=country,
+                )
+            )
+        delhi_root = Path(tmp) / "delhi"
+        delhi_root.mkdir(parents=True, exist_ok=True)
+        feeds = [f"http://127.0.0.1:{port}/feed" for port, *_ in nodes]
+        processes.append(
+            start_node(
+                port=DELHI_PORT,
+                node_id="delhi-node",
+                name="Delhi Air Quality Cell",
+                region="delhi",
+                root=delhi_root,
+                neighbours=",".join(feeds),
+            )
+        )
+        print("The Delhi node is started empty and subscribes to both feeds by URL.")
+
+        try:
+            for port in [*(n[0] for n in nodes), DELHI_PORT]:
+                if not wait_for(port):
+                    print(f"A node did not start on port {port}.")
+                    return 1
+
+            contracts: list[tuple[str, set[str], str]] = []
+            for step, (port, country, *_rest) in enumerate(nodes, start=1):
+                base = f"http://127.0.0.1:{port}"
+                node = httpx.get(f"{base}/node", timeout=30).json()
+                rule(f"{step}. {node['name']}")
+                print(f"Node {node['node_id']}, country {node['country']}.")
+                spots = httpx.get(f"{base}/hotspots", timeout=30).json()
+                print(f"{len(spots)} hotspots, from satellite and station evidence alone:\n")
+                print_hotspots(spots)
+
+                table = httpx.get(f"{base}/authorities", timeout=30).json()
+                print(
+                    f"\n  Authority table: {table.get('country_name')} "
+                    f"({table.get('region_count')} regions, "
+                    f"{table.get('municipal_count')} municipal bodies, "
+                    f"addresses are placeholders: {table.get('addresses_are_placeholders')})"
+                )
+                own = httpx.get(f"{base}/corridors", timeout=30).json()
+                print(f"  Corridors it watches: {', '.join(c['name'] for c in own)}")
+
+                feed = httpx.get(f"{base}/feed", timeout=30).json()
+                contracts.append((country, set(feed), str(feed.get("feed_version"))))
+
+            rule(f"{len(nodes) + 1}. The same contract from both")
+            for country, keys, version in contracts:
+                print(f"  {country} feed version {version}: {', '.join(sorted(keys))}")
+            same = len({(frozenset(k), v) for _, k, v in contracts}) == 1
+            print(f"  Identical shape: {same}")
+
+            rule(f"{len(nodes) + 2}. Delhi lists them as neighbours")
+            neighbours = httpx.get(f"http://127.0.0.1:{DELHI_PORT}/neighbours", timeout=30).json()
+            for entry in neighbours["neighbours"]:
+                node = entry["node"] or {}
+                print(
+                    f"  {entry['url']}\n"
+                    f"    node: {node.get('name')} ({node.get('node_id')}, "
+                    f"country {node.get('country')})\n"
+                    f"    hotspots offered: {entry['hotspot_count']}  "
+                    f"error: {entry['error'] or 'none'}"
+                )
+
+            if no_model:
+                rule(f"{len(nodes) + 3}. Alerts skipped (--no-forecast)")
+            else:
+                rule(f"{len(nodes) + 3}. Each node drafts one alert to its own authority")
+                print("Two model calls and two reverse geocodes. Nothing is sent.\n")
+                for port, country, *_rest in nodes:
+                    base = f"http://127.0.0.1:{port}"
+                    spots = httpx.get(f"{base}/hotspots", timeout=30).json()
+                    if not spots:
+                        continue
+                    try:
+                        response = httpx.post(
+                            f"{base}/hotspots/{spots[0]['hotspot_id']}/alert", timeout=180
+                        )
+                    except Exception as exc:  # noqa: BLE001 - a demo reports, it does not raise
+                        print(f"  {country}: alert could not be drafted: {exc}\n")
+                        continue
+                    if response.status_code != 200:
+                        print(f"  {country}: {response.status_code} {response.text[:200]}\n")
+                        continue
+                    alert = response.json()
+                    j = alert["jurisdiction"]
+                    window = (
+                        "statutory"
+                        if j.get("response_window_statutory", True)
+                        else "not statutory, a follow-up interval"
+                    )
+                    print(
+                        f"  {country}  {alert['area']}\n"
+                        f"    to:        {j['authority_name']} <{j['email']}>\n"
+                        f"    under:     {j['statute']}, {j['section']}\n"
+                        f"    window:    {j['response_window_days']} days ({window})\n"
+                        f"    language:  {j.get('local_language') or 'named by the model'}\n"
+                        f"    subject:   {alert['brief']['subject']}\n"
+                        f"    status:    {alert['status']} (a person must confirm)\n"
+                    )
+
+            rule("What this showed")
+            print(
+                "Two nodes in two more countries raised hotspots from instruments alone,\n"
+                "each with its own country's authority table, standard and corridors,\n"
+                "and each published on the same feed contract, which a\n"
+                "Delhi node read without a line of code changing. What differed between\n"
+                "the three processes was VAYUDOOT_NODE_COUNTRY.\n"
+                "\n"
+                "No South African or Brazilian government body runs either node, has been\n"
+                "approached, or has agreed to anything. The authority names are real and\n"
+                "public; every address is on the reserved .invalid domain."
+            )
+            return 0
+        finally:
+            stop(processes)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument(
+    route = parser.add_mutually_exclusive_group()
+    route.add_argument(
         "--cross-border",
         action="store_true",
         help="Add a node in Pakistan's Punjab (country PK) publishing on the same contract",
     )
+    route.add_argument(
+        "--brics",
+        action="store_true",
+        help="Run a South African (ZA) and a Brazilian (BR) node instead, with Delhi reading both",
+    )
     parser.add_argument(
         "--no-forecast",
         action="store_true",
-        help="Stop before the one model call; detection and the feeds still run",
+        help="Stop before any model call; detection and the feeds still run",
     )
     args = parser.parse_args()
+    if args.brics:
+        return run_brics(args.no_forecast)
     cross_border = args.cross_border
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -393,11 +612,7 @@ def main() -> int:
             )
             return 0
         finally:
-            for process in processes:
-                process.terminate()
-            for process in processes:
-                with contextlib.suppress(Exception):
-                    process.wait(timeout=10)
+            stop(processes)
 
 
 if __name__ == "__main__":

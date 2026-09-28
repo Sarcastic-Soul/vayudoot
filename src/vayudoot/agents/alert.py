@@ -21,7 +21,7 @@ from strands import Agent
 
 from ..models import build_model
 from ..schemas import AlertBrief, Jurisdiction
-from .prompts import ALERT
+from .prompts import ALERT, local_language_line
 
 
 def build_alert_agent() -> Agent:
@@ -34,20 +34,29 @@ def build_alert_agent() -> Agent:
 
 
 async def write_alert_brief(
-    facts: str, jurisdiction: Jurisdiction, region: str, agent: Agent | None = None
+    facts: str,
+    jurisdiction: Jurisdiction,
+    region: str,
+    country: str = "",
+    agent: Agent | None = None,
 ) -> AlertBrief:
     """Summarise a facts block for the authority it is addressed to.
 
-    `region` is the state or territory, which is what decides the local
-    language — the same way the complaint drafter is told the region and left to
-    name its language, rather than a table here that would need a row per state.
+    `region` is the state or province. Where the authority table names the
+    region's language — South Africa's provinces, where no model should have to
+    choose among the official languages, and Brazil, where it is always
+    Portuguese — that language is passed on and the model is told to use it.
+    Where the table leaves it out, as India's does, the model is told the region
+    and names its language itself, the same way the complaint drafter is.
     """
     agent = agent or build_alert_agent()
+    language = local_language_line(jurisdiction.local_language)
     prompt = f"""Write the situation summary for this alert.
 
 ADDRESSED TO
   {jurisdiction.authority_name} ({jurisdiction.authority_tier})
   Region: {region or "unknown"}
+  Country: {country or jurisdiction.country or "unknown"}{language}
 
 FACTS
 {facts}
