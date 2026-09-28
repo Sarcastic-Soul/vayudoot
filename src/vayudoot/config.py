@@ -25,7 +25,7 @@ Tier = Literal["primary", "fast"]
 # cost of every report for no gain in quality.
 DEFAULT_MODEL_IDS: dict[str, dict[str, str]] = {
     "gemini": {
-        "primary": "gemini-3.5-flash",
+        "primary": "gemini-3.8-flash",
         "fast": "gemini-3.5-flash-lite",
     },
     # Ollama defaults are the Ollama Cloud free-tier models rather than local
@@ -46,14 +46,19 @@ DEFAULT_MODEL_IDS: dict[str, dict[str, str]] = {
 # same-class models multiplies the allowance without a card and without leaving
 # Google, which hard constraint 6 requires. The chain only applies to the default
 # model; an explicit `VAYUDOOT_MODEL_ID` override means exactly that model.
+#
+# Order is by what answered when probed, not by version number: in September
+# 2026 gemini-3.5-flash and gemini-3-flash-preview answered 503 "high demand" for
+# hours while the newer Flash models were idle, so they sit last, where they
+# cost nothing unless everything ahead of them is spent. gemini-2.5-flash is gone
+# because it answers 404 — retired — and a dead entry costs a request per minute.
 MODEL_FALLBACKS: dict[str, dict[str, tuple[str, ...]]] = {
     "gemini": {
         "primary": (
-            "gemini-3.8-flash",
             "gemini-3.7-flash",
             "gemini-3.6-flash",
+            "gemini-3.5-flash",
             "gemini-3-flash-preview",
-            "gemini-2.5-flash",
         ),
         "fast": ("gemini-3.1-flash-lite",),
     },
@@ -288,14 +293,16 @@ class Settings(BaseSettings):
     #:
     #: Set against the horizon above, not against a single night. At the 3-5 m/s
     #: typical of the Indo-Gangetic plain in burning season, air covers roughly
-    #: 260-430 km a day, so over 72 hours a 400 km reach is the conservative end
-    #: rather than the generous one.
+    #: 260-430 km a day, so over 72 hours a 500 km reach is still the
+    #: conservative end rather than the generous one.
     #:
-    #: The number is checked against the case the whole thing exists for:
-    #: Ludhiana to Delhi is 286 km. A tighter reach — 200 km was the first
-    #: guess — puts Punjab's burning outside Delhi's forecast entirely, which is
-    #: precisely the event Indian air quality forecasting exists to catch.
-    vayudoot_forecast_upwind_km: float = 400.0
+    #: The number is checked against the cases the whole thing exists for.
+    #: Ludhiana to Delhi is 286 km; a tighter reach — 200 km was the first guess —
+    #: puts Punjab's burning outside Delhi's forecast entirely. Lahore to Delhi is
+    #: 428 km and Sheikhupura 464 km; the earlier 400 km stopped short of both,
+    #: which quietly made trans-boundary smog — the brief's own example — invisible
+    #: to the forecast.
+    vayudoot_forecast_upwind_km: float = 500.0
     #: How long a forecast is served from memory before the model is asked again.
     #: A corridor outlook is one fast-tier call per waypoint against a free tier
     #: metered per request, and the inputs — an hourly weather model and a scan

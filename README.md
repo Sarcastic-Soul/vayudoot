@@ -110,7 +110,7 @@ any other. See [the pipeline](#the-reporting-pipeline) below.
 ### Forecasting — where it is about to be bad
 
 Gemini reads an Open-Meteo pollutant forecast, an Open-Meteo wind forecast and
-every hotspot currently within 400 km upwind, and produces a risk window with
+every hotspot currently within 500 km upwind, and produces a risk window with
 the conditions driving it and the inputs it read. Reported per location and per
 **economic corridor**: the NCR, the Delhi–Mumbai Industrial Corridor, the
 Punjab–Haryana stubble belt, Mumbai–Pune, Chennai–Bengaluru and

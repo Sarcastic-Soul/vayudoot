@@ -104,15 +104,18 @@ is integrated. The deployment therefore stays on Render.
    than a generic "try again" message; see that module for why.
 
    A report costs two primary requests (evidence and drafting) and roughly eight
-   fast ones, so **the free tier is about ten reports a day** and the primary
-   quota is what runs out. That is why the corroboration synthesis node sits on
+   fast ones, so **one Flash model is about ten reports a day** and the primary
+   quota is what runs out. The quota is per model, not per key, so the primary
+   tier walks a chain of five Flash models (`MODEL_FALLBACKS` in `config.py`) and
+   moves on when one answers 429, 503 or 404 — about fifty reports a day, still
+   without a card. That is why the corroboration synthesis node sits on
    the fast tier despite doing judgement work: it would otherwise cut the daily
    budget by a third. Watch the primary number, not the total.
 
    Both tiers can be overridden without touching code:
 
    ```bash
-   VAYUDOOT_MODEL_ID=gemini-3.5-flash        # primary
+   VAYUDOOT_MODEL_ID=gemini-3.8-flash        # primary; turns the chain off
    VAYUDOOT_MODEL_ID_FAST=gemini-3.5-flash-lite
    ```
 

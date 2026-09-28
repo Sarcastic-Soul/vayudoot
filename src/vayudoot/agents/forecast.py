@@ -132,7 +132,7 @@ async def forecast_corridor(
             forecast_location(
                 latitude=lat,
                 longitude=lon,
-                location_name=f"{corridor.name} waypoint {index + 1}",
+                location_name=_waypoint_label(corridor, index),
                 nearby_hotspots=pool,
                 agent=agent,
             )
@@ -144,7 +144,14 @@ async def forecast_corridor(
     # A waypoint that failed is dropped rather than allowed to sink the corridor.
     # One provider error must not turn a corridor's outlook into silence.
     good = [o for o in outlooks if isinstance(o, AirQualityForecast)]
-    worst = max((o.risk for o in good), key=RISK_ORDER.index, default="low")
+    if not good:
+        # Every waypoint failed. There is no risk level that means "unknown", and
+        # "low" would render silence as calm air — the one wrong answer that
+        # sends somebody outdoors. The first failure is raised instead, so the
+        # caller reports an error and nothing is cached.
+        failure = next(o for o in outlooks if isinstance(o, BaseException))
+        raise failure
+    worst = max((o.risk for o in good), key=RISK_ORDER.index)
 
     return CorridorForecast(
         corridor_id=corridor.corridor_id,
@@ -153,6 +160,14 @@ async def forecast_corridor(
         summary=_corridor_summary(corridor, good, worst),
         waypoint_forecasts=good,
     )
+
+
+def _waypoint_label(corridor: Corridor, index: int) -> str:
+    """The place a waypoint sits on, or its number when the data names none."""
+    names = corridor.waypoint_names
+    if index < len(names) and names[index]:
+        return f"{names[index]} ({corridor.name})"
+    return f"{corridor.name} waypoint {index + 1}"
 
 
 def upwind_hotspots(
@@ -197,9 +212,6 @@ def _describe_hotspots(latitude: float, longitude: float, hotspots: list[Hotspot
 def _corridor_summary(
     corridor: Corridor, outlooks: list[AirQualityForecast], worst: str
 ) -> str:
-    if not outlooks:
-        return f"No outlook could be produced for {corridor.name}."
-
     at_worst = [o for o in outlooks if o.risk == worst]
     where = ", ".join(o.location_name for o in at_worst[:3]) or corridor.name
     return (

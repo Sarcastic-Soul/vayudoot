@@ -345,9 +345,9 @@ with no code changed. It does not claim that any Pakistani agency runs a node or
 has been approached; the node is this application with `PK` in its
 configuration, which is exactly what one would be.
 
-For that run the Delhi node's `VAYUDOOT_FORECAST_UPWIND_KM` is raised to 500 km,
-and the demo says so on screen. The shipped 400 km was tuned on Ludhiana, 286 km
-from Delhi, and stops short of Lahore at 428 km.
+The shipped upwind reach, 500 km, covers Lahore (428 km from Delhi) and
+Sheikhupura (464 km) with no configuration change. It was 400 km until this run
+showed that it stopped short of both.
 
 ## What this is not
 

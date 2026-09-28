@@ -46,6 +46,8 @@ def _corridors() -> tuple[Corridor, ...]:
             name=entry.get("name", corridor_id),
             states=list(entry.get("states", [])),
             waypoints=[(p["latitude"], p["longitude"]) for p in entry.get("waypoints", [])],
+            waypoint_names=[p.get("place", "") for p in entry.get("waypoints", [])],
+            countries=list(entry.get("countries", [])),
             description=entry.get("description", ""),
         )
         for corridor_id, entry in blob.get("corridors", {}).items()

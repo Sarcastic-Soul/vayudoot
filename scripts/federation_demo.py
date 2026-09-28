@@ -74,14 +74,6 @@ CROSS_BORDER_SITES = [
     ("Sheikhupura district", 31.7131, 73.9783),
 ]
 
-#: How far the Delhi node reaches for upwind hotspots in the cross-border run.
-#: The shipped default, 400 km, was tuned on Ludhiana (286 km from Delhi) and
-#: stops short of Lahore (428 km) and Sheikhupura (464 km). The demo raises it
-#: for the Delhi node only, through the same environment variable an operator
-#: would use, and says so on screen rather than hiding it.
-CROSS_BORDER_REACH_KM = "500"
-
-
 def seeded_signals(sites: list[tuple[str, float, float]] = BURNING_SITES) -> list[dict]:
     """Stubble-burning signals as a satellite pass would have recorded them.
 
@@ -148,7 +140,6 @@ def start_node(
     root: Path,
     neighbours: str = "",
     country: str = "IN",
-    extra_env: dict[str, str] | None = None,
 ) -> subprocess.Popen:
     env = {
         **os.environ,
@@ -166,7 +157,6 @@ def start_node(
         "DATABASE_URL": "",
         # Nothing unattended should start calling external APIs during a demo.
         "VAYUDOOT_SCAN_ENABLED": "false",
-        **(extra_env or {}),
     }
     return subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "vayudoot.api:app", "--port", str(port)],
@@ -277,11 +267,6 @@ def main() -> int:
                 region="delhi",
                 root=delhi_root,
                 neighbours=",".join(feeds),
-                extra_env=(
-                    {"VAYUDOOT_FORECAST_UPWIND_KM": CROSS_BORDER_REACH_KM}
-                    if cross_border
-                    else None
-                ),
             )
         )
 
@@ -353,12 +338,6 @@ def main() -> int:
 
             whose = "both Punjabs'" if cross_border else "Punjab's"
             rule(f"4. Delhi forecasts, with {whose} detections in hand")
-            if cross_border:
-                print(
-                    f"Delhi's upwind reach is set to {CROSS_BORDER_REACH_KM} km for this run "
-                    "(VAYUDOOT_FORECAST_UPWIND_KM).\nThe shipped 400 km was tuned on Ludhiana "
-                    "(286 km) and stops short of Lahore (428 km).\n"
-                )
             print("Calling the model. This is the only step that needs a provider.\n")
             try:
                 response = httpx.get(

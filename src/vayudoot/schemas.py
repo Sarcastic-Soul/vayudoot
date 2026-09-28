@@ -392,13 +392,16 @@ class Hotspot(BaseModel):
 class Exposure(BaseModel):
     """How many people live close enough to a hotspot to be breathing it.
 
-    A lower bound, and labelled as one. It counts the population of settlements
-    in a gazetteer whose centre lies within `radius_km` of the hotspot's centre,
-    so villages below the gazetteer's size floor, and people between settlements,
-    are not counted. The brief's own framing is that these events threaten public
-    health, and a number of people is what turns a circle on a map into a
-    priority — but an overstated number would be a public claim the data cannot
-    support, so the field says exactly what was counted.
+    A coarse figure, and labelled as one. It counts the population of settlements
+    in a gazetteer whose centre lies within `radius_km` of the hotspot's centre.
+    In the countryside that reads low, because villages below the gazetteer's
+    size floor and people between settlements are not counted; near a city it
+    can read high, because a city whose centre is in reach counts whole.
+
+    The brief's own framing is that these events threaten public health, and a
+    number of people is what turns a circle on a map into a priority — but an
+    overstated number would be a public claim the data cannot support, so the
+    field says exactly what was counted.
     """
 
     population: int = Field(ge=0)
@@ -446,6 +449,14 @@ class Corridor(BaseModel):
     #: summarised for the corridor, which is why they are sparse: they are
     #: sampling points, not a route to drive.
     waypoints: list[tuple[float, float]] = Field(default_factory=list)
+    #: The place each waypoint sits on, index for index with `waypoints`. A
+    #: forecast that says "waypoint 3" cannot be checked against a map; one that
+    #: says "Panipat" can.
+    waypoint_names: list[str] = Field(default_factory=list)
+    #: ISO 3166-1 alpha-2 codes, in the order the corridor runs. More than one
+    #: means the corridor crosses a border, which is the trans-boundary case the
+    #: brief names.
+    countries: list[str] = Field(default_factory=list)
     description: str = ""
 
 

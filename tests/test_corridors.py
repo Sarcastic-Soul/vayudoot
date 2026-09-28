@@ -124,14 +124,21 @@ def test_the_foreign_province_is_named_distinctly_from_its_indian_namesake():
     assert len(set(corridor.states)) == len(corridor.states)
 
 
-def test_the_data_file_records_which_countries_the_corridor_crosses():
-    """`Corridor` has no `countries` field yet, so this reads the file directly.
-
-    The point of recording it in data is that the corridor says what it is
-    without anybody having to recognise Lahore on a map.
-    """
+def test_the_corridor_records_which_countries_it_crosses():
+    """The corridor says what it is without anybody recognising Lahore on a map."""
     entry = json.loads(_DATA.read_text())["corridors"][TRANSBOUNDARY]
     assert entry["countries"] == ["PK", "IN"]
+    corridor = get_corridor(TRANSBOUNDARY)
+    assert corridor is not None
+    assert corridor.countries == ["PK", "IN"]
+
+
+def test_every_corridor_names_its_countries_and_its_waypoints():
+    """No country is assumed in Python, and no waypoint is an unlabelled number."""
+    for corridor in all_corridors():
+        assert corridor.countries, corridor.corridor_id
+        assert len(corridor.waypoint_names) == len(corridor.waypoints), corridor.corridor_id
+        assert all(corridor.waypoint_names), corridor.corridor_id
 
 
 def test_a_point_in_pakistans_punjab_finds_the_transboundary_corridor():

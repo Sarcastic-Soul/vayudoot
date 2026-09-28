@@ -645,7 +645,9 @@ def get_neighbours() -> dict:
 #: one fast-tier call per waypoint on a free tier metered per request, and a
 #: page that re-renders or a second viewer should not buy the same answer twice.
 #: Per process and lost on restart, which is fine for something this cheap to
-#: recompute. Failures are never cached: a quota trip should be retried.
+#: recompute. Failures are never cached: a quota trip should be retried. Nor is
+#: a corridor with a waypoint missing — the gap is usually a transient 503, and
+#: serving it for half an hour would hide the segment that came back.
 _forecast_cache: dict[str, tuple[float, AirQualityForecast | CorridorForecast]] = {}
 
 
@@ -680,6 +682,8 @@ async def get_forecast(lat: float, lon: float, place: str = "") -> AirQualityFor
         )
     except Exception as exc:
         # The forecast stage is a fast-tier call, so a quota trip reports as one.
+        if (busy := _model_busy(exc, tier="fast")) is not None:
+            raise busy from exc
         raise HTTPException(status_code=502, detail=errors.describe(exc, "fast")) from exc
     _forecast_cache[key] = (time.monotonic(), result)
     return result
@@ -720,8 +724,11 @@ async def get_corridor_forecast(corridor_id: str) -> CorridorForecast:
     try:
         result = await forecast_corridor(corridor, hotspots=context)
     except Exception as exc:
+        if (busy := _model_busy(exc, tier="fast")) is not None:
+            raise busy from exc
         raise HTTPException(status_code=502, detail=errors.describe(exc, "fast")) from exc
-    _forecast_cache[key] = (time.monotonic(), result)
+    if len(result.waypoint_forecasts) == len(corridor.waypoints):
+        _forecast_cache[key] = (time.monotonic(), result)
     return result
 
 
@@ -975,11 +982,10 @@ async def draft_rti(case_id: str, redraft: bool = False) -> Case:
     try:
         case.rti = await draft_rti_application(case)
     except Exception as exc:
-        if not errors.is_rate_limit(exc, tier="primary"):
-            raise  # not a recognised rate limit; keep the default 500 and log it
-        message = errors.describe(exc, tier="primary")
-        log.warning("RTI draft rate-limited for case %s: %s", case_id, message)
-        raise HTTPException(503, message) from exc
+        if (busy := _model_busy(exc, tier="primary")) is None:
+            raise  # not a rate limit or an overloaded model; keep the default 500
+        log.warning("RTI draft could not reach a model for case %s: %s", case_id, busy.detail)
+        raise busy from exc
     case.rti_drafted_at = datetime.now(UTC)
     case.log(
         "RTI application drafted under the Right to Information Act, 2005. Held for the "

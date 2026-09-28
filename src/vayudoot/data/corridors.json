@@ -8,20 +8,20 @@
     "Waypoints are SAMPLING POINTS, not a route to drive. A forecast is produced per",
     "waypoint and summarised for the corridor, so four to eight sparse points along",
     "the real alignment is the right density.",
-    "Each waypoint names the place it sits on. The Corridor schema keeps only the",
-    "coordinate pair, but forty bare numbers are unreviewable — the name is what",
+    "Each waypoint names the place it sits on, and the loader carries the name into",
+    "`waypoint_names`: forty bare numbers are unreviewable, and the name is what",
     "lets somebody check a number against a map before trusting a forecast built on",
     "it.",
     "A corridor that crosses an international border names the foreign province",
     "distinctly in `states` (e.g. 'Punjab (Pakistan)') and lists its countries as",
-    "ISO 3166-1 alpha-2 codes in `countries`. The Corridor schema does not carry",
-    "`countries` yet, so the loader ignores it; it is here so the data says what",
-    "it is, and a test reads it straight from this file."
+    "ISO 3166-1 alpha-2 codes in `countries`. Every corridor lists its countries,",
+    "including the domestic ones, so no country is assumed in Python."
   ],
   "corridors": {
     "ncr": {
       "name": "National Capital Region",
       "states": ["Delhi", "Haryana", "Uttar Pradesh"],
+      "countries": ["IN"],
       "description": "The Delhi conurbation and its satellite cities, the most densely monitored and most consistently polluted air shed in India.",
       "waypoints": [
         { "place": "New Delhi", "latitude": 28.6139, "longitude": 77.209 },
@@ -35,6 +35,7 @@
     "delhi-mumbai": {
       "name": "Delhi-Mumbai Industrial Corridor",
       "states": ["Delhi", "Haryana", "Rajasthan", "Gujarat", "Maharashtra"],
+      "countries": ["IN"],
       "description": "India's largest industrial corridor, following the western dedicated freight line from the capital through Rajasthan and the Gujarat petrochemical belt to Mumbai.",
       "waypoints": [
         { "place": "New Delhi", "latitude": 28.6139, "longitude": 77.209 },
@@ -50,6 +51,7 @@
     "punjab-haryana-stubble": {
       "name": "Punjab-Haryana stubble belt",
       "states": ["Punjab", "Haryana"],
+      "countries": ["IN"],
       "description": "The Indo-Gangetic paddy belt whose post-harvest residue burning, carried south-east on the winter wind, is the single largest seasonal driver of Delhi's smog.",
       "waypoints": [
         { "place": "Amritsar", "latitude": 31.634, "longitude": 74.8723 },
@@ -78,6 +80,7 @@
     "mumbai-pune": {
       "name": "Mumbai-Pune industrial belt",
       "states": ["Maharashtra"],
+      "countries": ["IN"],
       "description": "The chemical, refining and manufacturing strip along the Mumbai-Pune expressway, where industrial emission and construction dust sit on top of a dense population.",
       "waypoints": [
         { "place": "Mumbai", "latitude": 19.076, "longitude": 72.8777 },
@@ -92,6 +95,7 @@
     "chennai-bengaluru": {
       "name": "Chennai-Bengaluru Industrial Corridor",
       "states": ["Tamil Nadu", "Andhra Pradesh", "Karnataka"],
+      "countries": ["IN"],
       "description": "The southern manufacturing and automotive corridor running inland from the Chennai port through Ranipet and Hosur to Bengaluru.",
       "waypoints": [
         { "place": "Chennai", "latitude": 13.0827, "longitude": 80.2707 },
@@ -105,6 +109,7 @@
     "kolkata-durgapur": {
       "name": "Kolkata-Asansol-Durgapur industrial belt",
       "states": ["West Bengal"],
+      "countries": ["IN"],
       "description": "The lower Damodar valley coal, steel and thermal power belt, running north-west from Kolkata along the Grand Trunk Road to the Raniganj coalfield.",
       "waypoints": [
         { "place": "Kolkata", "latitude": 22.5726, "longitude": 88.3639 },

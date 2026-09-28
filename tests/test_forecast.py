@@ -232,20 +232,56 @@ async def test_one_failing_waypoint_does_not_sink_the_corridor():
     assert "2 of 3 waypoints reporting" in result.summary
 
 
-async def test_a_corridor_where_everything_failed_says_so_rather_than_reporting_calm():
-    """The dangerous failure mode: total silence rendering as "low risk"."""
+class DeadAgent(StubAgent):
+    def __init__(self):
+        super().__init__(None)
 
-    class DeadAgent(StubAgent):
-        def __init__(self):
-            super().__init__(None)
+    async def invoke_async(self, prompt, structured_output_model=None, **kwargs):
+        raise RuntimeError("provider down")
 
-        async def invoke_async(self, prompt, structured_output_model=None, **kwargs):
-            raise RuntimeError("provider down")
 
-    result = await forecast.forecast_corridor(corridor(), agent=DeadAgent())
+async def test_a_corridor_where_everything_failed_raises_rather_than_reporting_calm():
+    """The dangerous failure mode: total silence rendering as "low risk".
 
-    assert result.waypoint_forecasts == []
-    assert "No outlook could be produced" in result.summary
+    It used to return `risk="low"` with an apologetic summary, and the page drew
+    a calm green corridor. There is no risk level for "unknown", so it raises.
+    """
+    with pytest.raises(RuntimeError, match="provider down"):
+        await forecast.forecast_corridor(corridor(), agent=DeadAgent())
+
+
+async def test_a_dead_corridor_is_an_error_over_http_and_is_not_cached(client, monkeypatch):
+    from vayudoot.agents import forecast as forecast_module
+
+    monkeypatch.setattr(forecast_module, "build_forecast_agent", DeadAgent)
+
+    first = await client.get("/corridors/ncr/forecast")
+    assert first.status_code == 502
+
+    from vayudoot import api as api_module
+
+    assert "corridor:ncr" not in api_module._forecast_cache
+
+
+async def test_a_corridor_missing_a_waypoint_is_served_but_not_cached(client, monkeypatch):
+    """The gap is usually a transient 503; caching it would hide the recovery."""
+    from vayudoot import api as api_module
+    from vayudoot.schemas import CorridorForecast
+
+    async def partial(corridor, hotspots=None):
+        return CorridorForecast(
+            corridor_id=corridor.corridor_id,
+            corridor_name=corridor.name,
+            risk="high",
+            waypoint_forecasts=[outlook("high")],
+        )
+
+    monkeypatch.setattr(api_module, "forecast_corridor", partial)
+
+    response = await client.get("/corridors/ncr/forecast")
+
+    assert response.status_code == 200
+    assert "corridor:ncr" not in api_module._forecast_cache
 
 
 async def test_a_corridor_forecast_carries_the_disclaimer():
@@ -258,6 +294,16 @@ async def test_every_waypoint_is_named_in_its_own_forecast():
     names = [o.location_name for o in result.waypoint_forecasts]
 
     assert names == ["Test Corridor waypoint 1", "Test Corridor waypoint 2"]
+
+
+async def test_a_named_waypoint_is_forecast_under_its_place_name():
+    """ "Panipat" can be checked against a map; "waypoint 3" cannot."""
+    named = corridor(2).model_copy(update={"waypoint_names": ["Sonipat", "Panipat"]})
+    agent = StubAgent(outlook())
+
+    await forecast.forecast_corridor(named, agent=agent)
+
+    assert any("Panipat (Test Corridor)" in prompt for prompt in agent.prompts)
 
 
 @pytest.mark.parametrize(

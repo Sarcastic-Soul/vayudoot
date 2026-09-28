@@ -210,11 +210,12 @@ document.
 the model's judgement.** `upwind_hotspots` selects on distance alone, within
 `vayudoot_forecast_upwind_km`, and hands the model each one's bearing, distance, severity,
 confidence and corroboration state. Deciding upwind-ness here would be geometry pretending
-to be meteorology. The reach is 400 km, set against the 72-hour horizon rather than a single
+to be meteorology. The reach is 500 km, set against the 72-hour horizon rather than a single
 night: at the 3-5 m/s typical of the Indo-Gangetic plain in burning season air covers
-260-430 km a day. The number is checked against the case the whole thing exists for.
+260-430 km a day. The number is checked against the cases the whole thing exists for.
 Ludhiana to Delhi is 286 km, and the first guess of 200 km would have put Punjab's burning
-outside Delhi's forecast entirely.
+outside Delhi's forecast entirely; Lahore is 428 km, and 400 km would have hidden the
+trans-boundary case.
 
 **A peak window that has already passed is dropped.** Observed on a live run: asked for a
 72-hour outlook, the model returned a peak window beginning the previous day. It was reading
