@@ -227,8 +227,9 @@ def facts_block(
         e = s.exposure
         towns = f"; largest: {', '.join(e.towns[:5])}" if e.towns else ""
         lines.append(
-            f"Population within {e.radius_km:.0f} km: at least {e.population:,} "
-            f"({e.settlement_count} settlement(s) counted{towns}). A lower bound."
+            f"Population within {e.radius_km:.0f} km: about {e.population:,} "
+            f"({e.settlement_count} settlement(s) counted{towns}). A coarse figure: "
+            "villages under 15,000 people are not counted and a town counts whole."
         )
     else:
         lines.append("Population nearby: not estimated.")

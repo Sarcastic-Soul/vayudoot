@@ -102,6 +102,30 @@ interface calls it an **unidentified source**, with a line saying a photograph
 would classify it. That is not a gap in the data; it is what a satellite can and
 cannot know, stated plainly.
 
+Each hotspot also carries a rough **population exposure**: the people living in
+towns whose centre is within ten kilometres, from the GeoNames gazetteer. It is
+labelled as a coarse figure, because it is one — villages under 15,000 people
+are not counted and a city counts whole — and it is kept off the public feed.
+
+### Alerts — from a hotspot straight to the authority
+
+A corroborated hotspot can be turned into an **alert brief** for the pollution
+control board that covers it, without waiting for anyone to file a complaint.
+The brief states what was detected, the evidence under it, the people nearby
+and any satellite reading, and suggests checks for an inspector. It follows the same
+rules as a complaint: a person reviews and confirms it, the envelope is written
+to a sandbox outbox, and nothing reaches a real regulator. An uncorroborated
+hotspot cannot be alerted on; citizen reports alone are not enough to put a
+place in front of a regulator.
+
+### Satellite imagery — what the sky looked like
+
+For any hotspot, the node fetches NASA GIBS true-colour imagery of the area
+(VIIRS, free, no key) and asks Gemini to read it for visible smoke or haze. The
+reading is shown beside the image as a model's annotation. It never counts as
+corroboration: a 375-metre pixel read by a model is not the independent evidence
+the confidence cap is waiting for.
+
 ### Reporting — what a person does standing in front of the problem
 
 A photograph runs the full case pipeline and, at the end, becomes a signal like
@@ -145,9 +169,17 @@ ours: a node that laundered a neighbour's detection would let one bad instance
 contaminate the network, and nobody downstream could tell whose evidence a
 hotspot rested on. A feed reporting our own node id is refused outright.
 
+The same hotspots are published as **GeoJSON** (`GET /feed.geojson`, RFC 7946,
+areas as polygons), so an agency in any country can load a node into QGIS or its
+own dashboard without running our code. Each node declares its country, and a
+corridor records which countries it crosses — the Lahore–Delhi trans-boundary
+corridor crosses two.
+
 See [`docs/federation.md`](docs/federation.md) for the contract, and
 `python scripts/federation_demo.py` to watch two real nodes do it on one
-machine — no mocking, the real HTTP path.
+machine — no mocking, the real HTTP path. Add `--cross-border` for a third node
+configured for Pakistan's Punjab, whose burning reaches Delhi's forecast
+through the same feed.
 
 ### Citizen sensors
 
@@ -380,6 +412,11 @@ The shipped configuration puts **both on Gemini**: primary on Flash, fast on
 Flash-Lite. The tier split survives as a cost control inside one provider, since
 only two of the ten model calls a report makes need judgement.
 
+AI Studio's free tier meters each model separately, so the primary tier walks a
+chain of Flash models and moves to the next one when a model answers 429
+(quota spent), 503 (overloaded) or 404 (retired). See `MODEL_FALLBACKS` in
+[`config.py`](src/vayudoot/config.py).
+
 Ollama remains supported for local development and the offline test suite. A
 system a state could run on its own hardware is part of the deployability
 argument, so the abstraction earns its keep.
@@ -397,6 +434,8 @@ VAYUDOOT_MODEL_PROVIDER=gemini   # or ollama
 | Open-Meteo | wind speed and direction, plume back-trace | none |
 | Open-Meteo Air Quality | pollutant forecast for the outlook | none |
 | OpenStreetMap Nominatim | reverse geocoding | none |
+| NASA GIBS | true-colour satellite imagery of a hotspot | none |
+| GeoNames `cities15000` | population exposure (CC BY 4.0, shipped as data) | none |
 
 Exceedance is measured against the **NAAQS** thresholds in the Indian standard
 (CPCB notification S.O. 384(E), 2009), held in configuration in µg/m³ with unit
@@ -434,6 +473,19 @@ Punjab detecting while Delhi forecasts.
 | `GET` | `/hotspots` | Every active hotspot, most confident first |
 | `GET` | `/hotspots/{id}` | One hotspot with the signals underneath it |
 | `POST` | `/sensors/readings` | Submit a low-cost sensor reading as a signal |
+| `POST` | `/hotspots/{id}/imagery` | Fetch satellite imagery of the area and have Gemini read it |
+| `GET` | `/hotspots/{id}/imagery` | The last reading, if one was made |
+| `GET` | `/hotspots/{id}/imagery.jpg` | The image that reading was made from |
+
+**Alerts**
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/hotspots/{id}/alert` | Draft an alert brief for the authority covering a corroborated hotspot |
+| `GET` | `/alerts` | Every alert, or `?hotspot_id=` for one hotspot's |
+| `GET` | `/alerts/{id}` | One alert |
+| `POST` | `/alerts/{id}/confirm` | The human gate; writes the envelope to the sandbox outbox |
+| `GET` | `/alerts/{id}/envelope` | That envelope |
 
 **Forecasting**
 
@@ -449,6 +501,7 @@ Punjab detecting while Delhi forecasts.
 | --- | --- | --- |
 | `GET` | `/node` | Who this instance is |
 | `GET` | `/feed` | This node's hotspots, as a versioned document |
+| `GET` | `/feed.geojson` | The same hotspots as RFC 7946 GeoJSON, for any GIS tool |
 | `GET` | `/neighbours` | What each configured peer is reporting, and which failed |
 
 **Reporting**

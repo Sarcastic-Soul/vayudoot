@@ -339,7 +339,8 @@ async def test_a_cached_imagery_reading_is_cited_as_context_not_evidence(client,
     assert "does not count towards corroboration" in body["facts"]
 
 
-def test_exposure_is_stated_as_a_lower_bound_when_present():
+def test_exposure_is_stated_as_a_coarse_figure_when_present():
+    """A city counts whole, so "at least" would overstate as often as understate."""
     now = datetime.now(UTC)
     snapshot = HotspotSnapshot(
         hotspot_id="VDH-TEST0001",
@@ -363,8 +364,8 @@ def test_exposure_is_stated_as_a_lower_bound_when_present():
         ),
     )
     facts = alerts.facts_block(snapshot, "Ludhiana, Punjab")
-    assert "Population within 10 km: at least 1,618,879" in facts
-    assert "A lower bound." in facts
+    assert "Population within 10 km: about 1,618,879" in facts
+    assert "A coarse figure" in facts
     assert "Pollution type: crop residue burning" in facts
     assert "citizen photograph reports: 1" in facts
 

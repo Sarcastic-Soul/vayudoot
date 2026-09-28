@@ -392,16 +392,48 @@ left. Rubric weights are in `PROBLEM-STATEMENTS.md`.
       video**. The script is timed to four minutes and says what to do if the
       Gemini quota runs out mid-take.
 
+## Added for the BRICS edition of the brief
+
+The BRICS edition of Track 2 names three things the list above did not cover
+well: trans-boundary smog, alerting authorities for rapid intervention, and
+interoperability between nations. Everything below uses only the Gemini API key
+and free, keyless public data.
+
+- [x] **Alert an authority from a hotspot, not only from a case.** A corroborated
+      hotspot can be turned into an alert brief (fast tier, `agents/alert.py`)
+      addressed to the board that covers its centre. It follows the same rules
+      as a complaint: a person confirms before anything is written, the envelope
+      goes to an outbox file, the address is `.invalid`, and live filing raises.
+      An uncorroborated hotspot answers 409, because an alert is a louder claim
+      than a map area and constraint 7's gate applies to it first.
+
+- [x] **Satellite imagery, read by Gemini.** NASA GIBS true-colour imagery
+      (VIIRS, free, no key) is fetched for a hotspot's area and read by the
+      primary model for visible smoke or haze. The reading is an annotation with
+      a disclaimer. It never counts as corroboration: a model reading a 375 m
+      pixel is not independent evidence in the sense the gate means. Earth
+      Engine and Bhuvan stay out, since both need a registration this project
+      does not have.
+
+- [x] **Cross-border corridor and an open GeoJSON feed.** A Lahore–Delhi
+      trans-boundary corridor, corridors that record which countries they cross,
+      a node that declares its country, and `GET /feed.geojson` (RFC 7946, areas
+      as polygons, never points) so any GIS tool in any country can read a node
+      without our code. `scripts/federation_demo.py --cross-border` runs a
+      Pakistani node beside the Indian ones. It does not claim any agency runs
+      one. The upwind reach went from 400 km to 500 km because 400 stopped short
+      of Lahore.
+
+- [x] **Population exposure per hotspot.** From the GeoNames `cities15000`
+      gazetteer (CC BY 4.0), shipped as data. A coarse figure, labelled as one;
+      see `Exposure` in `schemas.py` for what it counts. Kept off the public
+      feed.
+
+- [x] **Model fallback across free-tier Gemini models.** AI Studio meters each
+      model separately, so the primary tier walks a chain of Flash models and
+      moves on at 429, 503 or 404. About fifty reports a day instead of ten.
+
 ## Under consideration, not committed
-
-- **Population exposure per hotspot.** "Threatens public health" is the brief's
-  own framing and Impact Potential is 15%. A coarse district population density
-  table shipped as data would give every hotspot a number of people. Cheap if
-  the data is clean, droppable if it is not.
-
-- **ISRO / Bhuvan or Earth Engine imagery.** The organisers name both, and FIRMS
-  detections are not imagery. Free on a noncommercial registration. Decide by
-  day four or drop it; v0.1 already called tiles a rabbit hole and was right.
 
 - **CPCB / data.gov.in station data alongside OpenAQ.** More India-specific than
   OpenAQ and named by the organisers. Cheap if the endpoint behaves.
