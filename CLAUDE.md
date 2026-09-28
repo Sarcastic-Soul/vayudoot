@@ -86,6 +86,14 @@ lapsed, which is rare and never part of the ten calls a report spends. Forecast
 is on `fast` despite also running outside a report, because it summarises tool
 output rather than composing a document.
 
+Imagery is the fourth agent on `primary`, and it is outside that count for the
+same reason as RTI. It reads a satellite true-colour snapshot and judges whether
+smoke is visible under the cloud — judgement on an image, the evidence stage's
+kind of work, which flash-lite does worse. It runs only when an operator asks
+about one hotspot, and its reading is cached per hotspot and image date, so the
+same picture is never paid for twice. The hotspot alert is on `fast`: the facts
+block is built in Python and the model only writes a short summary of it.
+
 **The two tiers can sit on different providers.** `VAYUDOOT_MODEL_PROVIDER_FAST`
 overrides the provider for the fast tier only, and `settings.provider_for(tier)`
 is the single thing that decides. That is deliberate, not incidental: it spreads
@@ -179,33 +187,12 @@ generated-with attribution.
 
 ## Run agents in parallel
 
-Independent work should be split across agents rather than done in sequence. It
-is materially faster, and the constraint that makes it work is file ownership,
-not task size.
+Split independent work across agents. The rule that makes it work is **one owner per file, per
+wave** — the usual clean split is Python versus `src/vayudoot/web`. Agents do not commit; the
+coordinator reads the diff, verifies independently, and commits. For interface work, require
+rendered screenshots — every UI bug here so far passed both `ruff` and `pytest`.
 
-**One owner per file, per wave.** Two agents editing `api.py` at once produces a
-merge, not a speedup. Partition by the files a task must touch, and if two tasks
-want the same file, they belong in the same agent or in different waves. The
-usual clean split is Python versus `src/vayudoot/web`, since the interface and
-the pipeline share nothing.
-
-**Keep shared documents out of every brief.** `CLAUDE.md`, `docs/SCOPE.md` and
-`README.md` are written by whoever is coordinating. Several agents editing the
-same document concurrently is the one conflict that is guaranteed.
-
-**Agents do not commit.** They leave the work in the tree and report. The
-coordinator reads the diff, verifies it independently, and commits — an agent
-reporting success is evidence, not proof.
-
-Tell each agent: which paths it owns and which it must not touch; that another
-agent is working concurrently, so a test failure in a file it did not touch is
-not its problem; and that a dev server it starts is its own to stop, because a
-stray one holds the port for everybody afterwards.
-
-For interface work, require rendered screenshots. Every UI bug in this project
-so far — invisible nav labels, a clipped control, a single-column layout that
-should have been two — passed both `ruff` and `pytest` and was only ever visible
-in an image.
+Full briefing rules: `docs/parallel-agents.md`.
 
 ## Record decisions where they are enforced
 
@@ -222,3 +209,11 @@ hit it while changing the code.
   `docs/SCOPE.md`.
 
 If a decision fits none of those, it probably did not need writing down.
+
+## UI and design work
+
+Hackathon project — optimize for visual impact, not platform consistency. Full creative latitude
+on color, typography, layout, animation and iconography; pick whatever best fits the project theme
+without waiting for sign-off. Reach for shadcn/ui, Aceternity UI, Magic UI, Framer Motion and similar
+third-party component/animation sources freely — judges and demo viewers see the surface, not the
+process.
