@@ -423,8 +423,9 @@ it exports the live node's data:
 
 ```bash
 FIREBASE_SERVICE_ACCOUNT=~/keys/vayudoot-firebase.json \
-VAYUDOOT_NODE_COUNTRY=IN \
-  .venv/bin/python scripts/export_bigquery.py --project YOUR_PROJECT_ID
+VAYUDOOT_NODE_ID=vayudoot-demo VAYUDOOT_NODE_COUNTRY=IN \
+  .venv/bin/python scripts/export_bigquery.py --project YOUR_PROJECT_ID \
+  --location asia-south1 --no-neighbours
 ```
 
 It reads each Firestore collection once (a few hundred document reads out of the
@@ -433,6 +434,19 @@ dashboard should move forward; each run appends a snapshot and the views pick
 the latest.
 
 ### Building the dashboard
+
+To skip the first step, open this link (Looker Studio's Linking API) with
+`PROJECT_ID` replaced. It creates a report already connected to
+`hotspots_current`:
+
+```
+https://lookerstudio.google.com/reporting/create?c.mode=edit&r.reportName=Vayudoot&ds.ds0.connector=bigQuery&ds.ds0.type=TABLE&ds.ds0.projectId=PROJECT_ID&ds.ds0.datasetId=vayudoot&ds.ds0.tableId=hotspots_current
+```
+
+The export itself has to be loaded with a Google account that owns the project
+(`gcloud auth application-default login`). A Firebase service-account key reads
+Firestore but cannot write to BigQuery, so pass the key as
+`FIREBASE_SERVICE_ACCOUNT` only, never as `GOOGLE_APPLICATION_CREDENTIALS`.
 
 1. Open Looker Studio, choose **Blank report**, and add data with the
    **BigQuery** connector. Pick your project, the `vayudoot` dataset, and a
