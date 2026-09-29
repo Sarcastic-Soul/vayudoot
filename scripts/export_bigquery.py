@@ -108,7 +108,23 @@ def main(argv: list[str] | None = None) -> int:
 
     ready, missing = (False, "--no-upload") if args.no_upload else _can_upload(args.project)
     if ready:
-        result = export.upload(manifest, args.project, args.dataset, args.location)
+        from google.api_core.exceptions import Forbidden
+
+        try:
+            result = export.upload(manifest, args.project, args.dataset, args.location)
+        except Forbidden as exc:
+            # Credentials exist but cannot write to BigQuery: most often a
+            # Firebase service-account key, which has Firestore rights only.
+            # The export is on disk either way, so say what to fix, not a trace.
+            print(f"\nNot loaded: BigQuery refused these credentials.\n  {exc.message}\n")
+            print(
+                "Sign in as a project owner instead:\n"
+                "  gcloud auth application-default login\n"
+                f"  gcloud auth application-default set-quota-project {args.project}\n"
+                "and unset GOOGLE_APPLICATION_CREDENTIALS, or grant the account the\n"
+                "BigQuery Data Editor and BigQuery Job User roles."
+            )
+            return 1
         if result["skipped"]:
             print(f"\nNot loaded: {result['reason']} ({result['target']}).")
         else:
