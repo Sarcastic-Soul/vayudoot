@@ -577,7 +577,8 @@ Punjab detecting while Delhi forecasts.
 **Analysis and demo tooling** (scripts, not endpoints): `scripts/export_bigquery.py`
 exports signals, hotspots (as areas), alert statuses and corridors for the free
 BigQuery sandbox, with queries that compare countries and a Looker Studio
-dashboard over them in [`docs/bigquery.md`](docs/bigquery.md). `scripts/demo_prep.py` makes every model
+dashboard over them in [`docs/bigquery.md`](docs/bigquery.md) — the demo node's is
+[live](https://datastudio.google.com/reporting/c740daec-70f2-40a0-bfdd-9feb33060910). `scripts/demo_prep.py` makes every model
 call a demo shows ahead of time, so a recording cannot be spoiled by a busy
 free-tier model; it never confirms or files anything.
 

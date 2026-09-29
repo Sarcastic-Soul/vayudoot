@@ -435,18 +435,30 @@ the latest.
 
 ### Building the dashboard
 
-To skip the first step, open this link (Looker Studio's Linking API) with
-`PROJECT_ID` replaced. It creates a report already connected to
-`hotspots_current`:
+The demo node's dashboard is built and public:
+<https://datastudio.google.com/reporting/c740daec-70f2-40a0-bfdd-9feb33060910>
+(Looker Studio now calls itself Data Studio; the URLs are interchangeable). It
+has the hotspot map, a table of every hotspot by confidence, and the model-output
+note the rules below ask for.
+
+To get the same report over your own project without rebuilding it, open this
+link with `PROJECT_ID` replaced. It is Looker Studio's Linking API: it copies the
+demo report and points its data source at your `hotspots_current` view.
 
 ```
-https://lookerstudio.google.com/reporting/create?c.mode=edit&r.reportName=Vayudoot&ds.ds0.connector=bigQuery&ds.ds0.type=TABLE&ds.ds0.projectId=PROJECT_ID&ds.ds0.datasetId=vayudoot&ds.ds0.tableId=hotspots_current
+https://lookerstudio.google.com/reporting/create?c.reportId=c740daec-70f2-40a0-bfdd-9feb33060910&c.mode=edit&r.reportName=Vayudoot&ds.ds0.connector=bigQuery&ds.ds0.type=TABLE&ds.ds0.projectId=PROJECT_ID&ds.ds0.datasetId=vayudoot&ds.ds0.tableId=hotspots_current
 ```
+
+If the copy still shows the demo's data, the template's data source alias is
+not `ds0`: read it under **Resource > Manage added data sources > Edit** in the
+demo report and put it in place of `ds0` in the link.
 
 The export itself has to be loaded with a Google account that owns the project
 (`gcloud auth application-default login`). A Firebase service-account key reads
 Firestore but cannot write to BigQuery, so pass the key as
 `FIREBASE_SERVICE_ACCOUNT` only, never as `GOOGLE_APPLICATION_CREDENTIALS`.
+
+To build it by hand, or to add pages:
 
 1. Open Looker Studio, choose **Blank report**, and add data with the
    **BigQuery** connector. Pick your project, the `vayudoot` dataset, and a
@@ -455,16 +467,18 @@ Firestore but cannot write to BigQuery, so pass the key as
 
    | Page | Data source | Charts |
    | --- | --- | --- |
-   | Map | `hotspots_current` | Google Maps chart, type **Filled map**, location field `area`; colour by `severity`; tooltip `confidence`, `corroborated`, `signal_count` |
+   | Map | `hotspots_current` | Google Maps chart, type **Filled map**: **Location** `hotspot_id`, **Geospatial field** `area`, **Tooltip** `severity`, **Color metric** `confidence` as Average. Zoom in to the region by hand: each hotspot is about 2 km across and is invisible at country scale |
    | Trend | custom query 1 above | Time series of `hotspots` and `corroborated` by `week`, broken down by `country` |
-   | Evidence | `hotspots_current` | Scorecards for total and corroborated; a table of query 2 as a custom query |
+   | Evidence | `hotspots_current` | A table of `hotspot_id`, `pollution_type`, `severity` and `confidence` (Average), sorted by confidence; scorecards for total and corroborated; query 2 as a custom query |
    | Alerts | `alerts_current` | Table by `authority_name` and `status`; scorecard of `awaiting_confirmation` |
    | Forecasts | `forecast_ledger_latest` | Table of query 7 as a custom query |
 
    To use one of the ready queries, add data with the BigQuery connector,
    choose **Custom query**, pick the project, and paste the SQL.
 3. `area` arrives as a **Geospatial** field because it is a `GEOGRAPHY` column.
-   Leave it that way; the Filled map needs it.
+   Leave it that way; the Filled map needs it. The map's **Location** must be
+   `hotspot_id`, one row per hotspot: a `country` location fills the whole
+   country instead of drawing the areas.
 4. Under **Resource > Manage added data sources**, set each source's **data
    freshness** to 1 hour, so the dashboard shows a new export soon after it is
    loaded without re-querying on every view.
