@@ -9,13 +9,14 @@
 import { useEffect, useRef } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
+import { apiUrl } from "../lib/api.js";
 import { useCases, useClusters } from "../lib/store.js";
 import { words, whereOf, shortWhen, isTerminal } from "../lib/format.js";
 import { TILES, useLeafletMap } from "../lib/maps.js";
 import { ClusterCard } from "./ClusterCard.js";
 import { Flag } from "./Flag.js";
 import { MapPane } from "./MapPane.js";
-import { CameraIcon, InboxIcon, PinIcon } from "./Icons.js";
+import { CameraIcon, InboxIcon, PatternIcon, PinIcon } from "./Icons.js";
 import { CaseListSkeleton } from "./Skeletons.js";
 
 /* Leaflet popups take innerHTML when handed a string, so this hands it real
@@ -66,12 +67,23 @@ export function CasesView() {
   }, [cases]);
 
   const count = cases ? cases.length : 0;
+  const tally = (pick) => (cases || []).filter(pick).length;
+  const waiting = tally((c) => c.status === "awaiting_confirmation");
+  const filed = tally((c) => ["filed", "acknowledged", "escalated"].includes(c.status));
+  const closed = tally((c) => isTerminal(c));
 
   return html`
     <header class="page-head">
       <h2>Cases</h2>
-      <p>Every report this instance has run, newest first. Open one to read the
-        complaint it drafted and what it was based on.</p>
+      <p>Every report, newest first. Open one to read its complaint.</p>
+      ${count > 0 && html`
+        <ul class="case-stats-row" aria-label="Cases by state">
+          <li><strong class="tnum">${count}</strong> total</li>
+          ${waiting > 0 && html`
+            <li class="is-waiting"><strong class="tnum">${waiting}</strong> waiting for you</li>`}
+          <li><strong class="tnum">${filed}</strong> filed</li>
+          <li><strong class="tnum">${closed}</strong> closed</li>
+        </ul>`}
     </header>
 
     <${MapPane} paneClass="cases-map" containerRef=${container} />
@@ -84,11 +96,7 @@ export function CasesView() {
             ${clusters.length === 1 ? "1 pattern" : `${clusters.length} patterns`}
           </p>
         </div>
-        <p class="patterns-lead">
-          Reports of the same kind, at the same place, close enough together in time to be one
-          problem rather than several. One photograph is an incident; a pattern is the argument
-          a regulator acts on. Strongest first.
-        </p>
+        <p class="patterns-lead">Same kind, same place, close in time — strongest first.</p>
         <ul class="cluster-list">
           ${clusters.map((cluster) => html`
             <${ClusterCard} key=${cluster.cluster_id} cluster=${cluster} />`)}
@@ -96,10 +104,10 @@ export function CasesView() {
       </section>`}
 
     ${clusters && clusters.length === 0 && count > 0 && html`
-      <p class="note patterns-none">
-        <strong>No repeat patterns yet.</strong> When several reports of the same kind arrive
-        from the same place within the same window, they are grouped here as one — which is a
-        categorically stronger thing to put in front of an authority than any one of them.
+      <p class="patterns-none-line">
+        <${PatternIcon} />
+        <span><strong>No repeat patterns yet.</strong> Several reports of one kind, at one
+          place, get grouped here.</span>
       </p>`}
 
     ${cases && count > 0 && html`
@@ -111,21 +119,31 @@ export function CasesView() {
     <ul class="case-list">
       ${(cases || []).map((c) => html`
         <li key=${c.case_id}>
-          <button type="button" onClick=${() => navigate(c.case_id)}>
-            <span class="row">
-              <strong>${c.case_id}</strong>
+          <button type="button" class="case-card" onClick=${() => navigate(c.case_id)}>
+            <span class=${`case-card-thumb${c.report.image_path ? "" : " is-empty"}`}>
+              ${c.report.image_path
+                ? html`<img src=${apiUrl(`/cases/${c.case_id}/photo`)} alt="" loading="lazy" />`
+                : html`<${CameraIcon} />`}
               <span class="pill" data-status=${c.status}>${words(c.status)}</span>
             </span>
-            <span class="where"><${PinIcon} /><span>${whereOf(c)}</span></span>
-            <span class="case-list-foot">
-              <span class=${`kind${c.evidence ? "" : " is-waiting"}`}>
-                ${c.jurisdiction && c.jurisdiction.country && html`
-                  <${Flag} code=${c.jurisdiction.country} />${" "}`}
-                ${c.evidence ? words(c.evidence.pollution_type)
-                  : c.status === "rejected" ? "Not taken up"
-                    : isTerminal(c) ? "Stopped before classification" : "Still classifying…"}
+            <span class="case-card-body">
+              <span class="case-card-top">
+                <span class=${`case-card-kind${c.evidence ? "" : " is-waiting"}`}>
+                  ${c.evidence ? words(c.evidence.pollution_type)
+                    : c.status === "rejected" ? "Not taken up"
+                      : isTerminal(c) ? "Stopped before classification" : "Still classifying…"}
+                </span>
+                <span class="when">${shortWhen(c.created_at)}</span>
               </span>
-              <span class="when">${shortWhen(c.created_at)}</span>
+              <span class="where"><${PinIcon} /><span>${whereOf(c)}</span></span>
+              <span class="case-card-foot">
+                <span class="case-card-id">
+                  ${c.jurisdiction && c.jurisdiction.country && html`
+                    <${Flag} code=${c.jurisdiction.country} />`}
+                  ${c.case_id}
+                </span>
+                <span class="case-card-go" aria-hidden="true">→</span>
+              </span>
             </span>
           </button>
         </li>`)}
@@ -138,9 +156,7 @@ export function CasesView() {
         <div class="empty">
           <${InboxIcon} />
           <h3>No cases yet</h3>
-          <p>A case starts with a photograph. Take one in front of the problem and this
-            instance will classify it, corroborate it, work out who is responsible, and
-            draft the complaint.</p>
+          <p>A case starts with a photograph or a voice note.</p>
           <button type="button" class="primary" onClick=${() => navigate("report")}>
             <${CameraIcon} /> Report a pollution event
           </button>

@@ -3,9 +3,10 @@
  * **Hard constraint 7 is the whole shape of this file.** A forecast is a model's
  * reasoning over public data, people act on air quality predictions, and an
  * unlabelled wrong one does real harm to real lungs. So every rendering of an
- * outlook carries three things in plain sight, never behind a click: the
- * `disclaimer` the server attached, verbatim; the inputs the model read
- * (`basis`); and how sure it says it is. The words are conditions — "the model
+ * outlook carries three things in plain sight, never behind a click: a line
+ * saying it is not an official forecast, with the server's `disclaimer`
+ * verbatim one tap under it; the inputs the model read (`basis`); and how sure
+ * it says it is. The words are conditions — "the model
  * expects conditions that let pollution build up" — and never instructions. No
  * seal, no crest, no red "ALERT" banner, nothing an official advisory would
  * wear: the model-derived mark is a small spark in the information colour, and
@@ -13,8 +14,9 @@
  *
  * The waiting state is honest about why it is slow. One model call per
  * waypoint, all in parallel, on a free tier: there is no progress to report
- * between "asked" and "answered", so the page shows a clock and says what it is
- * waiting for rather than drawing a progress bar it would have to invent.
+ * between "asked" and "answered", so the page shows a clock and names the
+ * inputs each waypoint reads rather than drawing a progress bar it would have
+ * to invent.
  *
  * Worst first. The corridor carries the worst band any waypoint carries, and
  * the list under it opens on the waypoint that set it, because the segment in
@@ -40,17 +42,26 @@ export function RiskChip({ risk, suffix = "" }) {
     </span>`;
 }
 
-/* The disclaimer, verbatim from the object. Not paraphrased: the wording is
-   fixed server-side so every surface that shows a forecast says the same thing. */
+/* The disclaimer. The one-line label is always visible; the server's text is
+   verbatim, not paraphrased, because the wording is fixed server-side so every
+   surface that shows a forecast says the same thing. It sits one tap under the
+   label rather than as a paragraph under every band. */
 export function Disclaimer({ text, compact = false }) {
   if (!text) return null;
-  return html`
-    <aside class=${`disclaimer${compact ? " is-compact" : ""}`}>
-      <${ModelIcon} />
-      <div>
-        ${!compact && html`<strong>A model's reasoning, not an official forecast</strong>`}
+  if (compact) {
+    return html`
+      <aside class="disclaimer is-compact">
+        <${ModelIcon} />
         <p>${text}</p>
-      </div>
+      </aside>`;
+  }
+  return html`
+    <aside class="disclaimer">
+      <${ModelIcon} />
+      <details>
+        <summary><strong>Model output — not an IMD or CPCB forecast</strong></summary>
+        <p>${text}</p>
+      </details>
     </aside>`;
 }
 
@@ -75,9 +86,9 @@ export function OutlookPending({ corridor, startedAt }) {
       <div class="pending-head">
         <span class="pending-spark" aria-hidden="true"><${ModelIcon} /></span>
         <div>
-          <h3>Asking the model about ${n} waypoints…</h3>
-          <p>One call per sampling point, all in parallel, on a free tier. This usually takes
-            20 to 60 seconds; the answer is then kept for 30 minutes.</p>
+          <h3>Asking the model…</h3>
+          <p class="tnum" title="One call per sampling point, all in parallel, on a free tier.">
+            ${n} waypoints · usually 20–60 s · cached 30 min</p>
         </div>
         <span class="pending-clock" aria-hidden="true"><${Elapsed} since=${startedAt} /></span>
       </div>
@@ -89,8 +100,14 @@ export function OutlookPending({ corridor, startedAt }) {
             <span class="skeleton"></span>
           </li>`)}
       </ol>
-      <p class="pending-note">Each waypoint reads a pollutant forecast, a wind forecast and every
-        hotspot within reach upwind — this node's own and its neighbours'.</p>
+      <div class="pending-inputs">
+        <span class="eyebrow">Each waypoint reads</span>
+        <ul class="input-chips">
+          <li>Pollutant forecast</li>
+          <li>Wind forecast</li>
+          <li title="This node's own and its neighbours'">Upwind hotspots</li>
+        </ul>
+      </div>
     </div>`;
 }
 
@@ -107,13 +124,10 @@ export function OutlookFailed({ error, status, onRetry }) {
         <p class="failed-detail">${error || "The server gave no reason."}</p>
         <p class="failed-hint">
           ${quota
-            ? "The free-tier model quota looks spent for now. It refills on its own; nothing is "
-              + "cached after a failure, so retrying asks again."
+            ? "Free-tier quota spent for now; it refills on its own."
             : overloaded
-              ? "The model is overloaded right now. This is not a reading of calm air — no "
-                + "waypoint answered. Trying again in a minute usually works."
-              : "No waypoint answered, so there is no outlook — not a low one. Nothing is "
-                + "cached after a failure, so retrying asks the model again."}
+              ? "The model is overloaded. No answer is not calm air — retry in a minute."
+              : "No waypoint answered: no outlook, not a low one."}
         </p>
         <button type="button" class="secondary" onClick=${onRetry}>
           <${RetryIcon} /> Try again
@@ -173,36 +187,32 @@ function WaypointOutlook({ forecast, corridor, index, worst, open, corridorDiscl
           <span class="wp-head">
             <span class="wp-name">
               ${waypointName(forecast, corridor, index)}
-              ${worst && html`<span class="worst-tag">Worst segment</span>`}
+              ${worst && html`<span class="worst-tag">Worst</span>`}
             </span>
-            <span class="wp-where tnum">${coordLabel(forecast.latitude, forecast.longitude)}</span>
           </span>
           <span class="wp-figs">
             <${RiskChip} risk=${forecast.risk} />
             <span class="wp-conf tnum" title="How sure the model says it is">
-              ${percent(forecast.confidence)}<small>confidence</small></span>
+              ${percent(forecast.confidence)}<small>confidence</small>
+              <span class="conf-meter" aria-hidden="true">
+                <span style=${`width:${Math.round(forecast.confidence * 100)}%`}></span>
+              </span></span>
           </span>
         </summary>
 
         <div class="wp-body">
-          <p class="wp-blurb">${RISK_BLURB[forecast.risk]}</p>
           <dl class="wp-facts">
             <div>
               <dt>Peak window</dt>
-              <dd>${peak || html`<span class="muted">The model did not name one</span>`}</dd>
+              <dd>${peak || html`<span class="muted">None named</span>`}</dd>
             </div>
             <div>
               <dt>Looks ahead</dt>
-              <dd class="tnum">${forecast.horizon_hours} hours</dd>
+              <dd class="tnum">${forecast.horizon_hours} h</dd>
             </div>
             <div>
-              <dt>Confidence</dt>
-              <dd>
-                <span class="tnum">${percent(forecast.confidence)}</span>
-                <span class="conf-meter" aria-hidden="true">
-                  <span style=${`width:${Math.round(forecast.confidence * 100)}%`}></span>
-                </span>
-              </dd>
+              <dt>Where</dt>
+              <dd class="tnum">${coordLabel(forecast.latitude, forecast.longitude)}</dd>
             </div>
           </dl>
 
@@ -217,8 +227,7 @@ function WaypointOutlook({ forecast, corridor, index, worst, open, corridorDiscl
           <h4 class="eyebrow">Inputs it read</h4>
           ${forecast.basis?.length
             ? html`<${Bullets} items=${forecast.basis} className="basis" />`
-            : html`<p class="muted wp-none">The model listed no inputs for this waypoint, so
-                there is nothing to check its work against. Read it as unsupported.</p>`}
+            : html`<p class="muted wp-none">No inputs listed — read it as unsupported.</p>`}
 
           ${forecast.disclaimer && forecast.disclaimer !== corridorDisclaimer
             && html`<${Disclaimer} text=${forecast.disclaimer} compact />`}
@@ -269,9 +278,9 @@ export function OutlookResult({ corridor, forecast, focus, onFocus }) {
           <${FailedIcon} />
           <div>
             <h3>No waypoint produced an outlook</h3>
-            <p class="failed-hint">Every call along this corridor failed, so there is no risk band
-              to show — this is not a low-risk answer, it is no answer. The server may keep
-              this empty result for up to 30 minutes before it asks the model again.</p>
+            <p class="failed-hint" title=${"The server may keep this empty result for up to "
+              + "30 minutes before it asks the model again."}>Every call failed: no answer, not a
+              low-risk one.</p>
           </div>
         </div>
         <${Disclaimer} text=${forecast.disclaimer} />
@@ -289,19 +298,17 @@ export function OutlookResult({ corridor, forecast, focus, onFocus }) {
           <div class="hero-band">
             <span class="eyebrow">Worst along the corridor</span>
             <span class="hero-risk" id="outlook-band">${forecast.risk}<small> risk</small></span>
-            <p>${RISK_BLURB[forecast.risk]}</p>
+            ${!forecast.summary && html`<p>${RISK_BLURB[forecast.risk]}</p>`}
           </div>
           <dl class="hero-figs">
             <div>
               <dt>Confidence</dt>
-              <dd class="tnum">${confidence || "—"}</dd>
-              <dd class="hero-sub">the model's own, per waypoint</dd>
+              <dd class="tnum" title="The model's own, per waypoint">${confidence || "—"}</dd>
             </div>
             <div>
               <dt>Answered</dt>
               <dd class="tnum">${byIndex.size}/${corridor.waypoints.length}</dd>
-              <dd class="hero-sub">${missing ? `${plural(missing, "waypoint")} failed`
-                : "every waypoint"}</dd>
+              ${missing > 0 && html`<dd class="hero-sub">${missing} failed</dd>`}
             </div>
             <div>
               <dt>Looks ahead</dt>
@@ -316,8 +323,7 @@ export function OutlookResult({ corridor, forecast, focus, onFocus }) {
 
       ${missing > 0 && html`
         <p class="note is-limit">
-          <strong>${plural(missing, "waypoint")} did not answer.</strong> ${" "}The corridor's band
-          is the worst of those that did; a missing waypoint is unknown, not low.
+          <strong>${plural(missing, "waypoint")} did not answer</strong> — unknown, not low.
         </p>`}
 
       <h3 class="section-label">Along the corridor</h3>
@@ -346,8 +352,10 @@ export function OutlookResult({ corridor, forecast, focus, onFocus }) {
           <${Bullets} items=${inputs} className="basis" />
         </details>`}
 
-      <p class="outlook-foot">Band chosen as the worst waypoint, not an average: a corridor is
-        a population strip and a supply line, and the segment in trouble is the one to see.
-        ${worstIndex >= 0 && ` Here that is waypoint ${worstIndex + 1}.`}</p>
+      <details class="why outlook-foot">
+        <summary>Why the worst waypoint, not an average?</summary>
+        <p>A corridor is a population strip and a supply line, and the segment in trouble is the
+          one to see.${worstIndex >= 0 && ` Here that is waypoint ${worstIndex + 1}.`}</p>
+      </details>
     <//>`;
 }

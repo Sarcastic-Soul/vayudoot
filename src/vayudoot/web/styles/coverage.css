@@ -1,9 +1,9 @@
 /* Coverage.
    The question this page answers is "what happens if I report from here", not
-   "here are some rows". So: the numbers first, the rules as sentences, and the
-   regions as cards you can scan. Addresses are the evidence for the safety
-   claim, so they stay available behind a toggle rather than repeating eighty
-   times in the default view.
+   "here are some rows". So: the numbers first, each rule as one routed row,
+   and the regions as collapsed rows you can scan and open. Addresses are the
+   evidence for the safety claim, so they stay available behind a toggle
+   rather than repeating eighty times in the default view.
 
    `.page-head`, `.section-label` and the card recipe come from shell.css and
    tokens.css; nothing on this page invents its own. */
@@ -32,57 +32,196 @@
   border-left-color: var(--danger);
 }
 
-/* ── the numbers ─────────────────────────────────────────────────────── */
+/* ── shared inline glyphs on this page ───────────────────────────────── */
 
-/* On a phone these are a short table of key figures — a number, then what it
-   counts — rather than three tiles, two of which would sit on one row and
-   leave the third stranded beside a hole. They become tiles once there is
-   room for all of them on one row. */
-.stats {
-  list-style: none;
+.served-line svg,
+.stat-icon svg,
+.warn > svg,
+.route-icon svg,
+.route-arrow svg,
+.route-caret svg,
+.tier-chip svg,
+.rule-window svg,
+.search svg,
+.chip svg,
+.region-lang svg,
+.region-caret svg,
+.region-bodies svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── countries ───────────────────────────────────────────────────────── */
+
+.served-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--s3);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  cursor: help;
+}
+
+.served-line svg { width: 16px; height: 16px; color: var(--info); }
+.served-line strong { color: var(--ink); font-weight: var(--w-semi); }
+
+/* One tab per country the node carries a table for: flag, name, counts,
+   because the choice is between places and a place reads faster as a flag
+   than as a code. The chosen one takes the accent edge and tint. */
+.country-tabs {
   display: grid;
-  gap: 0;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--s2);
   margin: 0 0 var(--s5);
-  padding: 0;
+}
+
+.country-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
+  padding: var(--s3) var(--s4);
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
+}
+
+.country-tab:hover { border-color: var(--line-strong); box-shadow: var(--shadow-hover); }
+
+.country-tab.is-chosen {
+  background: var(--ok-tint);
+  border-color: var(--ok);
+  box-shadow: inset 0 0 0 1px var(--ok), var(--shadow-1);
+}
+
+.country-flag { flex: none; display: inline-flex; }
+.country-flag .flag-emoji { font-size: 1.5rem; line-height: 1; }
+
+.country-text { display: grid; gap: 1px; min-width: 0; }
+
+.country-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--w-semi);
+  line-height: var(--lh-tight);
+}
+
+.country-counts { font-size: var(--t-meta); color: var(--ink-soft); }
+
+.own-tag {
+  display: inline-block;
+  padding: 0 7px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  color: var(--info);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-radius: var(--radius-pill);
+}
+
+/* ── the numbers ─────────────────────────────────────────────────────── */
+
+/* Four tiles, two by two on a phone and in a row once there is room. The
+   number leads; the icon and the label only say what it counts. */
+.stats {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s2);
+  margin: 0 0 var(--s4);
+  padding: 0;
 }
 
 .stats li {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(56px, auto) 1fr;
-  align-items: baseline;
-  gap: var(--s4);
-  padding: var(--s3) var(--s4);
-  border-top: 1px solid var(--line);
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
 }
 
-.stats li:first-child { border-top: 0; }
+.stat-icon {
+  position: absolute;
+  top: var(--s3);
+  right: var(--s3);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--ok);
+  background: var(--ok-tint);
+  border-radius: 9px;
+}
+
+.stat-icon svg { width: 17px; height: 17px; }
 
 .stats strong {
+  font-family: var(--font-display);
   font-size: var(--t-display);
-  font-weight: var(--w-semi);
-  line-height: 1;
-  letter-spacing: var(--track-display);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 
-.stats span {
+.stat-label {
+  padding-right: var(--s6);
   font-size: var(--t-meta);
   line-height: var(--lh-snug);
   color: var(--ink-soft);
 }
 
-.stat-skeleton { height: 60px; }
-.region-skeleton { height: 148px; }
+.stat-sub {
+  justify-self: start;
+  margin-top: var(--s1);
+  padding: 0 8px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  line-height: 1.7;
+  color: var(--attention);
+  background: var(--attention-tint);
+  border-radius: var(--radius-pill);
+}
 
-/* The safety claim. This is the one thing on the page that must not be
-   skimmed past, so it gets the band treatment rather than a footnote. */
+/* No statute sets a window: the tile says so in the info hue, so a dash never
+   reads as a missing number of days. */
+.stats li.is-none strong { color: var(--ink-soft); }
+.stats li.is-none .stat-icon { color: var(--info); background: var(--info-tint); }
+
+.stat-skeleton { height: 96px; }
+.region-skeleton { height: 60px; }
+
+/* The safety claim. The one thing on the page that must not be skimmed past,
+   so it keeps the band treatment — one line of it. */
 .warn {
-  display: block;
-  padding: var(--s4);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
   margin-bottom: var(--s5);
   font-size: var(--t-meta);
   line-height: var(--lh-snug);
@@ -93,10 +232,11 @@
   border-radius: var(--radius);
 }
 
-.warn strong { font-weight: var(--w-semi); }
+.warn > svg { width: 20px; height: 20px; color: var(--attention); }
+.warn strong { font-weight: var(--w-semi); color: var(--attention); }
 
 .warn code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.92em;
   padding: 1px 5px;
   background: var(--surface);
@@ -104,70 +244,143 @@
   border-radius: 4px;
 }
 
-/* ── rules read as sentences ─────────────────────────────────────────── */
+/* ── rules as routed rows ────────────────────────────────────────────── */
 
-.rules {
+/* Kind of report → the body it goes to → how long that body has. One card,
+   one row per kind; the statute opens under its row. */
+.routes {
   list-style: none;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--s3);
   margin: 0;
   padding: 0;
-}
-
-.rules li {
-  display: grid;
-  align-content: start;
-  gap: var(--s2);
-  padding: var(--s4);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-1);
+  overflow: hidden;
 }
 
-.rules h4 {
-  font-size: var(--t-body);
+.routes > li + li { border-top: 1px solid var(--line); }
+
+.route > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "kind kind caret" "tier window window";
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  padding: var(--s3) var(--s4);
+  list-style: none;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) ease;
+}
+
+.route > summary::-webkit-details-marker { display: none; }
+.route > summary:hover { background: var(--surface-2); }
+.route[open] > summary { background: var(--surface-2); }
+
+.route-kind {
+  grid-area: kind;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
   font-weight: var(--w-semi);
   text-transform: capitalize;
 }
 
-.rules p {
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  color: var(--ink-soft);
+.route-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  color: var(--ink);
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: 9px;
 }
 
-.rules strong { color: var(--ink); font-weight: var(--w-medium); }
+.route-icon svg { width: 18px; height: 18px; }
 
-.rule-statute {
-  padding-top: var(--s2);
-  border-top: 1px solid var(--line);
+.route-arrow { display: none; color: var(--ink-soft); }
+.route-arrow svg { width: 18px; height: 18px; }
+
+.route-caret, .region-caret { grid-area: caret; display: grid; color: var(--ink-soft); }
+
+.route-caret svg, .region-caret svg {
+  width: 16px;
+  height: 16px;
+  transform: rotate(-90deg);
+  transition: transform var(--dur) var(--ease-out);
 }
 
-.rule-window {
+.route[open] .route-caret svg, .region[open] .region-caret svg { transform: rotate(90deg); }
+
+.tier-chip {
+  grid-area: tier;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  justify-self: start;
   padding: 3px 10px 3px 8px;
-  font-size: var(--t-eyebrow);
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  white-space: nowrap;
+  border: 1px solid;
+  border-radius: var(--radius-pill);
+}
+
+.tier-chip svg { width: 15px; height: 15px; }
+
+.tier-chip.is-municipal { color: var(--info); background: var(--info-tint); border-color: var(--info-line); }
+.tier-chip.is-state { color: var(--ok); background: var(--ok-tint); border-color: var(--ok-line); }
+.tier-chip.is-central {
+  color: var(--ink);
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+
+.rule-window {
+  grid-area: window;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 8px;
+  font-size: var(--t-meta);
   font-weight: var(--w-semi);
-  letter-spacing: 0.02em;
+  white-space: nowrap;
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
 }
 
-.rule-window::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--ink-soft);
+.rule-window svg { width: 15px; height: 15px; color: var(--ink-soft); }
+
+/* No statute sets a deadline: the pill turns to the info hue and a hollow
+   ring, and the table's own note is its tooltip and sits under the row. It
+   must not look like a shorter or missing number of days. */
+.rule-window.is-none {
+  font-weight: var(--w-medium);
+  color: var(--info);
+  background: var(--info-tint);
+  border-color: var(--info-line);
+  border-style: dashed;
+  cursor: help;
 }
+
+.route-law {
+  display: grid;
+  gap: var(--s1);
+  padding: 0 var(--s4) var(--s4) calc(var(--s4) + 32px + var(--s3));
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  animation: view-in var(--dur) var(--ease-out);
+}
+
+.route-law strong { color: var(--ink); font-weight: var(--w-semi); }
 
 /* ── list controls ───────────────────────────────────────────────────── */
 
@@ -177,9 +390,21 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--s3) var(--s5);
+  margin-top: var(--s6);
 }
 
-.list-head .section-label { margin-bottom: 0; }
+.list-head .section-label { display: flex; align-items: center; gap: var(--s2); margin: 0; }
+
+.list-head .count {
+  padding: 0 7px;
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0;
+  line-height: 1.7;
+  color: var(--ink);
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
 
 .list-tools {
   display: flex;
@@ -187,21 +412,45 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--s3) var(--s4);
+  gap: var(--s2) var(--s4);
 }
 
 /* flex-basis rather than a percentage width: inside a shrink-to-fit flex item
    a percentage resolves against a width that depends on this element, and the
    filter ended up wrapping onto its own line on a wide screen. */
-.list-tools input[type="search"] {
-  flex: 0 1 30ch;
+.search {
+  position: relative;
+  display: flex;
+  flex: 0 1 32ch;
   min-width: 16ch;
+}
+
+.search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 17px;
+  height: 17px;
+  color: var(--ink-soft);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.search input[type="search"] {
+  width: 100%;
   min-height: 44px;
-  padding: var(--s2) var(--s3);
+  padding: var(--s2) var(--s3) var(--s2) 38px;
   font-size: var(--t-body);
+  border-radius: var(--radius-pill);
 }
 
 .list-tools .switch { flex: none; }
+
+.list-note {
+  margin: var(--s2) 0 0;
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
 
 .switch {
   display: inline-flex;
@@ -229,27 +478,55 @@
   list-style: none;
   display: grid;
   align-items: start;
-  gap: var(--s3);
-  margin: var(--s4) 0 0;
+  gap: var(--s2);
+  margin: var(--s3) 0 0;
   padding: 0;
 }
 
-.coverage-list > li {
-  padding: var(--s4);
+.region {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-1);
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 
-.region-head {
+.region:hover { border-color: var(--line-strong); box-shadow: var(--shadow-hover); }
+.region[open] { border-color: var(--line-strong); }
+
+.region > summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s3);
+  gap: var(--s2);
+  min-height: 56px;
+  padding: var(--s2) var(--s3) var(--s2) var(--s4);
+  list-style: none;
+  cursor: pointer;
 }
 
-.region-head h4 { font-size: var(--t-body); font-weight: var(--w-semi); }
+.region > summary::-webkit-details-marker { display: none; }
+
+.region-text { display: grid; flex: 1; min-width: 0; }
+
+.region-name {
+  font-weight: var(--w-semi);
+  line-height: var(--lh-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.region-board {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.region-lang { display: grid; color: var(--ink-soft); cursor: help; }
+.region-lang svg { width: 16px; height: 16px; }
 
 .chip {
   flex: none;
@@ -270,203 +547,103 @@
   border-color: var(--line);
 }
 
-.region-board {
-  margin-top: var(--s1);
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  color: var(--ink-soft);
-}
+.region .chip { display: inline-flex; align-items: center; gap: 4px; }
+.region .chip svg { width: 13px; height: 13px; }
 
-.region-cities { list-style: none; display: grid; gap: var(--s2); margin: var(--s3) 0 0; padding: 0; }
-
-.region-cities li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--s1) var(--s2);
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  padding-top: var(--s2);
+.region-bodies {
+  list-style: none;
+  display: grid;
+  margin: 0;
+  padding: 0 var(--s4) var(--s3);
   border-top: 1px solid var(--line);
+  animation: view-in var(--dur) var(--ease-out);
 }
 
-.region-cities strong { font-weight: var(--w-semi); }
-
-.region-foot {
-  margin-top: var(--s3);
-  padding-top: var(--s3);
+.region-bodies li {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--s3);
+  padding: var(--s2) 0;
   font-size: var(--t-meta);
   line-height: var(--lh-snug);
-  color: var(--ink-soft);
-  border-top: 1px dashed var(--line);
+}
+
+.region-bodies li + li { border-top: 1px dashed var(--line); }
+
+.region-bodies svg { width: 16px; height: 16px; align-self: center; color: var(--ink-soft); }
+.region-bodies .is-board svg { color: var(--ok); }
+.region-bodies .is-lang { grid-template-columns: 16px minmax(0, 1fr); color: var(--ink-soft); }
+
+.body-text { display: grid; min-width: 0; }
+.body-name { color: var(--ink); }
+
+.body-tier {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ok);
+}
+
+.body-tier.is-city {
+  font-size: var(--t-meta);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
 }
 
 /* Addresses: present in the markup for anyone who wants them, out of the way
    until asked for. */
 .addr {
   display: none;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: var(--t-eyebrow);
   color: var(--ink-soft);
   overflow-wrap: anywhere;
 }
 
 .show-addresses .addr { display: inline; }
-.show-addresses .region-cities li .addr { flex-basis: 100%; }
 
-/* ── countries ───────────────────────────────────────────────────────── */
+/* ── phones ──────────────────────────────────────────────────────────── */
 
-/* One tab per country the node carries a table for. Each is a small card —
-   flag, name, counts — because the choice is between places, and a place
-   reads faster as a flag than as a code. The chosen one takes the ink border
-   the rest of the app uses for "selected". */
-.served-line {
-  max-width: var(--measure);
-  margin: 0 0 var(--s4);
-  font-size: var(--t-meta);
-  color: var(--ink-soft);
+/* Three countries side by side as flag-over-name, and each region down to its
+   name alone: the board is the first line once the row is opened. */
+@media (max-width: 559.98px) {
+  .country-tabs { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+
+  .country-tab {
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--s1);
+    padding: var(--s3) var(--s2);
+    text-align: center;
+  }
+
+  .country-name { justify-content: center; font-size: var(--t-meta); }
+  .country-counts, .own-tag { display: none; }
+
+  .list-tools { flex-wrap: nowrap; }
+  .search { flex: 1 1 0; }
+
+  .region-board { display: none; }
+  .region > summary { min-height: 48px; }
+
+  .warn { align-items: flex-start; }
 }
 
-.served-line strong { color: var(--ink); font-weight: var(--w-semi); }
-
-.country-tabs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--s2);
-  margin: 0 0 var(--s5);
-}
-
-.country-tab {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  min-width: 0;
-  padding: var(--s3) var(--s4);
-  font: inherit;
-  text-align: left;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-1);
-  cursor: pointer;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
-}
-
-.country-tab:hover { border-color: var(--line-strong); }
-
-.country-tab.is-chosen {
-  border-color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--ink), var(--shadow-1);
-}
-
-.country-tab:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
-
-.country-flag { flex: none; display: inline-flex; }
-.country-flag .flag-emoji { font-size: 1.6rem; line-height: 1; }
-
-.country-text { display: grid; gap: 2px; min-width: 0; }
-
-.country-name {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  font-weight: var(--w-semi);
-}
-
-.country-counts { font-size: var(--t-meta); color: var(--ink-soft); }
-
-.own-tag {
-  display: inline-block;
-  padding: 1px 7px;
-  font-size: var(--t-eyebrow);
-  font-weight: var(--w-semi);
-  letter-spacing: 0.02em;
-  color: var(--info);
-  background: var(--info-tint);
-  border: 1px solid var(--info-line);
-  border-radius: var(--radius-pill);
-}
-
-.country-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s2);
-  margin: 0 0 var(--s4);
-  font-size: var(--t-lead);
-  font-weight: var(--w-semi);
-}
-
-/* No statute sets a deadline: the pill turns to the info hue and its dot to
-   a hollow ring, and the table's own note follows in plain text. It must not
-   look like a shorter or missing number of days. */
-.rule-window.is-none {
-  color: var(--info);
-  background: var(--info-tint);
-  border-color: var(--info-line);
-}
-
-.rule-window.is-none::before {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px currentColor;
-}
-
-.rule-window-note {
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  color: var(--ink-soft);
-}
-
-.region-lang {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: var(--s2) 0 0;
-  font-size: var(--t-meta);
-  color: var(--ink-soft);
-}
-
-.region-lang svg {
-  width: 16px;
-  height: 16px;
-  flex: none;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
+/* ── wider screens ───────────────────────────────────────────────────── */
 
 @media (min-width: 560px) {
-  .stats {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--s3);
-    background: none;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
+  .route > summary {
+    grid-template-columns: minmax(0, 1.3fr) auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "kind arrow tier window caret";
   }
 
-  .stats li {
-    grid-template-columns: none;
-    align-content: start;
-    gap: var(--s1);
-    padding: var(--s4);
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-1);
-  }
-
-  .stat-skeleton { height: 84px; }
+  .route-arrow { display: grid; grid-area: arrow; }
 }
 
 @media (min-width: 900px) {
-  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-}
-
-@media (min-width: 1240px) {
-  .coverage-list { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+  .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .coverage-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

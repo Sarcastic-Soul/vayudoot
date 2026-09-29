@@ -159,12 +159,10 @@ export function RTIPanel({ record, onUpdate }) {
       <aside class="rti-absent">
         <${AskIcon} />
         <p>
-          <strong>No Right to Information application for this case.</strong>
-          The Right to Information Act, 2005 is Indian law, and this complaint is with an
-          authority in ${name}. ${law
-            ? `The route there is the ${law}, which this system does not draft.`
-            : "That country has its own access-to-information law, which this system does "
-              + "not draft."}
+          <strong>No RTI application here — that is Indian law.</strong>
+          ${law
+            ? `In ${name} the route is the ${law}, which this system does not draft.`
+            : `${name} has its own access-to-information law, which this system does not draft.`}
         </p>
       </aside>`;
   }
@@ -190,15 +188,19 @@ export function RTIPanel({ record, onUpdate }) {
     return html`
       <section class="rti" aria-labelledby="rti-heading">
         ${head}
-        <p class="rti-lead" id="rti-heading">
-          If ${authority} never answers, a second complaint is not a lever — there was no duty
-          to answer the first one. An application under the Right to Information Act is
-          different in kind: it goes to a Public Information Officer, and section 7(1) gives
-          them thirty days to reply.
-        </p>
+        <div class="rti-lead" id="rti-heading">
+          If ${authority} stays silent, a Public Information Officer must reply within 30
+          days.${" "}
+          <details class="why why-case">
+            <summary>Why?</summary>
+            A second complaint is not a lever — there was no duty to answer the first one. An
+            RTI application is different in kind: section 7(1) gives the officer thirty days
+            to reply.
+          </details>
+        </div>
         <p class="rti-when">
-          Available from <strong>${onDate(due)}</strong>, ${inDays(due)} — once the${" "}
-          ${days ? `${days}-day ` : ""}window since filing has actually lapsed.
+          Available from <strong>${onDate(due)}</strong>, ${inDays(due)} · once the${" "}
+          ${days ? `${days}-day ` : ""}window lapses
         </p>
       </section>`;
   }
@@ -209,10 +211,8 @@ export function RTIPanel({ record, onUpdate }) {
       <section class="rti is-open" aria-labelledby="rti-heading">
         ${head}
         <p class="rti-lead" id="rti-heading">
-          The ${days ? `${days}-day ` : ""}window has lapsed and ${authority} has not answered.
-          An RTI application asks that office what is written on the file about this complaint,
-          and section 7(1) obliges it to reply within thirty days — which the complaint itself
-          never did.
+          The ${days ? `${days}-day ` : ""}window lapsed with no answer. Ask ${authority} what
+          is on the file — section 7(1) obliges a reply within 30 days.
         </p>
         ${busy ? html`<${Drafting} seconds=${seconds} />` : html`
           <${Fragment}>
@@ -221,9 +221,8 @@ export function RTIPanel({ record, onUpdate }) {
             </button>
             <p class="help">
               <${LockIcon} />
-              <span>This writes the document with a language model, which takes tens of
-                seconds rather than the usual instant. It is drafted once and kept on the
-                case. Nothing is sent: you file it yourself, in your own name.</span>
+              <span>One model call, tens of seconds. Nothing is sent — you file it yourself,
+                in your own name.</span>
             </p>
           <//>`}
         ${failure && html`
@@ -261,8 +260,7 @@ export function RTIPanel({ record, onUpdate }) {
                 ${items.map((item, i) => html`<li key=${i}>${item}</li>`)}
               </ul>`
             : html`
-              <p class="rti-todo-note">Every bracketed field highlighted below is yours to
-                fill in — your name, your address, and the fee.</p>`}
+              <p class="rti-todo-note">Fill in each highlighted field — name, address, fee.</p>`}
         </div>`}
 
       ${body
@@ -277,8 +275,7 @@ export function RTIPanel({ record, onUpdate }) {
               </button>
             </div>
             ${copied === "no" && html`
-              <p class="help" role="alert">This browser would not let the page reach the
-                clipboard. Select the text below and copy it yourself.</p>`}
+              <p class="help" role="alert">Clipboard blocked — select the text and copy it.</p>`}
             <pre class="rti-doc">${marked(body)}</pre>
           <//>`
         /* The drafting agent produced a structured application but no rendered
@@ -291,10 +288,10 @@ export function RTIPanel({ record, onUpdate }) {
           </p>`}
 
       ${drafted.questions && drafted.questions.length > 0 && html`
-        <p class="rti-foot">
+        <p class="rti-foot"
+           title="An RTI that demands action rather than information is refused, and thirty days are lost.">
           ${drafted.questions.length} ${drafted.questions.length === 1 ? "question" : "questions"},
-          asking only for information already held on a file. An RTI that demands action rather
-          than information is refused, and thirty days are lost.
+          each asking only for information already on file.
         </p>`}
 
       <p class="rti-drafted tnum">
@@ -307,9 +304,8 @@ export function RTIPanel({ record, onUpdate }) {
             ? html`
               <div class="update-panel">
                 <p class="decision">
-                  Redrafting throws this document away and writes another one, which is a
-                  second model call. Worth it if the case has moved since — an acknowledgement
-                  recorded, or an escalation — and not otherwise.
+                  Replaces this draft with a second model call. Only worth it if the case has
+                  moved since.
                 </p>
                 <div class="panel-buttons">
                   <button type="button" class="primary" onClick=${() => draft(true)}>
@@ -343,9 +339,7 @@ function Drafting({ seconds, again }) {
         ${again ? "Redrafting" : "Drafting"} the application…
         <span class="tnum">${seconds}s</span>
       </p>
-      <p class="rti-working-note">
-        One model call, writing a legal document from scratch. Tens of seconds is normal.
-      </p>
+      <p class="rti-working-note">Tens of seconds is normal.</p>
       <div class="rti-doc-skeleton" aria-hidden="true">
         ${[0, 1, 2, 3, 4, 5].map((i) => html`<span key=${i} class="skeleton"></span>`)}
       </div>

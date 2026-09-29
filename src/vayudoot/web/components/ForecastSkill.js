@@ -19,7 +19,8 @@
  *
  * The rates describe a model's reasoning, so the panel carries the same
  * "Model-derived" mark as every other predictive surface (hard constraint 7).
- * The server's caveat is shown verbatim rather than paraphrased.
+ * The server's caveat is shown verbatim rather than paraphrased, behind a
+ * disclosure: until something is scored it describes rates nobody can see.
  */
 
 import { useState } from "../vendor/hooks.mjs";
@@ -56,12 +57,14 @@ function Bar({ label, rate, count, of, kind }) {
 function Versus({ baseline }) {
   const name = BASELINE_NAME[baseline.name] || baseline.name;
   const { forecast: ours, baseline: theirs, compared } = baseline;
+  const head = html`
+    <h4 title=${baseline.description || null}>${BASELINE_HEAD[baseline.name] || `Against ${name}`}
+      ${baseline.description && html`<span class="info-dot" aria-hidden="true">i</span>`}</h4>`;
   if (!compared) {
     return html`
       <li class="skill-vs is-empty">
-        <h4>${BASELINE_HEAD[baseline.name] || `Against ${name}`}</h4>
-        <p class="skill-vs-what">${baseline.description}</p>
-        <p class="muted">No forecast could be compared with this baseline yet.</p>
+        ${head}
+        <p class="muted">Nothing compared yet.</p>
       </li>`;
   }
   const ahead = ours.exact - theirs.exact;
@@ -69,10 +72,9 @@ function Versus({ baseline }) {
   return html`
     <li class="skill-vs">
       <div class="skill-vs-head">
-        <h4>${BASELINE_HEAD[baseline.name] || `Against ${name}`}</h4>
+        ${head}
         <span class="skill-vs-n tnum">on ${plural(compared, "forecast")}</span>
       </div>
-      <p class="skill-vs-what">${baseline.description}</p>
       <div class="skill-bars" role="group" aria-label=${`Exact band, model against ${name}`}>
         <span class="skill-bars-k">Exact band</span>
         <${Bar} label="This model" rate=${ours.exact_rate} count=${ours.exact}
@@ -88,14 +90,12 @@ function Versus({ baseline }) {
         <${Bar} label=${name} rate=${theirs.within_one_rate} count=${theirs.within_one}
                 of=${theirs.scored} kind="base" />
       </div>
-      <p class="skill-vs-read">
+      <p class=${`skill-vs-read ${ahead > 0 ? "is-ahead" : ahead < 0 ? "is-behind" : ""}`}>
         ${ahead > 0
-          ? `The model called the exact band ${plural(ahead, "more time")} than ${phrase} did.`
+          ? `Model +${ahead} exact vs ${phrase}`
           : ahead < 0
-            ? `${capital(phrase)} called the exact band ${plural(-ahead, "more time")} than `
-              + "the model did."
-            : `The model and ${phrase} called the exact `
-              + "band equally often."}
+            ? `${capital(phrase)} +${-ahead} exact vs the model`
+            : `Level with ${phrase}`}
       </p>
     </li>`;
 }
@@ -183,8 +183,7 @@ function Ledger({ ledger }) {
     return html`<p class="note is-bad">The ledger could not be read.</p>`;
   }
   if (!ledger.length) {
-    return html`<p class="note">The ledger is empty: no outlook has been made on this node
-      yet. The first corridor someone opens starts it.</p>`;
+    return html`<p class="ledger-empty">Empty — the first corridor someone opens starts it.</p>`;
   }
   return html`
     <ol class="ledger-list">
@@ -192,38 +191,41 @@ function Ledger({ ledger }) {
     </ol>`;
 }
 
+/* The counts as tiles. With nothing scored this is the whole panel: the
+   numbers say what exists, and no rate is drawn — not a rate of zero. */
+function Counts({ skill }) {
+  const tiles = [
+    [skill.scored, "scored", "is-key"],
+    [skill.pending, "pending", ""],
+    [skill.unscorable, "unscorable", ""],
+    [skill.recorded, "recorded", ""],
+  ];
+  return html`
+    <ul class="skill-counts" aria-label=${`Last ${skill.window_days} days`}>
+      ${tiles.map(([n, label, cls]) => html`
+        <li key=${label} class=${cls}><strong class="tnum">${n ?? 0}</strong>${label}</li>`)}
+      <li class="is-window"><strong class="tnum">${skill.window_days}</strong>day window</li>
+    </ul>`;
+}
+
 function Scores({ skill }) {
   const small = skill.scored < SMALL_SAMPLE;
   if (!skill.scored) {
     return html`
-      <div class="skill-empty">
-        <p><strong>No forecast has been scored yet.</strong>${" "}
-          ${skill.recorded
-            ? `${plural(skill.recorded, "forecast")} recorded in the last ${skill.window_days}
-              days; ${skill.pending} still waiting for their window to close${skill.unscorable
-                ? `, ${skill.unscorable} with no station close enough to check` : ""}.`
-            : `Nothing has been recorded in the last ${skill.window_days} days.`}</p>
-        <p class="muted">Rates appear once outlooks have been checked against station
-          readings. Until then there is nothing to show — not a rate of zero.</p>
+      <div class="skill-top is-empty">
+        <${Counts} skill=${skill} />
+        <p class="skill-none"><${PendingIcon} /> No rates yet — nothing scored is not 0%.</p>
       </div>`;
   }
   return html`
     <div class="skill-top">
-      <div class=${`skill-n${small ? " is-small" : ""}`}>
-        <strong class="tnum">${skill.scored}</strong>
-        <span>${skill.scored === 1 ? "forecast scored" : "forecasts scored"}${" "}
-          in the last ${skill.window_days} days</span>
-        <ul class="skill-n-sub tnum">
-          <li>${skill.pending} pending</li>
-          <li>${skill.unscorable} could not be scored</li>
-          <li>${skill.recorded} recorded</li>
-        </ul>
+      <div class="skill-n">
+        <${Counts} skill=${skill} />
         ${small && html`
-          <p class="skill-small">Fewer than ${SMALL_SAMPLE} scored: read every rate below as${" "}
-            anecdote, not evidence.</p>`}
+          <p class="skill-small">Under ${SMALL_SAMPLE} scored: anecdote, not evidence.</p>`}
       </div>
       <div class="skill-overall">
-        <span class="eyebrow">This model, all scored forecasts</span>
+        <span class="eyebrow">This model, all scored</span>
         <p><strong class="tnum">${rateText(skill.forecast.exact_rate)}</strong>
           <span>exact band <small class="tnum">${
             `${skill.forecast.exact} of ${skill.forecast.scored}`}</small></span></p>
@@ -245,15 +247,11 @@ export function ForecastSkill() {
       <header class="skill-head">
         <span class="skill-mark" aria-hidden="true"><${TargetIcon} /></span>
         <div>
-          <h2 id="skill-title">How good the forecasts have been</h2>
-          <p>Every outlook is written to a ledger before its window opens, then checked
-            against what reference stations measured once it closes. It is scored beside two
-            simple guesses it has to beat: carrying the last day forward, and the raw CAMS
-            forecast with no model.</p>
-          <p class="forecast-label">
+          <div class="skill-title-row">
+            <h2 id="skill-title">Track record</h2>
             <${ModelMark}>Model-derived<//>
-            <span>A record of a model's reasoning, not an official forecast's accuracy.</span>
-          </p>
+          </div>
+          <p>Each outlook is checked against station readings once its window closes.</p>
         </div>
       </header>
 
@@ -264,14 +262,19 @@ export function ForecastSkill() {
       ${skill && html`<${Scores} skill=${skill} />`}
 
       ${skill && html`
-        <aside class="skill-caveat">
-          <strong>Read with care</strong>
-          <p>${skill.caveat}</p>
-          ${skill.band_basis && html`<p class="skill-basis">${skill.band_basis}</p>`}
-        </aside>`}
+        <details class="why skill-caveat">
+          <summary>How it is scored</summary>
+          <div>
+            <p>Beside two simple guesses it has to beat: carrying the last day forward, and the
+              raw CAMS forecast with no model. A record of a model's reasoning, not an official
+              forecast's accuracy.</p>
+            <p>${skill.caveat}</p>
+            ${skill.band_basis && html`<p class="skill-basis">${skill.band_basis}</p>`}
+          </div>
+        </details>`}
 
       <div class="timeline-head skill-ledger-head">
-        <h3 class="section-label">Latest entries in the ledger</h3>
+        <h3 class="section-label">Latest in the ledger</h3>
         ${skill && html`<p class="timeline-progress tnum">forecaster v${
           skill.forecaster_version}</p>`}
       </div>

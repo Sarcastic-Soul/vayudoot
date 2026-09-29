@@ -132,7 +132,25 @@
 .voice-cta strong { font-size: var(--t-lead); font-weight: var(--w-semi); line-height: var(--lh-tight); }
 .voice-cta span { font-size: var(--t-meta); line-height: var(--lh-snug); color: var(--ink-soft); }
 
-.voice-message { margin: 0; padding: var(--s2); font-size: var(--t-meta); color: var(--ink-soft); }
+.voice-message {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin: 0;
+  padding: var(--s1);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.voice-attach {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px var(--s2);
+}
+
+.voice-attach button.link { margin-right: var(--s1); font-size: var(--t-meta); }
 
 /* ── recording ─────────────────────────────────────────────────────────
    Dot, clock, level, stop — one line, the way a phone's recorder draws it. */

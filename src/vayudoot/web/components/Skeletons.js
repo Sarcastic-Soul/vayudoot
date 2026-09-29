@@ -49,10 +49,10 @@ export function CoverageSkeleton() {
       <p class="visually-hidden" role="status">Loading the authority table.</p>
       <div aria-hidden="true">
         <ul class="stats">
-          ${[0, 1, 2].map((i) => html`<li key=${i} class="skeleton stat-skeleton"></li>`)}
+          ${[0, 1, 2, 3].map((i) => html`<li key=${i} class="skeleton stat-skeleton"></li>`)}
         </ul>
         <ul class="coverage-list">
-          ${[0, 1, 2, 3].map((i) => html`<li key=${i} class="skeleton region-skeleton"></li>`)}
+          ${[0, 1, 2, 3, 4, 5].map((i) => html`<li key=${i} class="skeleton region-skeleton"></li>`)}
         </ul>
       </div>
     <//>`;

@@ -101,14 +101,14 @@ export function ClusterView({ clusterId }) {
       </button>
       <h2>${clusterId}</h2>
       ${cluster && html`
-        <p class="cluster-lead">
-          <${PatternIcon} />
-          <span>
-            <strong>${cluster.report_count} reports</strong> of
-            ${" "}${words(cluster.pollution_type)}, over ${spanLabel(cluster.span_days)},
-            within ${extentLabel(cluster.radius_km)} of one another.
-          </span>
-        </p>`}
+        <ul class="case-stats-row cluster-stats" aria-label="The pattern at a glance">
+          <li class="is-waiting">
+            <${PatternIcon} /><strong class="tnum">${cluster.report_count}</strong>
+            <span>reports · ${words(cluster.pollution_type)}</span>
+          </li>
+          <li><strong>${spanLabel(cluster.span_days)}</strong><span>running</span></li>
+          <li><strong>${extentLabel(cluster.radius_km)}</strong><span>across</span></li>
+        </ul>`}
       ${cluster && cluster.address && html`
         <p class="case-where"><${PinIcon} /><span>${cluster.address}</span></p>`}
     </div>
@@ -121,9 +121,7 @@ export function ClusterView({ clusterId }) {
       <div class="empty">
         <${PatternIcon} />
         <h3>No such pattern</h3>
-        <p>A pattern is worked out from the cases each time it is asked for, so one can stop
-          existing — a report withdrawn, or a group that has dropped back below the number of
-          reports it takes to be a pattern at all.</p>
+        <p>Patterns are recomputed on every visit. This one no longer has enough reports.</p>
         <button type="button" class="primary" onClick=${() => navigate("cases")}>
           Back to the cases
         </button>
@@ -163,11 +161,12 @@ export function ClusterView({ clusterId }) {
               </div>
             </dl>
 
-            <p class="note">
+            <details class="why why-case">
+              <summary>How is membership decided?</summary>
               Membership is worked out from the case store every time this page is opened, not
               stored on the cases. A report that arrives tomorrow within the same place, kind
               and window joins this group, and the count here goes up.
-            </p>
+            </details>
           </div>
 
           <div class="case-col">

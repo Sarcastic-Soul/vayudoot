@@ -12,7 +12,8 @@
  * - **Only a corroborated hotspot can be alerted** (hard constraint 7). An
  *   alert is a claim made in this system's name. An uncorroborated hotspot
  *   gets an explanation rather than a dead button: what is missing, and that
- *   the citizens behind it already have their own route — a complaint.
+ *   the citizens behind it already have their own route — a complaint. The
+ *   longer reason sits behind a "Why?" disclosure.
  * - **Nothing is sent before a person confirms** (hard constraint 2). Drafting
  *   stops at `awaiting_confirmation`; only "Confirm and send" writes anything,
  *   and what it writes goes to the sandbox outbox to a `.invalid` address
@@ -70,25 +71,22 @@ function NotAlertable({ hotspot }) {
           <h3 id="alert-heading">Not available for this hotspot</h3>
         </div>
       </div>
-      <p class="alert-why">
-        An alert is a claim this system makes <em>in its own name</em>, so it needs
-        independent evidence: a satellite detection or a ground-station reading that agrees.
-        Everything behind this hotspot came from members of the public, and a map that
-        turned citizen reports alone into official alerts could be steered by anyone who
-        filed enough of them.
-      </p>
+      <p class="alert-why">Needs a satellite or station reading that agrees.</p>
+      <details class="why">
+        <summary>Why?</summary>
+        <p>An alert is a claim this system makes <em>in its own name</em>. A map that turned
+          citizen reports alone into official alerts could be steered by anyone who filed
+          enough of them.</p>
+      </details>
       <ul class="alert-routes">
         <li>
           <${CameraIcon} />
-          <span><strong>The people who reported it already have a route.</strong> Each can
-            file their own complaint, in their own name, from their case${
-            hotspot.case_ids.length ? " — listed further down" : ""}.</span>
+          <span><strong>Reporters can file their own complaint</strong>${
+            hotspot.case_ids.length ? " — cases listed above" : ""}.</span>
         </li>
         <li>
           <${AlertMailIcon} />
-          <span><strong>This unlocks by itself.</strong> The next satellite pass or station
-            reading that agrees corroborates the hotspot, and drafting an alert becomes
-            available here.</span>
+          <span><strong>Unlocks by itself</strong> once independent evidence agrees.</span>
         </li>
       </ul>
       <button type="button" class="secondary" onClick=${() => navigate("report")}>
@@ -122,7 +120,7 @@ function Brief({ brief }) {
       </p>
       ${hasLocal && html`
         <p class="alert-lang-note">
-          Also sent in ${brief.local_language || "the region's language"}, below the facts.
+          Also sent in ${brief.local_language || "the region's language"}.
         </p>`}
       ${brief.suggested_checks && brief.suggested_checks.length > 0 && html`
         <${Fragment}>
@@ -175,8 +173,8 @@ function ImageryNote({ imagery }) {
     <p class="alert-imagery">
       <span class="model-mark"><${ModelIcon} />Imagery reading cited</span>
       <span>${imagery.image_date}: plume ${imagery.plume_visible ? "visible" : "not visible"},
-        cloud ${imagery.cloud_obscured ? "over the area" : "clear"}. Context only — the facts
-        say it does not count towards corroboration.</span>
+        cloud ${imagery.cloud_obscured ? "over the area" : "clear"}. Context only, not
+        corroboration.</span>
     </p>`;
 }
 
@@ -297,10 +295,8 @@ export function HotspotAlert({ hotspot, onAlert }) {
           </div>
         </div>
         <p class="alert-why">
-          Confirmed ${whenSent(alert.sent_at)} and addressed to
-          ${" "}<strong>${alert.jurisdiction.authority_name}</strong>. The address is on the
-          reserved <code>.invalid</code> domain and no delivery transport is wired in, so the
-          envelope below was written to this instance's outbox and went nowhere else.
+          ${whenSent(alert.sent_at)} · to <strong>${alert.jurisdiction.authority_name}</strong>
+          ${" "}at a <code>.invalid</code> address — written to the outbox, delivered nowhere.
         </p>
         <div class="envelope-sandbox">
           <div class="envelope-bar">
@@ -320,16 +316,16 @@ export function HotspotAlert({ hotspot, onAlert }) {
         <div class="actions alert-decision">
           <p class="eyebrow">Your decision</p>
           <p class="decision">
-            Sending writes this alert — the summary, the checks and the facts exactly as shown
-            above — to ${alert.jurisdiction.authority_name}. Nothing has gone anywhere yet.
+            Sends exactly what is shown above to ${alert.jurisdiction.authority_name}.
+            Nothing has gone anywhere yet.
           </p>
           <button type="button" class="primary" disabled=${Boolean(busy)} onClick=${send}>
             ${busy === "send" ? "Sending…" : html`<${SendIcon} /> Confirm and send this alert`}
           </button>
           <p class="help">
             <${LockIcon} />
-            <span>Sending writes to the local sandbox outbox, to a
-              ${" "}<code>.invalid</code> address. No authority is contacted.</span>
+            <span>Sandbox outbox, <code>.invalid</code> address. No authority is
+              contacted.</span>
           </p>
           ${problem}
         </div>
@@ -346,12 +342,13 @@ export function HotspotAlert({ hotspot, onAlert }) {
           <h3 id="alert-heading">Tell the office that covers this area</h3>
         </div>
       </div>
-      <p class="alert-why">
-        Independent instruments agree on this hotspot, so it can go to the authority with
-        jurisdiction without waiting for a complaint. Drafting looks the authority up in the
-        table, writes the facts from the data, and asks a model for a short summary in English
-        and the region's language. <strong>Nothing is sent</strong> — you read the draft
-        first.
+      <ul class="alert-steps" aria-label="What drafting does">
+        <li><${CheckIcon} />Authority from the table</li>
+        <li><${CheckIcon} />Facts from the data</li>
+        <li><${ModelIcon} />Summary by a model</li>
+      </ul>
+      <p class="alert-why alert-promise">
+        <${LockIcon} /><span><strong>Nothing is sent</strong> — you read the draft first.</span>
       </p>
       ${busy === "draft"
         ? html`

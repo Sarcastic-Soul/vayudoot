@@ -7,11 +7,12 @@
  * carries its state three ways — a shape, a word, and a colour — so it is
  * still legible in glare, in greyscale, and with animation switched off. */
 
+import { useState } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
+import { STAGES, STAGE_INDEX, words, isStatutory } from "../lib/format.js";
 import {
-  STAGES, STAGE_INDEX, words, caseCountry, countryName, isStatutory,
-} from "../lib/format.js";
-import { CheckIcon, CrossIcon } from "./Icons.js";
+  CheckIcon, CrossIcon, ModelIcon, SatelliteIcon, StationIcon, EscalateIcon,
+} from "./Icons.js";
 
 const STATE_WORD = {
   done: "Done",
@@ -20,54 +21,141 @@ const STATE_WORD = {
   failed: "Stopped",
 };
 
-function Detail({ pairs }) {
+/* Past this many characters a model's note is clamped to three lines behind a
+ * "Show more". The notes are useful and long — the corroboration one has run
+ * to twenty-five lines — and they were burying the stages either side. */
+const CLAMP_ABOVE = 220;
+
+function Clamped({ text }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > CLAMP_ABOVE;
   return html`
-    <dl>
-      ${Object.entries(pairs).map(([term, value]) => html`
-        <${Fragment} key=${term}><dt>${term}</dt><dd>${String(value)}</dd><//>`)}
-    </dl>`;
+    <div class="case-notes">
+      <p class="case-notes-head"><${ModelIcon} />Model notes</p>
+      <p class=${`case-notes-text${long && !open ? " is-clamped" : ""}`}>${text}</p>
+      ${long && html`
+        <button type="button" class="case-more" aria-expanded=${open}
+                onClick=${() => setOpen(!open)}>${open ? "Show less" : "Show more"}</button>`}
+    </div>`;
+}
+
+/* Sixteen points is as fine as a wind bearing is worth reading. */
+const COMPASS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+  "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+const compass = (deg) => COMPASS[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
+
+/* One measurement: an icon, a figure, a short caption. The full sentence the
+   stage wrote sits in the tooltip and, clamped, under the figure. */
+function Stat({ label, icon, value, unit, caption, title }) {
+  return html`
+    <div class="case-stat" title=${title || null}>
+      <span class="case-stat-label"><span class="case-stat-icon">${icon}</span>${label}</span>
+      <span class="case-stat-body">
+        <span class="case-stat-value tnum">${value}${unit
+          ? html`<small>${unit}</small>` : ""}</span>
+        <span class="case-stat-caption">${caption}</span>
+      </span>
+    </div>`;
+}
+
+const WindArrow = ({ from }) => html`
+  <svg viewBox="0 0 24 24" aria-hidden="true"
+       style=${`transform: rotate(${(from + 180) % 360}deg)`}>
+    <path d="M12 20V5M6.5 10.5 12 5l5.5 5.5" />
+  </svg>`;
+
+/* A 0–1 confidence as a bar and a number. Always drawn where evidence is:
+   a classification without its confidence is a claim without its caveat. */
+function Confidence({ value, halted }) {
+  const pct = Math.round((value || 0) * 100);
+  return html`
+    <div class=${`case-conf${halted ? " is-low" : ""}`}>
+      <span class="case-conf-label">Confidence</span>
+      <span class="case-conf-bar" aria-hidden="true"><i style=${`width:${pct}%`}></i></span>
+      <strong class="tnum">${pct}%</strong>
+      ${halted && html`<span class="case-conf-note">below the floor · held for review</span>`}
+    </div>`;
 }
 
 function detailFor(key, c) {
   if (key === "evidence" && c.evidence) {
-    const halted = c.status === "rejected";
-    return html`<${Detail} pairs=${{
-      "Classified": `${words(c.evidence.pollution_type)} — ${c.evidence.severity}`,
-      "Confidence": `${(c.evidence.confidence * 100).toFixed(0)}%`
-        + (halted ? " — below the floor, halted for human review" : ""),
-      "Visible": c.evidence.visible_indicators.join(", ") || "none recorded",
-    }} />`;
+    const e = c.evidence;
+    const seen = e.visible_indicators || [];
+    return html`
+      <div class="case-detail">
+        <div class="case-chips">
+          <span class="case-chip is-kind">${words(e.pollution_type)}</span>
+          <span class="case-chip case-sev" data-sev=${e.severity}>${e.severity}</span>
+        </div>
+        <${Confidence} value=${e.confidence} halted=${c.status === "rejected"} />
+        ${seen.length > 0 && html`
+          <ul class="case-seen" aria-label="Visible in the photograph">
+            ${seen.map((item, i) => html`<li key=${i}>${item}</li>`)}
+          </ul>`}
+      </div>`;
   }
   if (key === "corroboration" && c.corroboration) {
     const k = c.corroboration;
-    return html`<${Detail} pairs=${{
-      "Independent evidence": k.corroborated ? "corroborated" : "not corroborated",
-      "Satellite": `${k.satellite_fire_detections} detection(s). ${k.satellite_summary || ""}`,
-      "Air quality": k.air_quality_summary || "no reading",
-      "Wind": k.wind_speed_ms == null
-        ? "no reading" : `${k.wind_speed_ms} m/s from ${k.wind_from_degrees}°`,
-      "Upwind source": k.upwind_source_latitude == null
-        ? "not back-traced" : `${k.upwind_source_latitude}, ${k.upwind_source_longitude}`,
-      "Notes": k.corroboration_notes || "—",
-    }} />`;
+    const fires = k.satellite_fire_detections || 0;
+    return html`
+      <div class="case-detail">
+        <div class="case-chips">
+          ${k.corroborated
+            ? html`<span class="case-chip is-yes"><${CheckIcon} />Corroborated</span>`
+            : html`<span class="case-chip is-no"
+                title="No sensor returned a positive reading. That does not mean the report is wrong: hyper-local events often escape distant stations and satellites."
+              >Not corroborated</span>`}
+        </div>
+        <div class="case-stats">
+          <${Stat} label="Satellite" icon=${html`<${SatelliteIcon} />`} value=${fires}
+            caption=${fires === 1 ? "fire detection nearby" : "fire detections nearby"}
+            title=${k.satellite_summary} />
+          <${Stat} label="Station" icon=${html`<${StationIcon} />`}
+            value=${k.nearest_station_km == null ? "—" : k.nearest_station_km.toFixed(1)}
+            unit=${k.nearest_station_km == null ? "" : " km away"}
+            caption=${k.air_quality_summary || "no station reading"}
+            title=${k.air_quality_summary} />
+          <${Stat} label="Wind" icon=${k.wind_from_degrees == null ? "" : html`
+              <${WindArrow} from=${k.wind_from_degrees} />`}
+            value=${k.wind_speed_ms == null ? "—" : k.wind_speed_ms}
+            unit=${k.wind_speed_ms == null ? "" : " m/s"}
+            caption=${k.wind_from_degrees == null ? "no wind reading"
+              : `wind from ${compass(k.wind_from_degrees)} (${Math.round(k.wind_from_degrees)}°)`} />
+        </div>
+        ${k.upwind_source_latitude != null && html`
+          <p class="case-meta tnum">
+            Upwind back-trace · ${k.upwind_source_latitude}, ${k.upwind_source_longitude}
+          </p>`}
+        ${k.corroboration_notes && html`<${Clamped} text=${k.corroboration_notes} />`}
+      </div>`;
   }
   if (key === "jurisdiction" && c.jurisdiction) {
     const j = c.jurisdiction;
-    /* A follow-up interval is not a legal deadline, and the row says so in
-       its own label rather than in a footnote a reader might skip. */
+    /* A follow-up interval is not a legal deadline, and the chip says so in its
+       own words rather than in a footnote a reader might skip. */
     const statutory = isStatutory(j);
-    return html`<${Detail} pairs=${{
-      "Authority": `${j.authority_name} (${j.authority_tier})`,
-      "Country": countryName(caseCountry(j)),
-      "Statute": `${j.statute}${j.section ? ` — ${j.section}` : ""}`,
-      [statutory ? "Response window" : "Follow-up interval"]: statutory
-        ? `${j.response_window_days} days (statutory)`
-        : `${j.response_window_days} days — not statutory; no law sets a deadline here`,
-      "Language": j.local_language || "English only",
-      "Escalates to": j.escalation_authority || "—",
-    }} />`;
+    return html`
+      <div class="case-detail">
+        <p class="case-authority">
+          <strong>${j.authority_name}</strong>
+          <span class="case-chip">${j.authority_tier}</span>
+        </p>
+        <p class="case-meta">${j.statute}${j.section ? ` — ${j.section}` : ""}</p>
+        <div class="case-chips">
+          ${statutory
+            ? html`<span class="case-chip is-yes tnum">
+                ${j.response_window_days}-day response window · statutory</span>`
+            : html`<span class="case-chip is-info tnum"
+                title="No law sets a deadline here; this is the system's suggested follow-up.">
+                ${j.response_window_days}-day follow-up · not statutory</span>`}
+          ${j.escalation_authority && html`
+            <span class="case-chip"><${EscalateIcon} />${j.escalation_authority}</span>`}
+        </div>
+      </div>`;
   }
-  if (key === "drafting" && c.complaint) return c.complaint.subject;
+  if (key === "drafting" && c.complaint) {
+    return html`<p class="case-subject">${c.complaint.subject}</p>`;
+  }
   return null;
 }
 
@@ -101,7 +189,10 @@ export function Timeline({ record }) {
     <${Fragment}>
       <div class="timeline-head">
         <h3 class="section-label">How this case was built</h3>
-        <p class="timeline-progress">
+        <p class="timeline-progress case-progress">
+          <span class="case-progress-bar" aria-hidden="true">
+            ${states.map((st, i) => html`<i key=${i} data-state=${st}></i>`)}
+          </span>
           ${running ? `Stage ${done + 1} of ${STAGES.length}` : `${done} of ${STAGES.length} done`}
         </p>
       </div>

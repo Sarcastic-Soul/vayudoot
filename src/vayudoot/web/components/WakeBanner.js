@@ -21,8 +21,8 @@ export function WakeBanner() {
       ${waking && html`
         <p class="wake-note">
           <span class="wake-dot" aria-hidden="true"></span>
-          <span><strong>Waking the server.</strong> The free instance sleeps when idle;
-            this takes up to a minute.</span>
+          <span title="The free instance sleeps when idle.">
+            <strong>Waking the server</strong> · up to a minute</span>
         </p>`}
     </div>`;
 }

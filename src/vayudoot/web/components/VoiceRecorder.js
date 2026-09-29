@@ -43,6 +43,9 @@ const MicOffIcon = icon(html`
   <path d="M9 9v2a3 3 0 0 0 5.1 2.1M15 10V6a3 3 0 0 0-5.7-1.3" />
   <path d="M5.5 11a6.5 6.5 0 0 0 10.6 5M18.5 11a6.4 6.4 0 0 1-.6 2.7M12 17.5V21M8.5 21h7" />
   <path d="M4 4l16 16" />`);
+const LockIcon = icon(html`
+  <rect x="4.5" y="10.5" width="15" height="9.5" rx="2" />
+  <path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3" />`);
 const FileAudioIcon = icon(html`
   <path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5H6.5A.5.5 0 0 1 6 20z" />
   <path d="M14 3.5V8h4M10.5 17.5v-5l4-1v5" /><circle cx="9.5" cy="17.5" r="1" />
@@ -92,9 +95,8 @@ function refusal(error) {
     return {
       state: "denied",
       text: "Microphone access was refused, so nothing can be recorded here.",
-      hint: "To allow it, open this site's settings from the icon beside the address bar "
-        + "and turn the microphone on, then try again. Or attach a recording you already "
-        + "have below.",
+      hint: "Turn the microphone on in this site's settings (the icon by the address bar), "
+        + "or attach a file below.",
     };
   }
   if (name === "NotFoundError" || name === "OverconstrainedError") {
@@ -283,8 +285,10 @@ export function VoiceRecorder({ health, clip, onClip, onRecording }) {
                 </span>
               </button>`
             : html`
-              <p class="voice-message">This browser cannot record here. You can still attach
-                a recording made on your phone.</p>`}`}
+              <p class="voice-message">
+                <span class="voice-disc is-off"><${MicOffIcon} /></span>
+                <span>Recording isn't available in this browser — attach a file below.</span>
+              </p>`}`}
 
         ${state === "asking" && html`
           <div class="voice-row" role="status">
@@ -365,10 +369,13 @@ export function VoiceRecorder({ health, clip, onClip, onRecording }) {
           <input type="file" accept="audio/*,.m4a,.aac,.opus,.ogg,.webm,.mp3,.wav" hidden
                  ref=${picker} onChange=${onFile} />
           <button type="button" class="link" onClick=${() => picker.current.click()}>
-            ${state === "recorded" ? "Attach a different recording" : "Attach a recording instead"}
+            ${state === "recorded" ? "Attach a different file" : "Attach a file"}
           </button>
-          <span> — WebM, Ogg, MP3, M4A or WAV${maxBytes ? `, up to ${megabytes(maxBytes)}` : ""}.
-            The recording stays private; only what was said is shown on the case.</span>
+          <span class="report-chip">WebM · Ogg · MP3 · M4A · WAV</span>
+          ${maxBytes ? html`<span class="report-chip tnum">≤ ${megabytes(maxBytes)}</span>` : ""}
+          <span class="report-chip is-private"
+                title="The recording stays private; only what was said is shown on the case.">
+            <${LockIcon} />Private</span>
         </p>`}
     </div>`;
 }

@@ -10,7 +10,8 @@
  * - it is always "about", rounded, and never written to the unit;
  * - it always carries its radius, because "1.6M people" with no distance is a
  *   different and false claim;
- * - the server's `basis` sentence is shown verbatim under it;
+ * - the server's `basis` sentence is shown verbatim, behind a "How is this
+ *   counted?" disclosure, with "a coarse estimate" said on the card itself;
  * - towns are places, never facilities — hard constraint 7 — and are listed
  *   because "Ludhiana" is what makes the number make sense.
  *
@@ -43,11 +44,12 @@ export function ExposurePanel({ exposure }) {
             <h3 id="exposure-heading">No large town in reach</h3>
           </div>
         </div>
-        <p class="alert-why">
-          The gazetteer this is counted from lists towns of 15,000 people or more, and none
-          has its centre within reach of this hotspot. That is not the same as nobody living
-          here: villages and farms are not in it.
-        </p>
+        <p class="alert-why">Not the same as nobody here: villages and farms are not counted.</p>
+        <details class="why">
+          <summary>How is this counted?</summary>
+          <p>From a gazetteer of towns of 15,000 people or more; none has its centre within
+            reach of this hotspot.</p>
+        </details>
       </section>`;
   }
   const towns = exposure.towns || [];
@@ -56,22 +58,25 @@ export function ExposurePanel({ exposure }) {
       <div class="alert-card-head">
         <span class="alert-glyph" aria-hidden="true"><${PeopleIcon} /></span>
         <div>
-          <p class="eyebrow">Who is in reach</p>
-          <h3 id="exposure-heading" class="exposure-figure">
+          <p class="eyebrow">Who is in reach · coarse estimate</p>
+          <h3 id="exposure-heading" class="exposure-figure"
+              title=${`About ${exposure.population.toLocaleString("en-IN")} people`}>
             <span class="tnum">~${peopleShort(exposure.population)}</span>
             <span class="exposure-unit">people within ${Math.round(exposure.radius_km)} km</span>
           </h3>
         </div>
       </div>
-      <p class="exposure-coarse">
-        <strong>A coarse estimate, not a headcount.</strong> About
-        ${" "}<span class="tnum">${exposure.population.toLocaleString("en-IN")}</span>, from
-        ${" "}${plural(exposure.settlement_count || towns.length, "settlement")}.
-      </p>
       ${towns.length > 0 && html`
         <ul class="exposure-towns" aria-label="Largest places counted">
           ${towns.map((town) => html`<li key=${town}>${town}</li>`)}
+          ${(exposure.settlement_count || 0) > towns.length && html`
+            <li class="is-more tnum">
+              +${plural(exposure.settlement_count - towns.length, "more place")}</li>`}
         </ul>`}
-      ${exposure.basis && html`<p class="exposure-basis">${exposure.basis}</p>`}
+      ${exposure.basis && html`
+        <details class="why">
+          <summary>How is this counted?</summary>
+          <p class="exposure-basis">${exposure.basis}</p>
+        </details>`}
     </section>`;
 }

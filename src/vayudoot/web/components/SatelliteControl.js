@@ -95,8 +95,7 @@ export function SatelliteControl() {
                    onChange=${(e) => setImagery({ aerosol: e.target.checked })} />
             <span>
               <strong>Aerosol optical depth</strong>
-              <small>How much the whole air column dimmed sunlight. Haze, not a PM2.5
-                reading.</small>
+              <small>Haze in the whole air column — not a PM2.5 reading.</small>
             </span>
           </label>
           ${imagery.aerosol && html`
@@ -110,8 +109,7 @@ export function SatelliteControl() {
                    onChange=${(e) => setImagery({ fires: e.target.checked })} />
             <span>
               <strong>Fires</strong>
-              <small>VIIRS thermal anomalies, 375 m pixels. Heat seen from orbit — it does
-                not say what is burning.</small>
+              <small>Heat seen from orbit — not what is burning.</small>
             </span>
           </label>
 
@@ -125,9 +123,7 @@ export function SatelliteControl() {
                 setImagery({ date: utcYesterday() })}>Yesterday</button>`}
           </div>
           <p class="sat-foot">
-            NOAA-20 VIIRS daily composite via NASA GIBS, about 375 m a pixel, so it blurs at
-            street zoom. Yesterday by default: today's pass is often still a black wedge. Black
-            or blank means no pass yet, not clean air.
+            NOAA-20 VIIRS via NASA GIBS, ~375 m pixels. Black means no pass yet, not clean air.
           </p>
         </div>`}
     </div>`;

@@ -15,6 +15,16 @@ import { PlaceSearch } from "./PlaceSearch.js";
 
 const RESTING = "Drag the pin to where the pollution is.";
 
+/* Said once, behind the ⓘ: the pin is the most consequential field in the
+   form, and the reason is worth a hover rather than a paragraph. */
+const WHY_PIN = "The pin decides which authority receives the complaint, so put it where "
+  + "the pollution is — not where you are standing later.";
+
+const InfoIcon = () => html`
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.6v.2" />
+  </svg>`;
+
 export function LocationPicker({ point, onPoint }) {
   const [address, setAddress] = useState({ text: RESTING, loading: false });
   const marker = useRef(null);
@@ -80,7 +90,11 @@ export function LocationPicker({ point, onPoint }) {
   return html`
     <div class="field">
       <div class="field-head">
-        <label for="place">Where is it?</label>
+        <label for="place">
+          Where is it?
+          <span class="report-info" tabindex="0" role="img"
+                aria-label=${WHY_PIN} title=${WHY_PIN}><${InfoIcon} /></span>
+        </label>
         <button type="button" class="link" onClick=${() => locate()}>Use my location</button>
       </div>
       <${PlaceSearch} onPick=${(lat, lon) => pick.current(lat, lon)} />
@@ -88,8 +102,6 @@ export function LocationPicker({ point, onPoint }) {
       <p class=${`picked${address.loading ? " is-loading" : ""}${point ? " is-set" : ""}`}>
         ${address.text}
       </p>
-      <p class="help">Jurisdiction is decided by this pin, so it needs to be where the
-        pollution is — not where you are standing later.</p>
       <input type="hidden" id="latitude" value=${point ? point.latitude.toFixed(6) : ""} />
       <input type="hidden" id="longitude" value=${point ? point.longitude.toFixed(6) : ""} />
     </div>`;

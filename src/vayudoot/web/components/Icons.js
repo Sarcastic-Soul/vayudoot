@@ -268,3 +268,48 @@ export const ForkIcon = icon(html`
 /* An hourglass: a forecast whose window is still open. */
 export const PendingIcon = icon(html`
   <path d="M7 3.5h10M7 20.5h10M8 3.5c0 4.5 8 4.5 8 8.5s-8 4-8 8.5M16 3.5c0 4.5-8 4.5-8 8.5s8 4 8 8.5" />`);
+
+/* ── coverage: who a report goes to, and what kind of report it is ──── */
+
+/* A municipal body: a block of flats with windows. */
+export const BuildingIcon = icon(html`
+  <path d="M5 20.5V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v15.5M15 9.5h3.5a.5.5 0 0 1 .5.5v10.5M3.5 20.5h17" />
+  <path d="M8.5 8h3M8.5 11.5h3M8.5 15h3" />`);
+
+/* A regional board: a columned public building. */
+export const LandmarkIcon = icon(html`
+  <path d="M3.5 9.5 12 4l8.5 5.5zM5.5 9.5v8M9.5 9.5v8M14.5 9.5v8M18.5 9.5v8M3.5 20h17" />`);
+
+/* A shield: a statement that something is held back on purpose. */
+export const ShieldIcon = icon(html`
+  <path d="M12 3.5 19 6v5.5c0 4.4-3 7.7-7 9-4-1.3-7-4.6-7-9V6z" /><path d="m9 12 2.2 2.2L15.5 10" />`);
+
+export const SearchIcon = icon(html`<circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" />`);
+
+export const InfoIcon = icon(html`
+  <circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.8v.2" />`);
+
+/* A flame: open burning of waste. */
+export const FlameIcon = icon(html`
+  <path d="M12 21c3.6 0 6-2.4 6-5.8 0-3.7-3-5.9-4-9.7-1.8 1.3-2.8 3.4-2.6 5.6C10.2 10 9.4 8.8 9.2 7.5 7.3 9.4 6 11.9 6 15.2 6 18.6 8.4 21 12 21z" />`);
+
+/* A stalk of grain: crop residue. */
+export const CropIcon = icon(html`
+  <path d="M12 21V8M12 13c-2.8 0-4.5-1.7-4.5-4.5 2.8 0 4.5 1.7 4.5 4.5zm0 0c2.8 0 4.5-1.7 4.5-4.5-2.8 0-4.5 1.7-4.5 4.5zM12 8c-1.6-1.2-1.6-3.3 0-4.5 1.6 1.2 1.6 3.3 0 4.5z" />`);
+
+/* A factory with a stack: industrial emission. */
+export const FactoryIcon = icon(html`
+  <path d="M3.5 20.5V11l5 3v-3l5 3v-3l5 3V4.5h2v16z" /><path d="M3.5 20.5h17" />`);
+
+/* A crane arm over a block: construction dust. */
+export const CraneIcon = icon(html`
+  <path d="M6 20.5V4.5l13 3M6 7.5h13M6 4.5 3.5 7.5H6M16 7.5v4" /><rect x="14" y="11.5" width="4" height="3" />
+  <path d="M3.5 20.5h9" />`);
+
+/* A car seen from the side: vehicle emission. */
+export const CarIcon = icon(html`
+  <path d="M4 16.5V13l1.8-4.2A1.5 1.5 0 0 1 7.2 8h9.6a1.5 1.5 0 0 1 1.4.8L20 13v3.5z" />
+  <path d="M4 13h16" /><circle cx="7.5" cy="16.5" r="1.8" /><circle cx="16.5" cy="16.5" r="1.8" />`);
+
+/* A small arrow onward: routes to. */
+export const ArrowIcon = icon(html`<path d="M5 12h14m0 0-5-5m5 5-5 5" />`);

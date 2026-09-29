@@ -1184,15 +1184,9 @@ button.quiet.history-more:hover { color: var(--ink); background: none; }
     gap: var(--s6);
   }
 
-  /* The photograph and the timeline scroll with the page; the complaint is the
-     thing being read, so it stays put beside them. */
-  .case-grid > .case-col:last-child {
-    position: sticky;
-    top: var(--s5);
-    max-height: calc(100dvh - var(--s7));
-    overflow-y: auto;
-    padding-right: var(--s1);
-  }
+  /* No sticky column here. It used to stay put with its own scrollbar, which
+     left the decision card — the confirm button — below a fold inside a fold,
+     and a full-page capture showed it cut in half. Both columns now flow. */
 }
 
 /* A report may carry up to four photographs. The first leads, at full width,
@@ -1253,7 +1247,7 @@ button.quiet.history-more:hover { color: var(--ink); background: none; }
 .case-juris {
   display: grid;
   gap: var(--s2);
-  margin: calc(-1 * var(--s2)) 0 var(--s5);
+  margin: 0;
 }
 
 .juris-facts {
@@ -1368,3 +1362,681 @@ button.quiet.history-more:hover { color: var(--ink); background: none; }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* ── redesign: the case at a glance ──────────────────────────────────────
+   Figures, chips and bars in place of sentences. Everything below is scoped to
+   case-specific classes, because `.actions`, `.timeline` and friends are also
+   borrowed by the hotspot and forecast views. */
+
+.case-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+}
+
+.case-meta-row .case-where { flex: 1 1 320px; }
+
+.case-juris-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.case-juris-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 2px var(--s3) 2px var(--s2);
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-1);
+}
+
+.case-juris-chips svg[viewBox="0 0 24 24"] {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.case-juris-chips li.is-followup { background: var(--info-tint); border-color: var(--info-line); }
+.case-juris-chips .juris-tag { padding: 0 6px; }
+
+.juris-note .why-case { display: inline; }
+
+/* ── the banner's one control: jump to the decision ─────────────────── */
+
+.status-jump {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--s4);
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  white-space: nowrap;
+  color: var(--ok-on);
+  background: var(--ok);
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: filter .15s ease, transform .15s ease;
+}
+
+.status-jump:hover { filter: brightness(1.1); transform: translateY(1px); }
+
+@media (max-width: 560px) {
+  .status-banner:has(.status-jump) { grid-template-columns: auto minmax(0, 1fr); }
+  .status-jump { grid-column: 2; justify-self: start; }
+}
+
+/* ── the photograph, tagged with what was read from it ─────────────── */
+
+.case-figure {
+  position: relative;
+  margin: 0 0 var(--s5);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-2);
+}
+
+.case-figure .case-photo { margin: 0; border: 0; border-radius: 0; }
+
+.case-figure-tag {
+  position: absolute;
+  left: var(--s3);
+  bottom: var(--s3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.case-figure-tag span {
+  padding: 3px 10px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-snug);
+  color: #fff;
+  background: rgb(12 14 13 / 62%);
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.case-figure-kind { text-transform: capitalize; }
+
+/* ── the stage progress as four segments ───────────────────────────── */
+
+.case-progress { display: inline-flex; align-items: center; gap: var(--s2); }
+
+.case-progress-bar { display: inline-flex; gap: 3px; }
+
+.case-progress-bar i {
+  width: 14px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+}
+
+.case-progress-bar i[data-state="done"] { background: var(--ok); }
+.case-progress-bar i[data-state="active"] { background: var(--ok-line); }
+.case-progress-bar i[data-state="failed"] { background: var(--danger); }
+
+/* ── stage details ─────────────────────────────────────────────────── */
+
+.case-detail { display: grid; gap: var(--s3); margin-top: var(--s1); color: var(--ink); }
+
+.case-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.case-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.case-chip svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.case-chip.is-kind { font-weight: var(--w-semi); text-transform: capitalize; }
+.case-chip.is-yes { color: var(--ok); background: var(--ok-tint); border-color: var(--ok-line); }
+.case-chip.is-no {
+  color: var(--attention);
+  background: var(--attention-tint);
+  border-color: var(--attention-line);
+  cursor: help;
+}
+.case-chip.is-info { color: var(--info); background: var(--info-tint); border-color: var(--info-line); }
+
+/* Severity, on its own ramp — never the confidence's colour. */
+.case-sev { text-transform: capitalize; color: var(--cs); background: var(--cs-tint); border-color: var(--cs-line); }
+.case-sev[data-sev="low"] { --cs: var(--sev-low); --cs-tint: var(--sev-low-tint); --cs-line: var(--sev-low-line); }
+.case-sev[data-sev="moderate"] { --cs: var(--sev-moderate); --cs-tint: var(--sev-moderate-tint); --cs-line: var(--sev-moderate-line); }
+.case-sev[data-sev="high"] { --cs: var(--sev-high); --cs-tint: var(--sev-high-tint); --cs-line: var(--sev-high-line); }
+.case-sev[data-sev="severe"] { --cs: var(--sev-severe); --cs-tint: var(--sev-severe-tint); --cs-line: var(--sev-severe-line); }
+
+.case-sev::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.case-conf {
+  display: grid;
+  grid-template-columns: auto minmax(60px, 1fr) auto;
+  align-items: center;
+  gap: var(--s3);
+  font-size: var(--t-meta);
+}
+
+.case-conf-label {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.case-conf-bar {
+  height: 6px;
+  overflow: hidden;
+  background: var(--surface-sunk);
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.case-conf-bar i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  border-radius: inherit;
+  transition: width .5s ease;
+}
+
+.case-conf strong { font-size: var(--t-body); font-weight: var(--w-semi); }
+.case-conf-note { grid-column: 1 / -1; color: var(--attention); font-weight: var(--w-medium); }
+.case-conf.is-low .case-conf-bar i { background: var(--attention); }
+
+.case-seen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.case-seen li {
+  padding: 2px var(--s2);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.case-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: var(--s2);
+}
+
+/* On a phone three tiles side by side are too narrow for "24.9 km away", and
+   two-plus-one looks broken, so each becomes a row: label, then the figure. */
+@media (max-width: 559px) {
+  .case-stats { grid-template-columns: minmax(0, 1fr); }
+
+  .case-stat {
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--s3);
+    padding: var(--s2) var(--s3);
+  }
+}
+
+/* Waiting for a person, the only thing on the record card is withdrawal:
+   drawn as a quiet row, not an empty card with a rule across its top. */
+.case-grid .updates:has(> .withdraw:only-child) {
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.case-grid .updates > .withdraw:only-child:not(.is-open) { padding-top: 0; border-top: 0; }
+
+.case-stat {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: var(--s3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.case-stat[title]:hover { border-color: var(--line-strong); background: var(--surface); cursor: help; }
+
+.case-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.case-stat-icon { display: inline-grid; place-items: center; color: var(--info); }
+
+.case-stat-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .4s ease;
+}
+
+.case-stat-body { display: grid; gap: 2px; min-width: 0; }
+
+.case-stat-value {
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  line-height: 1.1;
+  letter-spacing: var(--track-display);
+  color: var(--ink);
+}
+
+.case-stat-value small {
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  letter-spacing: 0;
+  color: var(--ink-soft);
+}
+
+.case-stat-caption {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.case-meta {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.case-authority {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px var(--s2);
+  font-size: var(--t-body);
+  line-height: var(--lh-snug);
+}
+
+.case-authority strong { font-weight: var(--w-semi); }
+.case-authority .case-chip { text-transform: capitalize; font-size: var(--t-eyebrow); padding: 0 8px; }
+
+.case-subject {
+  margin-top: var(--s1);
+  padding-left: var(--s3);
+  font-size: var(--t-meta);
+  font-style: italic;
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  border-left: 2px solid var(--ok-line);
+}
+
+/* A model's long note: three lines, then "Show more". Marked as the model's
+   in the same info blue the rest of the interface uses for model output. */
+.case-notes {
+  display: grid;
+  gap: var(--s1);
+  padding: var(--s3);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-radius: var(--radius-sm);
+}
+
+.case-notes-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--info);
+}
+
+.case-notes-head svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.case-notes-text {
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+}
+
+.case-notes-text.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.case-more {
+  justify-self: start;
+  padding: 2px 0;
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  color: var(--info);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.case-more:hover { text-decoration-thickness: 2px; }
+
+/* ── the decision card ─────────────────────────────────────────────────
+   The one loud block on the page. An accent band along the top ties it to
+   the complaint it files; the sandbox line under the button is a chip, so it
+   is seen rather than skimmed. */
+
+.case-grid .actions {
+  border-top: 3px solid var(--ok);
+  background: linear-gradient(var(--ok-tint), var(--surface) 70%);
+  box-shadow: var(--shadow-2);
+}
+
+.case-grid .actions p.decision { font-size: var(--t-body); color: var(--ink); }
+.case-grid .actions p.decision strong { font-weight: var(--w-semi); }
+
+.case-grid .actions .help.case-sandbox {
+  justify-self: center;
+  align-items: center;
+  padding: 3px var(--s3);
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  color: var(--attention);
+  background: var(--attention-tint);
+  border: 1px solid var(--attention-line);
+  border-radius: var(--radius-pill);
+}
+
+.case-grid .actions .help.case-sandbox svg { margin-top: 0; width: 14px; height: 14px; }
+
+#case-decision { scroll-margin: var(--s6); }
+
+/* The ⓘ beside a section label: the longer reason, one hover away. */
+.case-info {
+  margin-left: 4px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: help;
+  color: var(--ink-soft);
+}
+
+.case-info:hover, .case-info:focus-visible { color: var(--ok); }
+
+/* ── "Why?" disclosures ─────────────────────────────────────────────── */
+
+details.why-case summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  color: var(--ok);
+  cursor: pointer;
+  list-style: none;
+}
+
+details.why-case summary::-webkit-details-marker { display: none; }
+
+details.why-case summary::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-left: 2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform .18s ease;
+}
+
+details.why-case[open] summary::after { transform: rotate(-135deg) translateY(-1px); }
+
+details.why-case[open] {
+  display: block;
+  margin-top: var(--s1);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+/* ── the list of cases: a photo card per case ──────────────────────── */
+
+.case-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: var(--s2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.case-stats-row li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px var(--s3);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-1);
+}
+
+.case-stats-row strong {
+  font-size: var(--t-body);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+}
+
+.case-stats-row li.is-waiting { background: var(--attention-tint); border-color: var(--attention-line); }
+.case-stats-row li.is-waiting strong { color: var(--attention); }
+
+.case-list button.case-card {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+  grid-template-rows: auto 1fr;
+}
+
+.case-list button.case-card:hover { transform: translateY(-2px); border-color: var(--ok-line); }
+.case-list button.case-card:active { transform: translateY(0); }
+
+.case-card-thumb {
+  position: relative;
+  display: block;
+  height: 132px;
+  background: var(--surface-sunk);
+  overflow: hidden;
+}
+
+.case-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .4s ease;
+}
+
+.case-list button.case-card:hover .case-card-thumb img { transform: scale(1.04); }
+
+.case-card-thumb.is-empty {
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  background:
+    repeating-linear-gradient(-45deg, var(--surface-2) 0 10px, var(--surface-sunk) 10px 20px);
+}
+
+.case-card-thumb.is-empty svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: .6;
+}
+
+.case-card-thumb .pill {
+  position: absolute;
+  top: var(--s2);
+  left: var(--s2);
+  box-shadow: var(--shadow-1);
+  background-color: var(--surface);
+}
+
+.case-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4) var(--s4);
+}
+
+.case-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.case-list .case-card-kind {
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  line-height: var(--lh-tight);
+  text-transform: capitalize;
+  color: var(--ink);
+}
+
+.case-list .case-card-kind.is-waiting { color: var(--ink-soft); text-transform: none; font-size: var(--t-body); }
+
+.case-list .case-card .where span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.case-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-top: auto;
+  padding-top: var(--s2);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+}
+
+.case-card-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  font-weight: var(--w-medium);
+}
+
+.case-card-go { color: var(--ok); font-weight: var(--w-semi); transition: transform .15s ease; }
+.case-list button.case-card:hover .case-card-go { transform: translateX(3px); }
+
+.case-list-skeleton li { height: 250px; }
+
+.patterns-none-line {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0 0 var(--s5);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.patterns-none-line svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--info);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.patterns-none-line strong { color: var(--ink); font-weight: var(--w-semi); }

@@ -320,3 +320,165 @@ button.link:hover { text-decoration-thickness: 2px; }
 
   .photo-drop { min-height: 260px; }
 }
+
+/* ── the report view's own furniture ─────────────────────────────────────
+   The intro is one line and a four-step strip, not a paragraph: the order of
+   events is the thing a first-time reporter needs, and the last step — the
+   person confirms — is the one this product will not skip. */
+
+.report-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: var(--s2) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: report-step;
+}
+
+.report-steps li {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 4px var(--s3) 4px 4px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-1);
+}
+
+/* A hairline arrow between steps, on screens wide enough to keep them on one
+   line; on a phone they wrap into a tidy grid of pills instead. */
+@media (min-width: 700px) {
+  .report-steps { gap: var(--s5); }
+
+  .report-steps li + li::before {
+    content: "";
+    position: absolute;
+    left: calc(-1 * var(--s5) + 5px);
+    top: 50%;
+    width: calc(var(--s5) - 10px);
+    height: 1px;
+    background: var(--line-strong);
+  }
+}
+
+.report-step-disc {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  font-size: 10px;
+  font-weight: var(--w-semi);
+  letter-spacing: .04em;
+  color: var(--ok);
+  background: var(--ok-tint);
+  border-radius: 50%;
+}
+
+.report-step-disc svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.report-step-disc.is-model { color: var(--info); background: var(--info-tint); }
+.report-step-disc.is-you { color: var(--ok-on); background: var(--ok); }
+
+/* Small facts about a field — a size limit, the formats — as chips rather
+   than a sentence of fine print. */
+.report-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.report-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px var(--s2);
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: .02em;
+  line-height: 1.7;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.report-chip svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.report-chip.is-private { color: var(--ok); background: var(--ok-tint); border-color: var(--ok-line); cursor: help; }
+
+/* The ⓘ beside a label: the reason, one hover or focus away. */
+.report-info {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  vertical-align: -3px;
+  color: var(--ink-soft);
+  border-radius: 50%;
+  cursor: help;
+  transition: color .15s ease;
+}
+
+.report-info:hover, .report-info:focus-visible { color: var(--ok); }
+
+.report-info svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* Two promises under the submit button, as a pair of icon lines. */
+.report-assure {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s1) var(--s4);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.report-assure span { display: inline-flex; align-items: center; gap: 6px; }
+
+.report-assure svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.report-assure span:last-child { color: var(--ok); font-weight: var(--w-medium); }
+
+.photo-field .report-chips { margin-top: 2px; }

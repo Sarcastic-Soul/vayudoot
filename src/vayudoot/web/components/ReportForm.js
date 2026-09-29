@@ -30,7 +30,7 @@ import { navigate } from "../lib/router.js";
 import { useHealth } from "../lib/store.js";
 import { megabytes } from "../lib/format.js";
 import { LocationPicker } from "./LocationPicker.js";
-import { ImagePlusIcon } from "./Icons.js";
+import { CameraIcon, ClockIcon, ImagePlusIcon, LockIcon, PinIcon, SendIcon } from "./Icons.js";
 import { VoiceRecorder } from "./VoiceRecorder.js";
 
 /* Below this the remaining daily budget is worth saying out loud. Above it,
@@ -93,9 +93,8 @@ export function ReportForm() {
       tone: "attention",
       detail: `That photograph is too large. The limit is ${megabytes(maxBytes)}, and that `
         + `one is ${megabytes(file.size)}.`,
-      hint: "Most phones can send a smaller copy — choose a reduced size when sharing, or "
-        + "retake it at a lower resolution. A resized photograph is enough here, since the "
-        + "image is scaled down before it is read anyway.",
+      hint: "Share a reduced-size copy instead — the image is scaled down before it is read "
+        + "anyway.",
     };
   }
 
@@ -146,21 +145,21 @@ export function ReportForm() {
   }
 
   return html`
-    <header class="page-head">
+    <header class="page-head report-head">
       <h2>Report a pollution event</h2>
-      <p>A pin and a photograph — or a voice note, in any language — are all that is
-        needed. From those this instance
-        classifies what it is looking at, checks it against satellite and ground
-        readings, works out who holds jurisdiction, and drafts the complaint for
-        you to approve.</p>
+      <p>Drop a pin, add a photo or voice note. We draft the rest.</p>
+      <ol class="report-steps" aria-label="How a report works">
+        <li><span class="report-step-disc"><${PinIcon} /></span>Pin the place</li>
+        <li><span class="report-step-disc"><${CameraIcon} /></span>Photo or voice</li>
+        <li><span class="report-step-disc is-model">AI</span>Checked and drafted</li>
+        <li><span class="report-step-disc is-you"><${SendIcon} /></span>You confirm</li>
+      </ol>
     </header>
 
     ${remaining === 0 && html`
       <div class="note is-limit" role="status">
-        This instance has used all ${health.reports_per_day} of today's reports. A report is
-        about ten model calls against a free tier, so the allowance is a real one. The budget
-        resets at midnight UTC — you can fill this in and try, but expect it to be refused
-        until then.
+        <strong>All ${health.reports_per_day} of today's reports are used.</strong> Resets at
+        00:00 UTC — a report sent before then will be refused.
       </div>`}
 
     <form novalidate onSubmit=${onSubmit}>
@@ -178,9 +177,11 @@ export function ReportForm() {
                   <span>Tap to use the camera, or choose a file</span>
                 </div>`}
           </div>
-          <span class="help">
-            ${preview ? "Tap the photograph to replace it." : "A single image."}
-            ${maxBytes ? ` Up to ${megabytes(maxBytes)}.` : ""}
+          <span class="report-chips">
+            ${preview
+              ? html`<span class="report-chip">Tap to replace</span>`
+              : html`<span class="report-chip">1 image</span>`}
+            ${maxBytes ? html`<span class="report-chip tnum">≤ ${megabytes(maxBytes)}</span>` : ""}
           </span>
         </label>
 
@@ -207,12 +208,14 @@ export function ReportForm() {
         <button type="submit" class="primary" disabled=${busy || recording}>
           ${busy ? "Starting the case…" : recording ? "Stop the recording first" : "Run the case"}
         </button>
-        <p class="submit-note">The run takes a few minutes. You will be taken to the case
-          and can watch each stage finish.</p>
+        <p class="report-assure">
+          <span><${ClockIcon} />A few minutes · watch it live</span>
+          <span><${LockIcon} />Nothing is filed until you confirm</span>
+        </p>
         ${remaining !== null && remaining > 0 && remaining <= LOW_BUDGET && html`
           <p class="submit-note tnum" role="status">
-            ${remaining === 1 ? "1 report left" : `${remaining} reports left`} on this instance
-            today. The budget resets at midnight UTC.
+            ${remaining === 1 ? "1 report left" : `${remaining} reports left`} today · resets
+            00:00 UTC
           </p>`}
         ${error && html`
           <div class="form-error" data-tone=${error.tone} role="alert">

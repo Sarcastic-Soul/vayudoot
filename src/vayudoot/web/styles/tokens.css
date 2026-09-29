@@ -10,7 +10,7 @@
  *
  *   type   11 · 13 · 16 · 19 · 23 · 28   (a ~1.2 ratio, six steps)
  *   space  4 · 8 · 12 · 16 · 24 · 32 · 48
- *   radius 8 · 12 · 16 · pill
+ *   radius 8 · 12 · 16 · 20 (hero bands) · pill
  *
  * Sixteen is the body size because this is used outdoors, at arm's length,
  * often in glare. Thirteen is the only step below it, so "small" means one
@@ -42,6 +42,20 @@
 
   --measure: 66ch;   /* where a line of prose stops being readable */
 
+  /* Inter for everything that is read, Plus Jakarta Sans for titles. Both are
+     loaded from Google Fonts in index.html; the system stack behind each is the
+     page as it looked before, so an offline load degrades to that and nothing
+     else. */
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Plus Jakarta Sans", var(--font-body);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ── motion ────────────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+  --dur-fast: .15s;
+  --dur: .24s;
+
   /* ── space ─────────────────────────────────────────────────────────── */
   --s1: 4px;
   --s2: 8px;
@@ -56,9 +70,10 @@
   --radius: 12px;
   --radius-lg: 16px;
   --radius-pill: 999px;
+  --radius-xl: 20px;   /* hero bands only */
 
   --sidebar: 248px;
-  --rail: 76px;
+  --rail: 88px;   /* wide enough for "Coverage" under its icon in Inter */
   --rail-tight: 60px;
   --page: 1080px;
 
@@ -139,6 +154,17 @@
   --shadow-1: 0 1px 2px rgb(20 20 18 / 5%);
   --shadow-2: 0 2px 4px rgb(20 20 18 / 6%), 0 12px 28px rgb(20 20 18 / 8%);
   --shadow: var(--shadow-1);   /* legacy name */
+  /* A resting card lifted by a hover: between the two steps, never a third
+     elevation that means something. */
+  --shadow-hover: 0 1px 2px rgb(20 20 18 / 5%), 0 6px 16px rgb(20 20 18 / 7%);
+
+  /* The brand, as a gradient for the one or two places that carry it: the
+     mark and a hero figure. Both ends are the accent green's family. */
+  --brand-grad: linear-gradient(135deg, #1d8a63 0%, #14664a 55%, #0f4d52 100%);
+  /* A faint wash of the accent at the top of the page, so the ground is not
+     a flat sheet. Low enough that nothing needs to be re-contrasted on it. */
+  --glow: rgb(20 102 74 / 7%);
+  --glow-2: rgb(26 82 150 / 5%);
 
   --focus: #1a5296;
 
@@ -197,6 +223,10 @@
 
     --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-2: 0 2px 4px rgb(0 0 0 / 40%), 0 12px 28px rgb(0 0 0 / 34%);
+    --shadow-hover: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 20px rgb(0 0 0 / 32%);
+    --brand-grad: linear-gradient(135deg, #5cc497 0%, #3a9d74 55%, #2f7d8a 100%);
+    --glow: rgb(79 180 136 / 8%);
+    --glow-2: rgb(127 176 238 / 5%);
 
     --focus: #7fb0ee;
 
@@ -251,6 +281,10 @@
 
   --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
   --shadow-2: 0 2px 4px rgb(0 0 0 / 40%), 0 12px 28px rgb(0 0 0 / 34%);
+  --shadow-hover: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 20px rgb(0 0 0 / 32%);
+  --brand-grad: linear-gradient(135deg, #5cc497 0%, #3a9d74 55%, #2f7d8a 100%);
+  --glow: rgb(79 180 136 / 8%);
+  --glow-2: rgb(127 176 238 / 5%);
 
   --focus: #7fb0ee;
 
@@ -261,10 +295,14 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 420px at 78% -140px, var(--glow), transparent 70%),
+    radial-gradient(900px 360px at 12% -180px, var(--glow-2), transparent 70%),
+    var(--bg);
+  background-repeat: no-repeat;
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-body);
+  font-feature-settings: "cv11";
   font-size: var(--t-body);
   line-height: var(--lh-body);
   -webkit-text-size-adjust: 100%;
@@ -278,6 +316,10 @@ h1, h2, h3, h4 {
   letter-spacing: var(--track-display);
   font-weight: var(--w-semi);
 }
+
+/* Titles only. Card titles (h3, h4) stay in the reading face, where the
+   display face's tight set would crowd a two-line title. */
+h1, h2 { font-family: var(--font-display); letter-spacing: -0.01em; word-spacing: 0.04em; }
 
 p { margin: 0; }
 
@@ -332,6 +374,9 @@ p { margin: 0; }
   transition: top .15s ease;
 }
 
+/* The shadow only while shown: parked above the page, its blur would still
+   bleed a grey smudge into the top edge. */
+.skip:not(:focus) { box-shadow: none; }
 .skip:focus { top: var(--s2); }
 
 /* Present to a screen reader, absent to everyone else. Used for the one-line

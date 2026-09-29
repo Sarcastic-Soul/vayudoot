@@ -17,8 +17,23 @@
  */
 
 import { html } from "../lib/html.js";
-import { percent, corroborationOf } from "../lib/format.js";
+import { percent, corroborationOf, kindLabel } from "../lib/format.js";
 import { UnverifiedIcon, CheckIcon } from "./Icons.js";
+
+/* The largest town counted in the hotspot's reach, or "" when none is. A town
+ * is a place, never a facility, so it is safe to headline — and "near
+ * Ahmedabad" says where far better than an id or a coordinate. The centre's
+ * coordinates are never shown as a location, for hard constraint 7's reason. */
+export const placeOf = (hotspot) => {
+  const towns = hotspot && hotspot.exposure && hotspot.exposure.towns;
+  return towns && towns.length ? towns[0] : "";
+};
+
+/* The headline for a hotspot: what it is and roughly where. */
+export const hotspotTitle = (hotspot) => {
+  const place = placeOf(hotspot);
+  return place ? `${kindLabel(hotspot)} near ${place}` : kindLabel(hotspot);
+};
 
 export function SeverityChip({ severity }) {
   return html`
@@ -57,19 +72,20 @@ export function Figures({ hotspot, size = "row" }) {
     </span>`;
 }
 
-/* The corroboration state, spelled out. `full` adds the sentence that says
- * what the flag costs; the badge alone is for a dense list row, and even there
- * it says "not independently corroborated" in words rather than relying on the
- * colour it is drawn in. */
-export function CorroborationBadge({ hotspot, full = false }) {
+/* The corroboration state, spelled out. `detail` is one short line under the
+ * label saying what the flag rests on or what it costs; the full sentence is
+ * the badge's tooltip. Either way it says "not independently corroborated" in
+ * words rather than relying on the colour it is drawn in. */
+export function CorroborationBadge({ hotspot, detail = "" }) {
   const state = corroborationOf(hotspot);
   const Icon = state.ok ? CheckIcon : UnverifiedIcon;
   return html`
-    <span class=${`corr${state.ok ? " is-ok" : " is-uncorroborated"}${full ? " is-full" : ""}`}>
+    <span class=${`corr${state.ok ? " is-ok" : " is-uncorroborated"}${detail ? " is-full" : ""}`}
+          title=${state.detail}>
       <${Icon} />
       <span class="corr-body">
         <span class="corr-label">${state.label}</span>
-        ${full && html`<span class="corr-detail">${state.detail}</span>`}
+        ${detail && html`<span class="corr-detail">${detail}</span>`}
       </span>
     </span>`;
 }

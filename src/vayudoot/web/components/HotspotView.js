@@ -15,22 +15,23 @@
  * 7. Contributing cases are linked instead, which is where a reader with
  * standing to see the detail already goes.
  *
- * Under the map sit the three things an operator does next, in the order a
- * phone reads them: who is in reach, the alert to the authority, and a look at
- * the satellite picture. On a wide screen the alert takes the larger column,
- * because it is the one that ends in a decision.
+ * The page reads top to bottom as: what and where (the kind and the nearest
+ * town are the headline; the id is secondary), the facts as tiles with the
+ * corroboration band under them, then the map beside who is in reach and the
+ * evidence, then the two things an operator does next — the alert to the
+ * authority, which ends in a decision and so takes the larger column, and a
+ * look at the satellite picture.
  */
 
 import { html, Fragment } from "../lib/html.js";
 import { navigate } from "../lib/router.js";
 import { useHotspot } from "../lib/store.js";
 import {
-  words, onDate, atTime, plural, percent, radiusLabel, spanLabel,
-  sourceBreakdown, sourceLabel, SOURCE_BLURB, corroborationOf,
-  kindLabel, isUnidentified, whyUnidentified,
+  words, onDate, atTime, shortWhen, plural, percent, radiusLabel, spanLabel,
+  sourceBreakdown, sourceLabel, SOURCE_BLURB, corroborationOf, countedSources,
 } from "../lib/format.js";
 import { HotspotsMap } from "./HotspotsMap.js";
-import { Figures, CorroborationBadge } from "./HotspotMarks.js";
+import { SeverityChip, ConfidenceMeter, CorroborationBadge, hotspotTitle } from "./HotspotMarks.js";
 import { CaseListSkeleton } from "./Skeletons.js";
 import { ExposurePanel } from "./Exposure.js";
 import { HotspotAlert } from "./HotspotAlert.js";
@@ -53,15 +54,40 @@ function SignalRow({ signal }) {
         </span>
         <span class="signal-summary">${signal.summary || words(signal.pollution_type)}</span>
         <span class="signal-figures">
-          <span><span class="figure-label">Certainty</span>
+          <span title="How sure the source is the observation is real">
+            <span class="figure-label">Certainty</span>
             <span class="tnum">${percent(signal.strength)}</span></span>
-          <span><span class="figure-label">Size</span>
+          <span title="How large the observed thing is">
+            <span class="figure-label">Size</span>
             <span class="tnum">${percent(signal.magnitude)}</span></span>
           ${signal.pollution_type !== "unclear" &&
             html`<span class="signal-kind">${words(signal.pollution_type)}</span>`}
         </span>
       </span>
     </li>`;
+}
+
+/* The facts as tiles. Severity and confidence each keep their own label —
+   the two measures side by side and never merged — and the rest is the
+   detection's extent in space and time. */
+function Facts({ hotspot }) {
+  return html`
+    <dl class="hs-facts">
+      <div data-severity=${hotspot.severity}>
+        <dt>Severity</dt><dd><${SeverityChip} severity=${hotspot.severity} /></dd>
+      </div>
+      <div>
+        <dt>Confidence</dt>
+        <dd><${ConfidenceMeter} value=${hotspot.confidence} capped=${!hotspot.corroborated} /></dd>
+      </div>
+      <div><dt>Area</dt><dd class="tnum">${radiusLabel(hotspot.radius_km)}<small> radius</small></dd></div>
+      <div><dt>Signals</dt><dd class="tnum">${hotspot.signal_count}</dd></div>
+      <div><dt>Running for</dt><dd>${spanLabel(hotspot.span_days)}</dd></div>
+      <div title=${`First signal ${onDate(hotspot.first_seen_at)}, `
+        + `latest ${onDate(hotspot.last_seen_at)}`}>
+        <dt>Last seen</dt><dd>${shortWhen(hotspot.last_seen_at)}</dd>
+      </div>
+    </dl>`;
 }
 
 export function HotspotView({ hotspotId }) {
@@ -74,17 +100,7 @@ export function HotspotView({ hotspotId }) {
         <button type="button" class="link back" onClick=${() => navigate("")}>
           <${BackIcon} /> What is happening now
         </button>
-        <h2>${hotspotId}</h2>
-        ${hotspot && html`
-          <p class="hotspot-lead">
-            <${HotspotIcon} />
-            <span>
-              <strong>${kindLabel(hotspot)}</strong>, over an area
-              ${" "}${radiusLabel(hotspot.radius_km)} across, built from
-              ${" "}${plural(hotspot.signal_count, "signal")} across
-              ${" "}${spanLabel(hotspot.span_days)}.
-            </span>
-          </p>`}
+        ${!hotspot && html`<h2>${hotspotId}</h2>`}
       </div>
 
       ${!hotspot && !error && html`<${CaseListSkeleton} />`}
@@ -93,9 +109,8 @@ export function HotspotView({ hotspotId }) {
         <div class="empty">
           <${HotspotIcon} />
           <h3>No such hotspot</h3>
-          <p>Detection is worked out from the signals every time it is asked for, so a hotspot
-            can stop existing — its signals aged out of the window, or the case behind one of
-            them was withdrawn. It is not a broken link.</p>
+          <p>Its signals aged out of the window, or the case behind one was withdrawn. It is
+            not a broken link.</p>
           <button type="button" class="primary" onClick=${() => navigate("")}>
             Back to what is happening now
           </button>
@@ -106,100 +121,84 @@ export function HotspotView({ hotspotId }) {
 
       ${hotspot && html`
         <${Fragment}>
-          <div class="hotspot-headline">
-            <${Figures} hotspot=${hotspot} size="large" />
-            <${CorroborationBadge} hotspot=${hotspot} full=${true} />
-          </div>
+          <header class="hs-hero" data-severity=${hotspot.severity}>
+            <div class="hs-hero-head">
+              <p class="hs-hero-id"><${HotspotIcon} />Hotspot <code>${hotspot.hotspot_id}</code></p>
+              <h2>${hotspotTitle(hotspot)}</h2>
+            </div>
+            <${Facts} hotspot=${hotspot} />
+            <${CorroborationBadge} hotspot=${hotspot}
+              detail=${state.ok
+                ? `Backed by ${countedSources(hotspot.source_counts, { independentOnly: true })}.`
+                : "Confidence capped until a satellite or station reading agrees."} />
+          </header>
 
-          <${HotspotsMap} hotspots=${[hotspot]} paneClass="hotspot-map" fitMaxZoom=${14} />
-          <p class="map-caption">
-            The circle is the hotspot's published extent, not the location of anything inside
-            it. Hotspots are drawn as areas and never as points, so that a detection cannot be
-            read as an accusation against one address.
-          </p>
+          <div class="hs-grid">
+            <div class="hs-map">
+              <${HotspotsMap} hotspots=${[hotspot]} paneClass="hotspot-map" fitMaxZoom=${14} />
+              <p class="map-caption">
+                <${HotspotIcon} />
+                An area, not an accusation against any address. No party is named.
+              </p>
+            </div>
+
+            <div class="hs-side">
+              <${ExposurePanel} exposure=${hotspot.exposure} />
+
+              <section class="hs-evidence" aria-labelledby="evidence-heading">
+                <div class="hs-evidence-head">
+                  <h3 id="evidence-heading">Evidence</h3>
+                  <ul class="source-tally">
+                    ${sourceBreakdown(hotspot.source_counts).map(({ source, count, independent }) => {
+                      const Icon = SourceIcon[source];
+                      return html`
+                        <li key=${source} class=${independent ? "is-independent" : ""}
+                            title=${SOURCE_BLURB[source]}>
+                          ${Icon && html`<${Icon} />`}
+                          <span class="tnum">${plural(count, sourceLabel(source).toLowerCase())}</span>
+                        </li>`;
+                    })}
+                  </ul>
+                </div>
+
+                <ul class="signal-list" aria-label="Every signal behind it, oldest first">
+                  ${[...hotspot.signals]
+                    .sort((a, b) => Date.parse(a.observed_at) - Date.parse(b.observed_at))
+                    .map((signal) => html`
+                      <${SignalRow} key=${`${signal.source}:${signal.signal_id}`}
+                                    signal=${signal} />`)}
+                </ul>
+
+                <details class="why">
+                  <summary>Certainty vs size</summary>
+                  <p>Oldest first. <strong>Certainty</strong> is how sure the source is the
+                    observation is real; <strong>size</strong> is how large the observed thing
+                    is. A model being certain of what it saw is not the same as what it saw
+                    being serious.</p>
+                </details>
+
+                ${state && !state.ok && html`
+                  <p class="note is-limit">Nothing here came from outside the public.</p>`}
+
+                ${hotspot.case_ids.length > 0 && html`
+                  <${Fragment}>
+                    <h4 class="section-label">Citizen cases inside it</h4>
+                    <ul class="hotspot-cases">
+                      ${hotspot.case_ids.map((caseId) => html`
+                        <li key=${caseId}>
+                          <button type="button" class="link" onClick=${() => navigate(caseId)}>
+                            ${caseId}
+                          </button>
+                        </li>`)}
+                    </ul>
+                  <//>`}
+              </section>
+            </div>
+          </div>
 
           <div class="hotspot-act">
-            <div class="act-exposure"><${ExposurePanel} exposure=${hotspot.exposure} /></div>
             <div class="act-alert"><${HotspotAlert} hotspot=${hotspot} /></div>
             <div class="act-imagery"><${ImageryCheck} hotspot=${hotspot} /></div>
-          </div>
-
-          <div class="cluster-grid">
-            <div class="case-col">
-              <h3 class="section-label">What it rests on</h3>
-              <ul class="source-tally">
-                ${sourceBreakdown(hotspot.source_counts).map(({ source, count, independent }) => {
-                  const Icon = SourceIcon[source];
-                  return html`
-                    <li key=${source} class=${independent ? "is-independent" : ""}>
-                      <span class="tally-mark" aria-hidden="true">
-                        ${Icon && html`<${Icon} />`}</span>
-                      <span class="tally-body">
-                        <strong>${plural(count, sourceLabel(source).toLowerCase())}</strong>
-                        <span>${SOURCE_BLURB[source]}</span>
-                      </span>
-                    </li>`;
-                })}
-              </ul>
-
-              <h3 class="section-label">The detection</h3>
-              <dl class="cluster-facts">
-                <div><dt>First signal</dt><dd>${onDate(hotspot.first_seen_at)}</dd></div>
-                <div><dt>Most recent</dt><dd>${onDate(hotspot.last_seen_at)}</dd></div>
-                <div><dt>Running for</dt><dd>${spanLabel(hotspot.span_days)}</dd></div>
-                <div><dt>Published extent</dt>
-                  <dd>${radiusLabel(hotspot.radius_km)} from the centre</dd></div>
-                <div><dt>Severity</dt><dd>${hotspot.severity}, from how large the observations
-                  are</dd></div>
-                <div><dt>Confidence</dt><dd class="tnum">${percent(hotspot.confidence)}${
-                  hotspot.corroborated ? "" : " — capped, see above"}</dd></div>
-              </dl>
-
-              ${hotspot.case_ids.length > 0 && html`
-                <${Fragment}>
-                  <h3 class="section-label">Citizen cases inside it</h3>
-                  <ul class="hotspot-cases">
-                    ${hotspot.case_ids.map((caseId) => html`
-                      <li key=${caseId}>
-                        <button type="button" class="link" onClick=${() => navigate(caseId)}>
-                          ${caseId}
-                        </button>
-                      </li>`)}
-                  </ul>
-                <//>`}
-
-              <p class="note">
-                Nothing here names a responsible party, and the system deliberately never will:
-                naming one from a photograph is unreliable and seriously harmful when wrong.
-                What a hotspot supports is a report of an observation to the authority that
-                holds jurisdiction over the area.
-              </p>
-            </div>
-
-            <div class="case-col">
-              <div class="timeline-head">
-                <h3 class="section-label">Every signal behind it</h3>
-                <p class="timeline-progress tnum">
-                  ${plural(hotspot.signals.length, "signal")}</p>
-              </div>
-              <p class="signal-lead">
-                Oldest first. <strong>Certainty</strong> is how sure the source is the
-                observation is real; <strong>size</strong> is how large the observed thing is.
-                They are separate on purpose — a model being certain of what it saw is not the
-                same as what it saw being serious.
-              </p>
-              <ul class="signal-list">
-                ${[...hotspot.signals]
-                  .sort((a, b) => Date.parse(a.observed_at) - Date.parse(b.observed_at))
-                  .map((signal) => html`
-                    <${SignalRow} key=${`${signal.source}:${signal.signal_id}`}
-                                  signal=${signal} />`)}
-              </ul>
-              ${state && !state.ok && html`
-                <p class="note is-limit">
-                  Nothing in this list came from outside the public. ${state.detail}
-                </p>`}
-            </div>
           </div>
         <//>`}
     <//>`;

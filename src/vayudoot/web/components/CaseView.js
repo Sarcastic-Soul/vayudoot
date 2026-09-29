@@ -5,14 +5,15 @@
  * The order on the page is an argument about importance: what state the case
  * is in, then the complaint it produced, then the evidence that supports it,
  * then the paperwork. On a wide screen the complaint moves to its own column
- * and stays put while the working scrolls beside it. */
+ * beside the working. That column is not sticky: it held the decision card in
+ * a nested scroller, where the confirm button sat below its own fold. */
 
 import { useEffect, useState } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
 import { api, apiUrl } from "../lib/api.js";
 import { navigate } from "../lib/router.js";
 import { useCase, useCaseCluster } from "../lib/store.js";
-import { whereOf } from "../lib/format.js";
+import { whereOf, words } from "../lib/format.js";
 import { BackIcon, PinIcon } from "./Icons.js";
 import { CaseActions } from "./CaseActions.js";
 import { CaseHistory } from "./CaseHistory.js";
@@ -57,14 +58,15 @@ export function CaseView({ caseId }) {
       </button>
       <h2>${caseId}</h2>
       ${record && html`
-        <p class="case-where"><${PinIcon} /><span>${whereOf(record)}</span></p>`}
+        <div class="case-meta-row">
+          <p class="case-where"><${PinIcon} /><span>${whereOf(record)}</span></p>
+          <${CaseJurisdiction} record=${record} />
+        </div>`}
     </div>
 
     <${StatusBanner} record=${record} />
 
     ${record && html`<${CoverageWarning} jurisdiction=${record.jurisdiction} />`}
-
-    ${record && html`<${CaseJurisdiction} record=${record} />`}
 
     ${record && html`<${ClusterBadge} cluster=${cluster} caseId=${caseId} />`}
 
@@ -79,10 +81,18 @@ export function CaseView({ caseId }) {
                 photoCount(record) > 1
                   ? `The ${photoCount(record)} photographs reported`
                   : "The photograph reported"}</h3>
-              <img class="case-photo" src=${apiUrl(`/cases/${caseId}/photo`)}
-                   alt=${photoCount(record) > 1
-                     ? "The first photograph submitted with this report"
-                     : "The photograph submitted with this report"} />
+              <figure class="case-figure">
+                <img class="case-photo" src=${apiUrl(`/cases/${caseId}/photo`)}
+                     alt=${photoCount(record) > 1
+                       ? "The first photograph submitted with this report"
+                       : "The photograph submitted with this report"} />
+                ${record.evidence && html`
+                  <figcaption class="case-figure-tag">
+                    <span class="case-figure-kind">${words(record.evidence.pollution_type)}</span>
+                    <span class="case-figure-conf tnum">
+                      ${Math.round(record.evidence.confidence * 100)}% confidence</span>
+                  </figcaption>`}
+              </figure>
               ${photoCount(record) > 1 && html`
                 <ul class="photo-strip">
                   ${record.report.image_paths.slice(1).map((_, i) => html`
@@ -91,8 +101,7 @@ export function CaseView({ caseId }) {
                            alt=${`Photograph ${i + 2} of ${photoCount(record)}`} />
                     </li>`)}
                 </ul>
-                <p class="photo-note">All ${photoCount(record)} were read together as one
-                  event.</p>`}
+                <p class="photo-note">Read together as one event.</p>`}
             <//>`}
 
           <${VoiceAccount} voice=${record.voice} />
@@ -102,7 +111,7 @@ export function CaseView({ caseId }) {
 
         <div class="case-col">
           ${record.complaint && html`<${Complaint} complaint=${record.complaint} />`}
-          <${CaseActions} record=${record} onUpdate=${setRecord} />
+          <div id="case-decision"><${CaseActions} record=${record} onUpdate=${setRecord} /></div>
 
           <${RTIPanel} record=${record} onUpdate=${setRecord} />
 

@@ -53,8 +53,8 @@ function windowNote(record) {
   if (!days) return "The complaint is in the sandbox outbox.";
   const lead = isStatutory(j)
     ? `The authority has ${days} days to respond.`
-    : `No law sets a deadline for this authority to answer; ${days} days is this system's `
-      + "suggested follow-up interval, not a statutory one.";
+    : `No law sets a deadline here; ${days} days is this system's follow-up interval, `
+      + "not a statutory one.";
   return `${lead} ${clockNote(record)}`.trim();
 }
 
@@ -104,8 +104,8 @@ export function describeStatus(record) {
       label: "held for review",
       closed,
       headline: "Held below the confidence floor.",
-      note: "The photograph was not classified confidently enough to draft a complaint "
-        + "from. Nothing has been sent, and nothing will be.",
+      note: "Not classified confidently enough to draft from. Nothing has been sent, and "
+        + "nothing will be.",
     };
   }
 
@@ -117,8 +117,8 @@ export function describeStatus(record) {
       label: "withdrawn",
       closed,
       headline: "You took this complaint back.",
-      note: `Withdrawn${on ? ` on ${on}` : ""}. Nothing further will be filed, the case will `
-        + "not be chased, and it cannot be reopened.",
+      note: `Withdrawn${on ? ` on ${on}` : ""}. Nothing further is filed or chased, and it `
+        + "cannot be reopened.",
       quote: said("Your reason", record.withdrawal_note),
     };
   }
@@ -131,8 +131,8 @@ export function describeStatus(record) {
       label: "resolved",
       closed,
       headline: "Resolved. The problem was dealt with.",
-      note: `Closed${on ? ` on ${on}` : ""}. This is the ending the case was for; nothing `
-        + "further is filed and the escalation clock has stopped.",
+      note: `Closed${on ? ` on ${on}` : ""}. Nothing further is filed; the escalation clock `
+        + "has stopped.",
       quote: said("What happened", record.resolution_note),
     };
   }
@@ -146,10 +146,9 @@ export function describeStatus(record) {
       label: "escalated",
       headline: to ? `Escalated to ${to}.` : "Escalated.",
       note: wasAcknowledged
-        ? `${authority || "The authority"} acknowledged this complaint but nothing followed `
-          + "within the window after that reply, so the case was raised a tier."
-        : `${capital(windowPhrase(record.jurisdiction))} lapsed without an acknowledgement, `
-          + "so the case was raised a tier.",
+        ? `${authority || "The authority"} acknowledged it, but nothing followed within the `
+          + "window after that reply."
+        : `${capital(windowPhrase(record.jurisdiction))} lapsed without an acknowledgement.`,
       quote: said("What the first authority said", record.response_note),
     };
   }
@@ -161,8 +160,7 @@ export function describeStatus(record) {
       Icon: ReplyIcon,
       label: "acknowledged",
       headline: `${authority || "The authority"} responded${on ? ` on ${on}` : ""}.`,
-      note: "An acknowledgement is a receipt, not a remedy, so the clock restarts rather "
-        + `than stopping. ${clockNote(record)}`.trim(),
+      note: `A receipt, not a remedy — the clock restarts. ${clockNote(record)}`.trim(),
       quote: said("What they said", record.response_note),
     };
   }
@@ -182,9 +180,9 @@ export function describeStatus(record) {
       tone: "attention",
       Icon: HandIcon,
       label: "awaiting confirmation",
-      headline: "Waiting for you.",
-      note: "Nothing has been sent. Read the draft, and file it when you are satisfied "
-        + "it is right.",
+      headline: "Waiting for you — nothing has been sent.",
+      note: "Read the draft, then confirm to file it.",
+      jump: "Review and file",
     };
   }
 
@@ -195,12 +193,12 @@ export function describeStatus(record) {
     Icon: HeldIcon,
     label: words(record.status),
     headline: "Working on this case.",
-    note: "Each stage appears below as it finishes. You can leave and come back.",
+    note: "Each stage appears below as it finishes.",
   };
 }
 
 export function StatusBanner({ record }) {
-  const { tone, Icon, headline, note, quote, closed, reason } = describeStatus(record);
+  const { tone, Icon, headline, note, quote, closed, reason, jump } = describeStatus(record);
   return html`
     <div class="status-banner" data-tone=${tone} data-closed=${closed ? "true" : null}
          aria-live="polite">
@@ -220,5 +218,11 @@ export function StatusBanner({ record }) {
           </blockquote>`}
       </div>
       ${closed && html`<span class="status-flag">Closed</span>`}
+      ${jump && html`
+        <button type="button" class="status-jump"
+                onClick=${() => document.getElementById("case-decision")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" })}>
+          ${jump} <span aria-hidden="true">↓</span>
+        </button>`}
     </div>`;
 }

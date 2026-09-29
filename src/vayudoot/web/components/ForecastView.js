@@ -31,6 +31,9 @@ import { NetworkPanel } from "./NetworkPanel.js";
 import { ForecastSkill } from "./ForecastSkill.js";
 import { BackIcon } from "./Icons.js";
 
+const NOT_OFFICIAL = "Conditions, not instructions. Not issued by IMD, CPCB, SAWS, DFFE, INMET, "
+  + "IBAMA or any other government authority.";
+
 /* The node's own country, from the authority table's `node_country`. The
    server lists only the corridors that run through it, so the list says so. */
 function useNodeCountry() {
@@ -40,21 +43,24 @@ function useNodeCountry() {
 
 function Overview({ corridors, error, onHover }) {
   const crossing = (corridors || []).filter((c) => borderCrossing(c)).length;
+  const points = (corridors || []).reduce((n, c) => n + c.waypoints.length, 0);
   const home = useNodeCountry();
   return html`
     <${Fragment}>
-      <div class="timeline-head">
+      <div class="corridor-list-head">
         <h3 class="section-label" id="corridor-list-label">Economic corridors</h3>
-        ${corridors && html`
-          <p class="timeline-progress tnum">${plural(corridors.length, "corridor")}${crossing
-            ? ` · ${crossing} cross-border` : ""}</p>`}
+        ${home && html`
+          <span class="corridor-scope"
+                title=${`Corridors through ${countryName(home)}, this node's country. A corridor `
+                  + "elsewhere is forecast by the node that serves it."}>
+            <${Flag} code=${home} size=${16} /></span>`}
       </div>
-      ${home && html`
-        <p class="corridor-scope">
-          <${Flag} code=${home} size=${16} />
-          <span>Corridors through ${countryName(home)}, this node's country. A corridor
-            elsewhere is forecast by the node that serves it.</span>
-        </p>`}
+      ${corridors && corridors.length > 0 && html`
+        <ul class="corridor-stats tnum" aria-label="Corridor totals">
+          <li><strong>${corridors.length}</strong> corridors</li>
+          <li title="Sampling points"><strong>${points}</strong> points</li>
+          ${crossing > 0 && html`<li><strong>${crossing}</strong> cross-border</li>`}
+        </ul>`}
       ${error && html`<p class="note is-bad">Could not read the corridors: ${error}</p>`}
       ${!corridors && html`
         <p class="visually-hidden" role="status">Loading the corridors.</p>
@@ -67,16 +73,16 @@ function Overview({ corridors, error, onHover }) {
             <${CorridorCard} key=${c.corridor_id} corridor=${c} onHover=${onHover} />`)}
         </ul>`}
       ${corridors && corridors.length === 0 && !error && html`
-        <p class="note">This instance has no corridors configured. They are data: an entry in
-          <code>data/corridors.json</code> adds one.</p>`}
+        <p class="note">No corridors configured. Add one in <code>data/corridors.json</code>.</p>`}
     <//>`;
 }
 
 /* The corridor's name and where it runs. Above both columns rather than in
-   one of them, so on a phone it is read before the map, not after it. */
+   one of them, so on a phone it is read before the map, not after it. The
+   description is behind a disclosure: the route and the map already say where
+   the corridor is, and the prose only says why it matters. */
 function DetailHead({ corridor }) {
   const crossing = borderCrossing(corridor);
-  const [open, setOpen] = useState(false);
   return html`
     <div class="corridor-head">
       <button type="button" class="link back" onClick=${() => navigate("forecast")}>
@@ -89,18 +95,18 @@ function DetailHead({ corridor }) {
           : (corridor.countries || []).length === 1 && html`
             <${Flag} code=${corridor.countries[0]} size=${16} name=${true} />`}
         <span>${corridor.states.join(" · ")}</span>
-        <span class="tnum">${plural(corridor.waypoints.length, "sampling point")}</span>
+        <span class="corridor-pts tnum">${plural(corridor.waypoints.length, "sampling point")}
+        </span>
       </p>
       ${(corridor.waypoint_names || []).length > 1 && html`
         <p class="corridor-stops">${corridor.waypoint_names.map((name, i) => html`
-          ${i > 0 && html`<span class="route-arrow" aria-hidden="true">→</span>`}
+          ${i > 0 && html`<span class="corridor-arrow" aria-hidden="true">→</span>`}
           <span key=${i}>${name.split(",")[0]}</span>`)}</p>`}
       ${corridor.description && html`
-        <p class=${`corridor-lead${open ? "" : " is-clamped"}`} id="corridor-lead">
-          ${corridor.description}</p>
-        <button type="button" class="link lead-more" aria-expanded=${open}
-                aria-controls="corridor-lead" onClick=${() => setOpen(!open)}>
-          ${open ? "Show less" : "Read more"}</button>`}
+        <details class="why corridor-about">
+          <summary>About this corridor</summary>
+          <p>${corridor.description}</p>
+        </details>`}
     </div>`;
 }
 
@@ -135,21 +141,17 @@ export function ForecastView({ corridorId }) {
       ${!corridorId && html`
         <header class="page-head forecast-head">
           <h2>Where it is about to get worse</h2>
-          <p>An outlook for each economic corridor, reasoned by a model from public pollutant
-            and wind forecasts and every hotspot upwind — this node's and its neighbours'.
-            Choose a corridor to ask.</p>
+          <p>Model outlooks along economic corridors. Pick one to ask.</p>
           <p class="forecast-label">
             <${ModelMark}>Model-derived<//>
-            <span>Conditions, not instructions. Not an official forecast, and not issued by
-              IMD, CPCB, SAWS, DFFE, INMET, IBAMA or any other government authority.</span>
+            <span title=${NOT_OFFICIAL}>Model output — not an IMD or CPCB forecast.</span>
           </p>
         </header>`}
 
       ${unknown && html`
         <div class="note is-bad">
-          <p>There is no corridor called <code>${corridorId}</code> on this node.${home
-            ? ` It lists only corridors that run through ${countryName(home)}; one elsewhere
-              is forecast by the node that serves that country.` : ""}</p>
+          <p>No corridor <code>${corridorId}</code> on this node${home
+            ? ` — it lists only corridors through ${countryName(home)}` : ""}.</p>
           <button type="button" class="link" onClick=${() => navigate("forecast")}>
             See every corridor</button>
         </div>`}

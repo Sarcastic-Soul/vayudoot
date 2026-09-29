@@ -414,3 +414,9 @@
     gap: var(--s6);
   }
 }
+
+/* The pattern's headline figures, drawn as the same pills as the Cases view's
+   tallies so the two pages read as one family. */
+.cluster-stats li { align-items: center; }
+.cluster-stats svg { width: 14px; height: 14px; flex: none; color: var(--attention); }
+.cluster-grid details.why-case { margin-top: var(--s3); }

@@ -97,16 +97,16 @@ export function VoiceAccount({ voice }) {
       ${voice.names_omitted > 0 && html`
         <p class="voice-names">
           <span class="voice-gap" aria-hidden="true">name left out</span>
-          Names the speaker said were left out on purpose. This service never names a person
-          or a business, even when the reporter does.
+          <span title="This service never names a person or a business, even when the reporter does.">
+            ${voice.names_omitted} ${voice.names_omitted === 1 ? "name" : "names"} left out on
+            purpose.</span>
         </p>`}
 
       <aside class="disclaimer is-compact">
         <${ModelIcon} />
         <div>
           <p>${voice.disclaimer}</p>
-          <p class="muted">The recording itself is kept private and is not published with
-            the case.</p>
+          <p class="muted">Recording kept private.</p>
         </div>
       </aside>
     </section>`;

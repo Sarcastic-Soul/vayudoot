@@ -1,55 +1,118 @@
 /* The operations view and one hotspot.
  *
  * The layout question this file answers is which of two things is larger. An
- * operations view is opened to answer "where", so the map takes the majority of
- * the surface and the ranked list sits beside it on anything wide enough and
- * under it on a phone. The map is sticky at desktop width: the list is what
+ * operations view is opened to answer "where", so the map is the hero: it takes
+ * the larger column and nearly the full height of the screen, and the ranked
+ * list sits beside it as a scroll panel of dense rows. On a phone the list
+ * falls under the map. The map is sticky at desktop width: the list is what
  * gets scrolled, and a map that scrolls away is a map you have to keep
  * scrolling back to.
  *
  * The presentation rule underneath everything here is hard constraint 7.
  * Severity is on a colour ramp; confidence is a number in plain ink and is on
- * no ramp at all; and `corroborated: false` gets a full-width band in attention
- * colour under every confidence it qualifies. A capped number shown without
- * the cap is the one thing this interface must never do, so the band is
- * deliberately the loudest element on an uncorroborated card. */
+ * no ramp at all; and `corroborated: false` is said in words beside every
+ * confidence it qualifies, with the meter hatched. A capped number shown
+ * without the cap is the one thing this interface must never do. */
 
 /* ── the view ────────────────────────────────────────────────────────── */
 
-.ops-head { margin-bottom: var(--s3); }
+.ops-head { margin-bottom: var(--s4); }
 
-/* The one-line summary, announced when it changes. It carries the count and
-   how much of it is uncorroborated, so a reader who never scrolls still knows
-   how the list should be read. */
-.ops-status {
+/* The strip: four numbers that say how to read everything under them. */
+.ops-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
   margin-bottom: var(--s4);
+}
+
+.ops-stat {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  min-width: 0;
+  padding: var(--s3) var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+.ops-stat-value {
+  font-family: var(--font-display, inherit);
+  font-size: var(--t-display);
+  font-weight: 750;
+  line-height: 1.05;
+  letter-spacing: var(--track-display);
+}
+
+.ops-stat-value small { font-size: var(--t-body); font-weight: var(--w-semi); color: var(--ink-soft); }
+
+.ops-stat-label {
   font-size: var(--t-meta);
   line-height: var(--lh-snug);
   color: var(--ink-soft);
-  max-width: var(--measure);
+  padding-right: 28px;
 }
 
-.ops-layout { display: grid; gap: var(--s5); align-items: start; }
+.ops-stat > svg {
+  position: absolute;
+  top: var(--s3);
+  right: var(--s3);
+  width: 22px;
+  height: 22px;
+  color: var(--ink-soft);
+  opacity: .6;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
-.ops-list-col { min-width: 0; }
+.ops-stat.is-severe .ops-stat-value { color: var(--sev-severe); }
+.ops-stat.is-ok .ops-stat-value, .ops-stat.is-ok > svg { color: var(--ok); opacity: 1; }
+.ops-stat.is-attention .ops-stat-value, .ops-stat.is-attention > svg {
+  color: var(--attention);
+  opacity: 1;
+}
+
+/* The severity mix under "Severe or high": one bar, each band its length. */
+.ops-stat-bar {
+  display: flex;
+  gap: 2px;
+  height: 5px;
+  margin-top: var(--s1);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.ops-stat-bar span { min-width: 4px; background: var(--sev); }
+
+.ops-layout { display: grid; gap: var(--s4); align-items: start; }
+
+.ops-list-col { min-width: 0; display: grid; gap: var(--s3); }
 .ops-map-col { min-width: 0; }
 
 .ops-map {
-  height: 44vh;
-  min-height: 300px;
+  height: 52vh;
+  min-height: 320px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   z-index: 0;
+  box-shadow: var(--shadow-1);
 }
 
 .hotspot-map {
-  height: 300px;
-  margin-bottom: var(--s2);
+  height: 320px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   z-index: 0;
+  box-shadow: var(--shadow-1);
 }
 
 .map-wrap.is-full .ops-map,
@@ -60,18 +123,31 @@
   border-radius: 0;
 }
 
+/* The one line under a hotspot's map: an area, not an accusation. */
 .map-caption {
-  margin-bottom: var(--s5);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s2);
   font-size: var(--t-meta);
   line-height: var(--lh-snug);
   color: var(--ink-soft);
-  max-width: var(--measure);
+}
+
+.map-caption svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
 }
 
 /* ── the legend ──────────────────────────────────────────────────────────
-   Two rows, because there are two variables on the map. Merging them into one
-   row is how a reader comes to believe a dashed red circle is a fifth severity
-   band. */
+   `.legend*` is also the corridor map's legend (forecast view), so its base
+   rules stay as they were. The ops legend is one compact line with two groups,
+   because there are two variables on the map; merging them is how a reader
+   comes to believe a dashed red circle is a fifth severity band. */
 
 .legend {
   display: grid;
@@ -129,6 +205,43 @@
 
 .legend-note { color: var(--ink-soft); font-size: var(--t-meta); }
 
+.ops-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  margin-top: var(--s2);
+  padding: 0 var(--s1);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+}
+
+.ops-legend ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ops-legend ul + ul { padding-left: var(--s4); border-left: 1px solid var(--line); }
+
+.ops-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+
+/* Severity words come from the data in lower case; the evidence labels are
+   already written the way they should read. */
+.ops-legend ul:first-child li { text-transform: capitalize; }
+
+.ops-legend .legend-swatch, .ops-legend .legend-ring { width: 12px; height: 12px; }
+.ops-legend-note { margin-left: auto; }
+
 /* The swatches borrow the same ramp as the chips. The map itself draws in
    fixed hexes — it sits on light tiles in both themes — so these are the
    theme-aware cousins of those, close enough to be recognised. */
@@ -143,59 +256,289 @@
 
 .legend-swatch { color: var(--sev); background: var(--sev-tint); }
 
+/* ── filters ─────────────────────────────────────────────────────────── */
+
+.ops-filters { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+.ops-chip.is-sev { text-transform: capitalize; }
+
+.ops-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 6px 0 12px;
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background-color var(--dur-fast, .15s) ease, border-color var(--dur-fast, .15s) ease,
+    color var(--dur-fast, .15s) ease;
+}
+
+.ops-chip:hover { border-color: var(--line-strong); background: var(--surface-2); }
+
+.ops-chip svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ops-chip .sev-dot { background: var(--sev); }
+
+.ops-chip-count {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  color: var(--ink-soft);
+  background: var(--surface-sunk);
+  border-radius: var(--radius-pill);
+}
+
+.ops-chip.is-on { color: var(--ok-on); background: var(--ok); border-color: var(--ok); }
+.ops-chip.is-on .ops-chip-count { color: var(--ok); background: var(--ok-on); }
+.ops-chip.is-on .sev-dot { box-shadow: 0 0 0 2px var(--ok-on); }
+
+/* One line, where the uncorroborated count is. Only drawn when there is one. */
+.ops-caveat {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--attention-tint);
+  border: 1px solid var(--attention-line);
+  border-radius: var(--radius-sm);
+}
+
+.ops-caveat strong { color: var(--attention); }
+
+.ops-caveat svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 1px;
+  color: var(--attention);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+}
+
 /* ── the ranked list ─────────────────────────────────────────────────── */
 
-.hotspot-list { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
+.ops-list-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+.ops-list-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px 50px;
+  gap: var(--s3);
+  padding: var(--s2) var(--s3) var(--s2) var(--s4);
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.ops-list-head span:nth-child(n + 2) {
+  text-align: center;
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.ops-list-head span:nth-child(2) { text-align: right; }
+.ops-list-head:has(+ .ops-empty), .ops-list-head:last-child { display: none; }
+
+.hotspot-list { display: grid; margin: 0; padding: 0; list-style: none; }
+
+.hotspot-list > li + li { border-top: 1px solid var(--line); }
 
 .hotspot-list-skeleton {
   display: grid;
-  gap: var(--s3);
+  gap: var(--s2);
   margin: 0;
-  padding: 0;
+  padding: var(--s3);
   list-style: none;
 }
 
-.hotspot-list-skeleton li { height: 168px; border-radius: var(--radius); }
+.hotspot-list-skeleton li { height: 58px; border-radius: var(--radius-sm); }
 
-.hotspot-card {
+.hs-row {
+  position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px 50px;
+  align-items: center;
   gap: var(--s3);
   width: 100%;
-  padding: var(--s4);
+  padding: var(--s3) var(--s3) var(--s3) var(--s4);
   font: inherit;
   color: inherit;
   text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-1);
+  background: transparent;
+  border: 0;
   cursor: pointer;
-  transition: border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+  transition: background-color var(--dur-fast, .15s) ease;
 }
 
-.hotspot-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-2); }
-.hotspot-card:active { transform: translateY(1px); }
+.hs-row:hover, .hs-row.is-active { background: var(--surface-2); }
+.hs-row:focus-visible { outline-offset: -2px; }
 
-.hotspot-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s3);
+/* Severity is the coloured edge, and its word is on the line beside it. */
+.hs-edge {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  background: var(--sev);
+  border-radius: 0 4px 4px 0;
+  transition: top var(--dur-fast, .15s) ease, bottom var(--dur-fast, .15s) ease;
 }
 
-.hotspot-kind {
-  font-size: var(--t-lead);
+.hs-row:hover .hs-edge, .hs-row.is-active .hs-edge { top: 0; bottom: 0; }
+
+.hs-main { display: grid; gap: 3px; min-width: 0; }
+
+.hs-title {
+  overflow: hidden;
   font-weight: var(--w-semi);
   line-height: var(--lh-tight);
-  text-transform: capitalize;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.hotspot-id {
-  flex: none;
+.hs-sub { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+
+.hs-sub, .hs-tags {
+  display: flex;
+  align-items: center;
+  gap: 2px var(--s2);
   font-size: var(--t-meta);
+  line-height: var(--lh-snug);
   color: var(--ink-soft);
-  letter-spacing: 0.01em;
 }
+
+.hs-sub > * + *::before { content: "·"; margin-right: var(--s2); color: var(--line-strong); }
+
+.hs-sev {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: var(--w-semi);
+  text-transform: capitalize;
+  color: var(--sev);
+}
+
+.hs-kind { margin-right: 2px; font-size: var(--t-eyebrow); font-weight: var(--w-medium); }
+
+.hs-tags { gap: 4px; flex-wrap: wrap; }
+.hs-tags:empty { display: none; }
+
+.hs-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 7px 0 5px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  line-height: 20px;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.hs-tag.is-independent { color: var(--info); background: var(--info-tint); border-color: var(--info-line); }
+
+.hs-tag svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hs-conf .conf { min-width: 0; gap: 3px; }
+.hs-conf .conf-num { font-size: var(--t-body); text-align: right; }
+.hs-conf .meter { height: 5px; }
+
+/* Corroboration, beside the confidence it qualifies. A tick in the accent
+   green when it is; the broken ring and the words "Citizen only" when not. */
+.hs-corr {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: var(--w-semi);
+  line-height: 1.15;
+  text-align: center;
+}
+
+.hs-corr svg {
+  width: 26px;
+  height: 26px;
+  padding: 5px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  border-radius: 50%;
+}
+
+.hs-corr.is-ok svg { color: var(--ok); background: var(--ok-tint); box-shadow: inset 0 0 0 1px var(--ok-line); }
+.hs-corr.is-uncorroborated { color: var(--attention); }
+.hs-corr.is-uncorroborated svg { background: var(--attention-tint); box-shadow: inset 0 0 0 1px var(--attention-line); }
+
+.hs-row .alert-chip { font-size: var(--t-eyebrow); padding: 0 7px 0 5px; line-height: 20px; gap: 4px; }
+.hs-row .alert-chip svg { width: 13px; height: 13px; }
+
+.ops-more {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  color: var(--ok);
+  background: var(--surface-2);
+  border: 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.ops-more:hover { background: var(--ok-tint); }
+
+.ops-nomatch { padding: var(--s5) var(--s4); font-size: var(--t-meta); color: var(--ink-soft); text-align: center; }
 
 /* ── severity and confidence, kept apart ─────────────────────────────────
    Side by side, each under its own word. The labels are load-bearing: "72%"
@@ -251,7 +594,7 @@
   overflow: hidden;
 }
 
-.meter-fill { display: block; height: 100%; background: var(--ink-soft); }
+.meter-fill { display: block; height: 100%; background: var(--ink-soft); border-radius: inherit; }
 
 /* A capped meter gets a hatched fill rather than a second colour, so it reads
    as "this bar cannot go further" instead of as a fifth status hue. */
@@ -261,8 +604,8 @@
 }
 
 /* ── corroboration ───────────────────────────────────────────────────────
-   Full width, under the confidence it qualifies, in words. On an
-   uncorroborated hotspot this is the loudest thing on the card on purpose. */
+   In words, under the confidence it qualifies. On an uncorroborated hotspot
+   this is the loudest thing on the page on purpose. */
 
 .corr {
   display: flex;
@@ -287,7 +630,7 @@
   stroke-linejoin: round;
 }
 
-.corr-body { display: grid; gap: 4px; min-width: 0; }
+.corr-body { display: grid; gap: 2px; min-width: 0; }
 .corr-label { font-weight: var(--w-semi); }
 .corr-detail { color: inherit; opacity: .92; font-weight: var(--w-normal); }
 
@@ -303,70 +646,18 @@
   border-color: var(--attention-line);
 }
 
-.corr.is-full { padding: var(--s3) var(--s4); font-size: var(--t-body); }
 .corr.is-full .corr-detail { font-size: var(--t-meta); }
-
-/* ── where a hotspot's signals came from ─────────────────────────────── */
-
-.hotspot-sources { display: flex; flex-wrap: wrap; gap: var(--s2); }
-
-.src {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  font-size: var(--t-meta);
-  color: var(--ink-soft);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-}
-
-/* Independent evidence is the half of the tally that decides corroboration,
-   so it is drawn in ink rather than in the muted grey of the rest. */
-.src.is-independent {
-  color: var(--ink);
-  background: var(--info-tint);
-  border-color: var(--info-line);
-}
-
-.src svg {
-  width: 15px;
-  height: 15px;
-  flex: none;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.hotspot-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s2) var(--s3);
-  font-size: var(--t-meta);
-  color: var(--ink-soft);
-}
-
-.ops-caveat { margin-top: 0; }
 
 /* ── the empty state ─────────────────────────────────────────────────────
    The state this instance is in most of the time, and the one a first-time
    reader is most likely to hit. It has one sentence to get right — an empty
-   map is not clean air — and then it says what a hotspot could be built from,
-   so that "nothing detected" is legible as a statement about coverage. */
+   map is not clean air. */
 
 .ops-empty {
   display: grid;
   justify-items: start;
   gap: var(--s3);
   padding: var(--s5) var(--s4);
-  background: var(--surface);
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius);
 }
 
 .ops-empty > svg {
@@ -390,36 +681,33 @@
 .ops-empty-lead strong { color: var(--ink); font-weight: var(--w-semi); }
 
 .source-key {
-  display: grid;
-  gap: var(--s3);
-  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.source-key li, .source-tally li {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--s3);
-  padding: var(--s3);
+.source-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 8px;
+  font-size: var(--t-meta);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--line-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
+  cursor: help;
 }
 
-.source-key li.is-independent, .source-tally li.is-independent {
-  border-left-color: var(--info);
-  background: var(--info-tint);
-}
+.source-key li.is-independent { color: var(--info); background: var(--info-tint); border-color: var(--info-line); }
+.source-key strong { font-weight: var(--w-semi); }
 
-.source-key svg, .tally-mark svg {
-  width: 20px;
-  height: 20px;
+.source-key svg {
+  width: 16px;
+  height: 16px;
   flex: none;
-  margin-top: 2px;
-  color: var(--ink-soft);
   fill: none;
   stroke: currentColor;
   stroke-width: 1.7;
@@ -427,72 +715,162 @@
   stroke-linejoin: round;
 }
 
-.source-key strong { display: block; font-size: var(--t-body); font-weight: var(--w-semi); }
-.source-key p { margin-top: 2px; }
+/* ═══ one hotspot ═══════════════════════════════════════════════════════ */
 
-/* ── one hotspot ─────────────────────────────────────────────────────── */
-
-.hotspot-lead {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--s2);
-  font-size: var(--t-body);
-  line-height: var(--lh-snug);
-  color: var(--ink-soft);
-  max-width: var(--measure);
-}
-
-.hotspot-lead strong { color: var(--ink); text-transform: capitalize; }
-
-.hotspot-lead svg {
-  width: 18px;
-  height: 18px;
-  flex: none;
-  margin-top: 3px;
-  color: var(--ink-soft);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-}
-
-.hotspot-headline {
+.hs-hero {
   display: grid;
   gap: var(--s4);
   padding: var(--s4);
-  margin-bottom: var(--s5);
-  background: var(--surface);
+  margin-bottom: var(--s4);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--sev) 9%, transparent), transparent 60%),
+    var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-left: 5px solid var(--sev);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
 }
 
-.figures.is-large .conf-num { font-size: var(--t-title); }
-.figures.is-large .sev { font-size: var(--t-body); padding: 5px 14px 5px 11px; }
-.figures.is-large .conf { min-width: 150px; }
-.figures.is-large .meter { height: 8px; }
+.hs-hero-head { display: grid; gap: var(--s1); }
 
-.source-tally {
-  display: grid;
+.hs-hero-id {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--s2);
-  margin: 0 0 var(--s5);
-  padding: 0;
-  list-style: none;
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
 }
 
-.tally-body { display: grid; gap: 2px; min-width: 0; }
-.tally-body strong { font-size: var(--t-body); font-weight: var(--w-semi); }
+.hs-hero-id svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  fill: none;
+  stroke: var(--sev);
+  stroke-width: 2;
+}
 
-.tally-body span {
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
+.hs-hero-id code {
+  padding: 0 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: .03em;
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.hs-hero h2 {
+  font-size: var(--t-title);
+  line-height: var(--lh-tight);
+  text-transform: none;
+}
+
+.hs-hero h2::first-letter { text-transform: uppercase; }
+
+/* The facts, as tiles: the numbers a table used to spell out. */
+.hs-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s2);
+  margin: 0;
+}
+
+.hs-facts > div {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+  padding: var(--s2) var(--s3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.hs-facts dt {
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
   color: var(--ink-soft);
+}
+
+.hs-facts dd {
+  margin: 0;
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.hs-facts dd small { font-size: var(--t-meta); font-weight: var(--w-medium); color: var(--ink-soft); }
+.hs-facts .sev { font-size: var(--t-body); justify-self: start; }
+.hs-facts .conf { min-width: 0; }
+.hs-facts .conf-num { font-size: var(--t-lead); }
+
+.hs-hero .corr { align-items: center; }
+.hs-hero .corr svg { margin-top: 0; }
+
+/* Map beside the people and the evidence on a wide screen. */
+.hs-grid { display: grid; gap: var(--s4); margin-bottom: var(--s4); }
+.hs-grid > * { min-width: 0; }
+.hs-side { display: grid; gap: var(--s4); align-content: start; }
+
+.hs-evidence {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+
+.hs-evidence-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.hs-evidence-head h3 { font-size: var(--t-lead); }
+
+.source-tally { display: flex; flex-wrap: wrap; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
+
+.source-tally li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 8px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  cursor: help;
+}
+
+.source-tally li.is-independent { color: var(--info); background: var(--info-tint); border-color: var(--info-line); }
+
+.source-tally svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .hotspot-cases {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s2);
-  margin: 0 0 var(--s4);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -504,34 +882,32 @@
    them would hand back the address the hotspot's radius exists to withhold —
    hard constraint 7. */
 
-.signal-lead {
-  margin-bottom: var(--s3);
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  color: var(--ink-soft);
-  max-width: var(--measure);
+.signal-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
-
-.signal-lead strong { color: var(--ink); font-weight: var(--w-semi); }
-
-.signal-list { display: grid; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
 
 .signal {
   display: flex;
   align-items: flex-start;
   gap: var(--s3);
-  padding: var(--s3);
+  padding: var(--s2) var(--s3);
   background: var(--surface);
-  border: 1px solid var(--line);
   border-left: 3px solid var(--line-strong);
-  border-radius: var(--radius-sm);
 }
 
+.signal + .signal { border-top: 1px solid var(--line); }
 .signal.is-independent { border-left-color: var(--info); }
 
 .signal-mark svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex: none;
   margin-top: 2px;
   color: var(--ink-soft);
@@ -542,18 +918,20 @@
   stroke-linejoin: round;
 }
 
-.signal-body { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.signal.is-independent .signal-mark svg { color: var(--info); }
+
+.signal-body { display: grid; gap: 2px; min-width: 0; flex: 1; }
 
 .signal-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--s2);
+  gap: 0 var(--s2);
 }
 
-.signal-source { font-weight: var(--w-semi); }
-.signal-when { font-size: var(--t-meta); color: var(--ink-soft); }
+.signal-source { font-size: var(--t-meta); font-weight: var(--w-semi); }
+.signal-when { font-size: var(--t-eyebrow); color: var(--ink-soft); }
 
 .signal-summary {
   font-size: var(--t-meta);
@@ -562,46 +940,78 @@
   overflow-wrap: anywhere;
 }
 
-.signal-figures { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); margin-top: 2px; }
+.signal-figures { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
 
-.signal-figures > span { display: inline-flex; align-items: baseline; gap: 6px; }
+.signal-figures > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0 8px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  line-height: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
 .signal-figures .figure-label { font-size: 10px; }
-.signal-kind { font-size: var(--t-meta); color: var(--ink-soft); text-transform: capitalize; }
+.signal-kind { color: var(--ink-soft); text-transform: capitalize; }
+
+.hs-evidence .why > p { margin-top: var(--s2); max-width: var(--measure); }
+.hs-evidence .note, .hs-evidence .note.is-limit { margin: 0; max-width: none; }
+.hs-evidence .section-label { margin: var(--s1) 0 0; }
 
 /* ── wider ───────────────────────────────────────────────────────────────
    The map takes the larger column and stays put while the list is scrolled.
-   700px is where the shell gains a sidebar; 900px is where two columns stop
-   squeezing the cards, so the split happens there and not before. */
+   900px is where two columns stop squeezing the rows, so the split happens
+   there and not before. At that width the list is its own scroll panel the
+   height of the map, so the whole view fits one screen. */
+
+@media (min-width: 640px) {
+  .ops-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .hs-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 
 @media (min-width: 900px) {
-  .ops-layout { grid-template-columns: minmax(0, 1.45fr) minmax(310px, 1fr); }
+  .ops-layout {
+    grid-template-columns: minmax(0, 1.55fr) minmax(330px, 1fr);
+    --ops-h: max(460px, calc(100dvh - 300px));
+  }
 
   .ops-map-col { position: sticky; top: var(--s4); }
 
-  .ops-map { height: min(62vh, 620px); }
+  .ops-map { height: var(--ops-h); }
 
-  .hotspot-map { height: 360px; }
+  .ops-list-col {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    height: var(--ops-h);
+  }
 
-  .ops-empty { padding: var(--s6) var(--s5); }
+  .ops-list-panel { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+
+  .hotspot-map { height: 100%; min-height: 420px; }
+
+  .hs-grid { grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); }
+  .hs-map { display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+  .hs-map .map-wrap { min-height: 420px; }
+  .hs-map .map-wrap:not(.is-full) .hotspot-map { height: 100%; }
+
+  .hs-facts { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
 
-/* A phone: one column, and the map is still the first thing. 44vh is enough
-   to see a circle in context and small enough that the first card is on
-   screen underneath it — the ranking is the second half of the answer. */
 @media (max-width: 899.98px) {
-  .ops-map { height: 42vh; min-height: 260px; max-height: 340px; }
+  .ops-map { height: 46vh; min-height: 280px; max-height: 380px; }
 }
 
-/* Why a hotspot has no pollution type yet, and what would give it one.
- *
- * Quiet on purpose. It sits under the corroboration band, which must stay the
- * loudest thing on an uncorroborated card, and it is explanatory rather than a
- * warning — an unidentified hotspot is a working instrument reporting a real
- * limit, not a fault. */
-.hotspot-unidentified {
-  display: block;
-  margin-top: 0.5rem;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: var(--ink-soft);
+@media (max-width: 419.98px) {
+  .ops-stat { padding: var(--s2) var(--s3); }
+  .ops-stat-value { font-size: var(--t-title); }
+  .ops-legend-note { margin-left: 0; }
+  .ops-legend ul + ul { padding-left: 0; border-left: 0; }
+  /* A phone row has about 200px for "Moderate · 1.0 km · 5d ago"; tighter
+     columns and separators keep the age from being cut off. */
+  .hs-row, .ops-list-head { grid-template-columns: minmax(0, 1fr) 62px 44px; gap: var(--s2); }
+  .hs-sub { gap: 2px 4px; }
+  .hs-sub > * + *::before { margin-right: 4px; }
 }

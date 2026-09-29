@@ -203,24 +203,24 @@ export function CorridorMap({ corridors, selectedId, forecast, pending, highligh
 
 /* What the map is drawing, said on the page. The ramp only appears once there
    is an outlook to colour; before that, the one thing to say is what the lines
-   are and are not. */
+   are and are not — in a few words, with the full sentence on hover. */
 export function CorridorLegend({ withRisk }) {
   return html`
     <div class="legend corridor-legend">
-      ${withRisk && html`
-        <div class="legend-row">
-          <span class="legend-label">Outlook</span>
-          <ul>
-            ${RISK_BANDS.map((band) => html`
-              <li key=${band}>
-                <span class="legend-swatch" data-risk=${band} aria-hidden="true"></span>${band}
-              </li>`)}
-          </ul>
-        </div>`}
-      <p class="legend-note">
+      <span class="legend-key"
+            title=${"Dots are sampling points the model is asked about, not a route to drive; "
+              + "the line only joins them in order."}>
         <span class="legend-dash" aria-hidden="true"></span>
-        Dots are sampling points the model is asked about, not a route to drive; the line only
-        joins them in order.${withRisk && " A segment takes the worse of its two ends."}
-      </p>
+        Sampling points, joined in order — not a road
+      </span>
+      ${withRisk && html`
+        <ul class="legend-ramp" aria-label="Outlook bands">
+          ${RISK_BANDS.map((band) => html`
+            <li key=${band}>
+              <span class="legend-swatch" data-risk=${band} aria-hidden="true"></span>${band}
+            </li>`)}
+        </ul>`}
+      ${withRisk && html`
+        <span class="legend-key is-soft">A segment takes its worse end</span>`}
     </div>`;
 }

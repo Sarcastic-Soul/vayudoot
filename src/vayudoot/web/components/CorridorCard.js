@@ -65,7 +65,7 @@ export function BorderBadge({ countries }) {
   return html`
     <span class="border-badge" title=${route ? `Crosses a national border: ${route}`
       : "Crosses a national border"}>
-      <${BorderIcon} />Cross-border${list.length > 1 && html`
+      <${BorderIcon} /><span class="border-word">Cross-border</span>${list.length > 1 && html`
         <span class="border-route">
           ${codes
             ? list.map((c, i) => html`${i > 0 && html`<span class="border-arrow"
@@ -79,17 +79,16 @@ export function BorderBadge({ countries }) {
    (Pakistan)" reads as "Lahore" in a one-line route. */
 const placeOf = (name) => String(name || "").split(",")[0].trim();
 
-/* First stop to last, and how many between: the route in one line. */
+/* First stop to last: the route in one line. How many between is the
+   sampling-point count beside it, so it is not said twice. */
 export function RouteLine({ corridor }) {
   const names = (corridor.waypoint_names || []).filter(Boolean);
   if (names.length < 2) return null;
-  const between = names.length - 2;
   return html`
     <span class="corridor-route">
       <span>${placeOf(names[0])}</span>
-      <span class="route-arrow" aria-hidden="true">→</span>
+      <span class="corridor-arrow" aria-hidden="true">→</span>
       <span>${placeOf(names[names.length - 1])}</span>
-      ${between > 0 && html`<span class="route-via">via ${plural(between, "stop")}</span>`}
     </span>`;
 }
 
@@ -102,40 +101,39 @@ export function CorridorCard({ corridor, onHover }) {
   const forecast = knownForecast(corridor.corridor_id);
   const crossing = borderCrossing(corridor);
   const answered = forecast?.waypoint_forecasts?.length > 0;
+  const single = !crossing && (corridor.countries || []).length === 1;
 
   return html`
     <li>
       <button type="button" class=${`corridor-card${crossing ? " is-cross-border" : ""}`}
+              title=${corridor.description || null}
               onClick=${() => navigate(`forecast/${corridor.corridor_id}`)}
               onMouseEnter=${() => onHover?.(corridor.corridor_id)}
               onMouseLeave=${() => onHover?.(null)}
               onFocus=${() => onHover?.(corridor.corridor_id)}
               onBlur=${() => onHover?.(null)}>
         <span class="corridor-glyph">
-          <${RouteGlyph} corridor=${corridor} forecast=${forecast} />
+          <${RouteGlyph} corridor=${corridor} forecast=${forecast} size=${48} />
         </span>
         <span class="corridor-main">
           <span class="corridor-title">
             <span class="corridor-name">${corridor.name}</span>
             ${crossing && html`<${BorderBadge} countries=${crossingCodes(corridor, crossing)} />`}
           </span>
-          <${RouteLine} corridor=${corridor} />
-          <span class="corridor-states">
-            ${!crossing && (corridor.countries || []).length === 1 && html`
+          <span class="corridor-meta">
+            ${single && html`
               <span class="corridor-country" title=${countryName(corridor.countries[0])}>
                 <${FlagMark} code=${corridor.countries[0]} size=${16} /></span>`}
-            ${corridor.states.join(" · ")}
-          </span>
-          ${corridor.description && html`
-            <span class="corridor-desc">${corridor.description}</span>`}
-          <span class="corridor-foot">
-            <span class="tnum">${plural(corridor.waypoints.length, "sampling point")}</span>
-            ${answered
-              ? html`<span class="risk-chip" data-risk=${forecast.risk}>
-                  <${ModelIcon} />${forecast.risk} outlook</span>`
-              : html`<span class="corridor-ask">Ask the model<${ChevronIcon} /></span>`}
+            <${RouteLine} corridor=${corridor} />
+            <span class="corridor-pts tnum" title=${plural(corridor.waypoints.length,
+              "sampling point")}>${corridor.waypoints.length} pts</span>
           </span>
         </span>
+        ${answered
+          ? html`<span class="risk-chip corridor-act" data-risk=${forecast.risk}
+                    title="Model-derived outlook">
+              <${ModelIcon} />${forecast.risk}</span>`
+          : html`<span class="corridor-ask">Ask<${ChevronIcon} /></span>`}
       </button>
     </li>`;
 }

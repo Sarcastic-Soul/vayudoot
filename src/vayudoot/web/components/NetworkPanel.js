@@ -99,34 +99,30 @@ function skillLine(skill) {
 function ThisForecaster({ spec }) {
   if (spec === null) return html`<div class="net-card skeleton net-skeleton"></div>`;
   if (spec === false) {
-    return html`<div class="net-card"><p class="muted">This node's forecaster spec could not
-      be read.</p></div>`;
+    return html`<div class="net-card"><p class="muted">Forecaster spec unavailable.</p></div>`;
   }
   const small = spec.skill && spec.skill.scored > 0 && spec.skill.scored < 30;
   return html`
     <div class="net-card net-forecaster">
       <div class="net-card-head">
-        <span class="eyebrow">This node's forecaster</span>
+        <span class="eyebrow" title=${"Published on the feed so a neighbour can see how this node "
+          + "forecasts and compare. The spec is shared; nothing about it is applied to anyone."}>
+          This node's forecaster</span>
         <${ModelMark}>Model-derived<//>
       </div>
-      <dl class="net-facts">
-        <div><dt>Version</dt><dd class="tnum">v${spec.forecaster_version}</dd></div>
-        <div>
-          <dt>Prompt</dt>
-          <dd class="mono" title=${spec.prompt_sha256}>${shortHash(spec.prompt_sha256)}…</dd>
-        </div>
-        <div><dt>Looks ahead</dt><dd class="tnum">${num(spec.horizon_hours)} hours</dd></div>
-        <div><dt>Upwind reach</dt><dd class="tnum">${num(spec.upwind_km)} km</dd></div>
-        <div>
-          <dt>Models</dt>
-          <dd>${spec.provider}${spec.tier ? ` · ${spec.tier} tier` : ""}<br />
-            <span class="mono fc-models">${(spec.model_ids || []).join(" → ")}</span></dd>
-        </div>
-        <div><dt>Record</dt><dd>${skillLine(spec.skill)}</dd></div>
-      </dl>
-      ${small && html`<p class="net-hint">Fewer than 30 scored: anecdote, not evidence.</p>`}
-      <p class="net-hint">Published on the feed so a neighbour can see how this node forecasts
-        and compare. The spec is shared; nothing about it is applied to anyone.</p>
+      <ul class="net-tiles tnum">
+        <li><strong>v${spec.forecaster_version}</strong>version</li>
+        <li><strong>${num(spec.horizon_hours)} h</strong>ahead</li>
+        <li><strong>${num(spec.upwind_km)} km</strong>upwind</li>
+      </ul>
+      <div class="fc-models">
+        <span class="fc-provider">${spec.provider}${spec.tier ? ` · ${spec.tier}` : ""}</span>
+        ${(spec.model_ids || []).map((m) => html`<code key=${m}>${m}</code>`)}
+        <code class="fc-hash" title=${`Prompt SHA-256 ${spec.prompt_sha256}`}>#${
+          shortHash(spec.prompt_sha256)}</code>
+      </div>
+      <p class="net-record">${skillLine(spec.skill)}${small
+        ? html` · <span class="net-small">under 30: anecdote</span>` : ""}</p>
     </div>`;
 }
 
@@ -136,9 +132,8 @@ function PeerForecaster({ n, ownCountry }) {
   if (!match.published) {
     return html`
       <div class="nb-fc">
-        <span class="fc-chip is-none">Publishes no forecaster</span>
-        <span class="nb-fc-note">Its feed is v${n.feed_version || "1.0"}; the forecaster spec
-          arrived in 1.1.</span>
+        <span class="fc-chip is-none" title="The forecaster spec arrived in feed 1.1">
+          No forecaster · feed v${n.feed_version || "1.0"}</span>
       </div>`;
   }
   const theirCountry = String(n.node?.country || "").toUpperCase();
@@ -159,28 +154,26 @@ function PeerForecaster({ n, ownCountry }) {
             <li key=${d.field}>
               ${describe(d)}
               ${d.field === "bands" && otherCountry && html`
-                <span class="nb-design">By design: each node anchors "low" to its own
-                  national standard, and ${countryName(theirCountry)}'s is not${" "}
-                  ${countryName(ownCountry)}'s.</span>`}
+                <span class="nb-design" title=${"Each node anchors \"low\" to its own national "
+                  + "standard."}>By design: ${countryName(theirCountry)} and${" "}
+                  ${countryName(ownCountry)} set different standards.</span>`}
             </li>`)}
         </ul>`}
       ${(match.adoptable || []).length > 0 && html`
         <div class="nb-adopt">
-          <span class="nb-adopt-k"><${ForkIcon} /> To match it on this node, an operator would
-            set</span>
+          <span class="nb-adopt-k" title="Nothing is applied automatically."><${ForkIcon} /> To
+            match, an operator sets</span>
           ${match.adoptable.map((a) => html`
             <code key=${a.env}>${a.env}=<wbr />${num(a.value)}</code>`)}
-          <span class="nb-fc-note">Nothing is applied automatically.</span>
         </div>`}
-      <span class="nb-fc-note">Their record: ${skillLine(n.forecaster?.skill)}</span>
+      <span class="nb-fc-note">Record: ${skillLine(n.forecaster?.skill)}</span>
     </div>`;
 }
 
 function ThisNode({ node, feed }) {
   if (node === null) return html`<div class="net-card skeleton net-skeleton"></div>`;
   if (node === false) {
-    return html`<div class="net-card"><p class="muted">This node's identity could not be read.
-      </p></div>`;
+    return html`<div class="net-card"><p class="muted">Node identity unavailable.</p></div>`;
   }
   const unconfigured = !node.region || node.region === "unspecified";
   return html`
@@ -208,17 +201,15 @@ function ThisNode({ node, feed }) {
             feed.generated_at)}</dd></div>`}
       </dl>
       ${unconfigured && html`
-        <p class="net-hint">Not yet named on the network. <code>VAYUDOOT_NODE_NAME</code>,
-          <code>_REGION</code> and <code>_COUNTRY</code> give it an identity a neighbour can
-          read.</p>`}
+        <p class="net-hint">Unnamed — set <code>VAYUDOOT_NODE_NAME</code>, <code>_REGION</code>,
+          <code>_COUNTRY</code>.</p>`}
     </div>`;
 }
 
 function Neighbours({ neighbours, ownCountry }) {
   if (neighbours === null) return html`<div class="net-card skeleton net-skeleton"></div>`;
   if (neighbours === false) {
-    return html`<div class="net-card"><p class="muted">The neighbour list could not be read.
-      </p></div>`;
+    return html`<div class="net-card"><p class="muted">Neighbour list unavailable.</p></div>`;
   }
   const { configured, reachable, neighbours: list } = neighbours;
   return html`
@@ -231,12 +222,10 @@ function Neighbours({ neighbours, ownCountry }) {
 
       ${configured === 0 ? html`
         <div class="net-empty">
-          <${NetworkIcon} />
-          <p><strong>This node reads nobody's feed yet.</strong> It publishes its own, but no
-            neighbour is configured, so its forecasts see only what it detected itself.</p>
-          <p class="muted">Adding one is a list of feed URLs in
-            <code>VAYUDOOT_NEIGHBOUR_FEEDS</code>. Their hotspots then feed this node's
-            forecasts as upwind context — never republished as its own.</p>
+          <span class="net-empty-mark" aria-hidden="true"><${NetworkIcon} /></span>
+          <p><strong>No neighbours yet</strong></p>
+          <p title=${"Their hotspots then feed this node's forecasts as upwind context — never "
+            + "republished as its own."}>Add feed URLs to <code>VAYUDOOT_NEIGHBOUR_FEEDS</code></p>
         </div>`
       : html`
         <ul class="neighbour-list">
@@ -289,11 +278,13 @@ export function NetworkPanel() {
         <span class="network-mark" aria-hidden="true"><${NetworkIcon} /></span>
         <div>
           <h2 id="network-title">The network</h2>
-          <p>Smoke does not stop at a state line, or a national one. Each deployment is a node:
-            it publishes what it detects on an open feed and reads its neighbours', so a fire
-            upwind is in the forecast before the smoke arrives. What is shared is a detection
-            layer and a description of how each node forecasts — never trained weights, and
-            never a setting pushed from one node to another.</p>
+          <p>Nodes share detections on open feeds, so upwind smoke is forecast early.</p>
+          <details class="why">
+            <summary>What is shared?</summary>
+            <p>Each deployment publishes what it detects and reads its neighbours'. Shared: a
+              detection layer and how each node forecasts. Never trained weights, and never a
+              setting pushed from one node to another.</p>
+          </details>
         </div>
       </header>
 
@@ -307,13 +298,11 @@ export function NetworkPanel() {
 
       <div class="feed-links">
         <${FeedLink} href="/feed" Icon=${FeedIcon} title="/feed" format="JSON · versioned">
-          The contract a neighbour node reads: this node's hotspots, with their confidence and
-          corroboration flag, and nothing that identifies a reporter.
+          What neighbours read · no reporter identity
         <//>
         <${FeedLink} href="/feed.geojson" Icon=${GlobeIcon} title="/feed.geojson"
-                     format="GeoJSON · RFC 7946">
-          The same feed for any GIS — open it in QGIS, ArcGIS or Google Earth with no code.
-          Hotspots are published as areas, never points.
+                     format="GeoJSON">
+          For QGIS or Google Earth · areas, never points
         <//>
       </div>
     </section>`;

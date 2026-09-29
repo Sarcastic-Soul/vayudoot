@@ -80,12 +80,29 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s2) var(--s3);
-  margin-top: var(--s1);
   font-size: var(--t-meta) !important;
   line-height: var(--lh-snug) !important;
 }
 
-.forecast-label > span:last-child { flex: 1 1 300px; }
+.forecast-label > span:last-child { cursor: help; }
+
+/* The "why" behind a claim uses the shared `details.why` from shell.css;
+   only its spacing is set here. */
+.forecast details.why > div > p + p { margin-top: var(--s2); }
+
+.info-dot {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  margin-left: 4px;
+  font: italic 700 10px/1 Georgia, serif;
+  vertical-align: 1px;
+  color: var(--ink-soft);
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  cursor: help;
+}
 
 /* ── layout ──────────────────────────────────────────────────────────────
    The operations view's shape: map first and large, the column beside it on
@@ -114,20 +131,59 @@
 }
 
 @media (min-width: 900px) {
-  .forecast-layout { grid-template-columns: minmax(0, 1.25fr) minmax(330px, 1fr); }
+  .forecast-layout { grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); }
   .forecast-map-col { position: sticky; top: var(--s4); }
-  .corridor-map { height: min(60vh, 580px); max-height: none; }
+  .corridor-map { height: min(calc(100vh - 150px), 700px); min-height: 480px; max-height: none; }
+  .forecast-layout.is-detail .corridor-map { height: min(calc(100vh - 230px), 640px); }
 }
 
 /* The dashed rule in the legend is the line on the map, drawn the same way,
    so the sentence beside it has something to point at. */
-.corridor-legend .legend-note { display: flex; gap: var(--s2); align-items: baseline; }
+.forecast .corridor-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  margin-top: var(--s2);
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-meta);
+}
+
+.corridor-legend .legend-key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--ink-soft);
+  cursor: help;
+}
+
+.corridor-legend .legend-key.is-soft { cursor: default; }
+
+.corridor-legend .legend-ramp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-transform: capitalize;
+}
+
+.corridor-legend .legend-ramp li { display: inline-flex; align-items: center; gap: 6px; }
+
+.corridor-legend .legend-swatch {
+  width: 12px;
+  height: 12px;
+  background: var(--sev);
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--sev);
+}
 
 .legend-dash {
   flex: none;
   width: 26px;
   height: 0;
-  margin-bottom: 3px;
   border-top: 3px dotted var(--ink-soft);
 }
 
@@ -178,17 +234,62 @@
 
 /* ── the corridor list ───────────────────────────────────────────────── */
 
+.corridor-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-bottom: var(--s2);
+}
+
+.corridor-list-head .section-label { margin: 0; }
+
+.corridor-scope { display: inline-flex; cursor: help; }
+
+/* The totals, as three numbers in a row rather than a sentence. */
+.corridor-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: 0 0 var(--s3);
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.corridor-stats li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.corridor-stats strong { font-size: var(--t-body); font-weight: var(--w-semi); color: var(--ink); }
+
+@media (max-width: 699.98px) {
+  .corridor-stats { gap: 6px; }
+  .corridor-stats li { padding: 2px 8px; }
+}
+
 .corridor-list,
-.corridor-skeleton { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
+.corridor-skeleton { display: grid; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
 
-.corridor-skeleton li { height: 132px; border-radius: var(--radius); }
+.corridor-skeleton li { height: 74px; border-radius: var(--radius); }
 
+/* One row per corridor: its shape, its name and route, and one action. The
+   description is on hover; the map beside it is what explains a corridor. */
 .corridor-card {
+  position: relative;
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  gap: var(--s3) var(--s4);
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s3);
   width: 100%;
-  padding: var(--s4);
+  padding: var(--s2) var(--s3) var(--s2) var(--s2);
   font: inherit;
   color: inherit;
   text-align: left;
@@ -197,21 +298,29 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-1);
   cursor: pointer;
-  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease,
+    background-color .15s ease;
 }
 
-.corridor-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-2); }
+.corridor-card:hover {
+  border-color: var(--ok-line);
+  box-shadow: var(--shadow-2);
+  transform: translateX(2px);
+}
+
 .corridor-card:active { transform: translateY(1px); }
 
 .corridor-glyph {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   background: var(--surface-sunk);
-  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+  transition: background-color .15s ease;
 }
+
+.corridor-card:hover .corridor-glyph { background: var(--ok-tint); }
 
 .route-glyph polyline {
   fill: none;
@@ -228,8 +337,9 @@
 }
 
 .corridor-card:hover .route-glyph polyline { stroke: var(--ok); }
+.corridor-card:hover .route-glyph circle { stroke: var(--ok); }
 
-.corridor-main { display: grid; gap: 6px; min-width: 0; }
+.corridor-main { display: grid; gap: 3px; min-width: 0; }
 
 .corridor-title {
   display: flex;
@@ -239,39 +349,67 @@
 }
 
 .corridor-name {
-  font-size: var(--t-lead);
+  font-size: var(--t-body);
   font-weight: var(--w-semi);
   line-height: var(--lh-tight);
-  letter-spacing: var(--track-display);
+  letter-spacing: -0.005em;
 }
 
-.corridor-states { font-size: var(--t-meta); line-height: var(--lh-snug); color: var(--ink-soft); }
+.corridor-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--s2);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+}
+
+.corridor-meta .corridor-country { display: inline-flex; }
 
 /* First stop to last: the route in the words a traveller would use. */
 .corridor-route {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 2px 6px;
+  gap: 2px 5px;
   font-size: var(--t-meta);
   font-weight: var(--w-medium);
   color: var(--ink);
 }
 
-.route-arrow { color: var(--ink-soft); }
-.route-via { color: var(--ink-soft); font-weight: var(--w-normal); }
+.corridor-arrow { color: var(--ink-soft); }
 
-.corridor-states .corridor-country { display: inline-flex; vertical-align: -2px; margin-right: 6px; }
-
-.corridor-scope {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-  margin: 0 0 var(--s3);
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
+.corridor-pts {
+  padding: 0 7px;
+  font-size: var(--t-eyebrow);
+  font-weight: var(--w-semi);
+  line-height: 18px;
   color: var(--ink-soft);
+  background: var(--surface-sunk);
+  border-radius: var(--radius-pill);
 }
+
+.corridor-head .corridor-pts { font-size: var(--t-meta); line-height: 22px; padding: 0 9px; }
+
+.corridor-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px 4px 12px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-semi);
+  color: var(--ok);
+  background: var(--ok-tint);
+  border: 1px solid var(--ok-line);
+  border-radius: var(--radius-pill);
+  transition: background-color .15s ease, color .15s ease;
+}
+
+/* The shared chevron points back; here it points on. */
+.corridor-ask svg { width: 16px; height: 16px; transform: rotate(180deg);
+  transition: transform .15s ease; }
+.corridor-card:hover .corridor-ask { color: var(--ok-on); background: var(--ok); }
+.corridor-card:hover .corridor-ask svg { transform: rotate(180deg) translateX(-2px); }
 
 .corridor-stops {
   display: flex;
@@ -283,39 +421,6 @@
   color: var(--ink);
 }
 
-.corridor-desc {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  color: var(--ink);
-}
-
-.corridor-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s2);
-  margin-top: var(--s1);
-  font-size: var(--t-meta);
-  color: var(--ink-soft);
-}
-
-.corridor-ask {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-weight: var(--w-semi);
-  color: var(--ok);
-}
-
-/* The shared chevron points back; here it points on. */
-.corridor-ask svg { width: 16px; height: 16px; transform: rotate(180deg); }
-.corridor-card:hover .corridor-ask svg { transform: rotate(180deg) translateX(-2px); }
-
 /* A corridor that crosses a national border. Drawn with a dashed outline —
    a border, literally — in plain ink: this is a fact about geography, not a
    warning and not a model's claim, so it borrows neither the risk ramp nor
@@ -324,7 +429,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 8px 2px 6px;
+  padding: 1px 8px 1px 6px;
   font-size: var(--t-eyebrow);
   font-weight: var(--w-semi);
   letter-spacing: var(--track-eyebrow);
@@ -352,7 +457,13 @@
   border-left: 1px solid var(--line-strong);
 }
 
-.corridor-card.is-cross-border { border-left: 3px dashed var(--field-line); }
+.corridor-card.is-cross-border { border-style: dashed; border-color: var(--field-line); }
+
+/* In a narrow card the flags carry the badge; the word is its tooltip and the
+   dashed card edge. */
+@media (max-width: 699.98px) {
+  .corridor-card .border-word { display: none; }
+}
 
 /* A risk band as a chip: a dot carries the hue, the word stays readable. */
 .risk-chip {
@@ -390,24 +501,7 @@
   color: var(--ink-soft);
 }
 
-.corridor-lead { max-width: var(--measure); color: var(--ink-soft); }
-
-/* On a phone the description would push the map below the fold, so it is cut
-   to three lines with a control to read the rest. Wider screens show it all. */
-.lead-more { justify-self: start; font-size: var(--t-meta); }
-
-@media (max-width: 699.98px) {
-  .corridor-lead.is-clamped {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    overflow: hidden;
-  }
-}
-
-@media (min-width: 700px) {
-  .lead-more { display: none; }
-}
+.corridor-about > summary { margin-top: 2px; }
 
 /* The phone shell has a sticky brand bar on top and a nav bar at the bottom;
    anything scrolled into view has to clear both. */
@@ -437,10 +531,10 @@
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) auto;
   gap: var(--s3);
-  align-items: start;
+  align-items: center;
 }
 
-.pending-head h3 { font-size: var(--t-lead); margin-bottom: var(--s1); }
+.pending-head h3 { font-size: var(--t-lead); margin-bottom: 2px; }
 
 .pending-head p {
   font-size: var(--t-meta);
@@ -497,12 +591,34 @@
 .pending-list li:nth-child(5) .skeleton { animation-delay: -1.2s; }
 .pending-list li:nth-child(6) .skeleton { animation-delay: -1.5s; }
 
-.pending-note {
+/* What each waypoint reads, as chips: the inputs a forecast reasoned over are
+   shown before it exists, not only after (hard constraint 7). */
+.pending-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
   padding-top: var(--s3);
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  color: var(--ink-soft);
   border-top: 1px solid var(--line);
+}
+
+.input-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.input-chips li {
+  padding: 2px 10px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  color: var(--info);
+  background: var(--info-tint);
+  border: 1px solid var(--info-line);
+  border-radius: var(--radius-pill);
 }
 
 /* The waypoint number, in a disc. Neutral until there is a band to wear. */
@@ -663,7 +779,29 @@
 }
 
 .disclaimer > svg { width: 20px; height: 20px; margin-top: 1px; color: var(--info); }
-.disclaimer strong { display: block; margin-bottom: 2px; font-weight: var(--w-semi); }
+.disclaimer strong { font-weight: var(--w-semi); color: var(--info); }
+.disclaimer summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  list-style: none;
+  cursor: pointer;
+}
+.disclaimer summary::-webkit-details-marker { display: none; }
+.disclaimer summary::after {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-right: 1.8px solid var(--info);
+  border-bottom: 1.8px solid var(--info);
+  transform: rotate(45deg);
+  transition: transform .2s ease;
+}
+.disclaimer details[open] summary::after { transform: rotate(-135deg); }
+.disclaimer details p { margin-top: var(--s1); color: var(--ink-soft); }
 .disclaimer.is-compact { margin-top: var(--s3); padding: var(--s2) var(--s3); }
 
 .forecast .note.is-limit { margin: var(--s3) 0 0; }
@@ -756,7 +894,6 @@
   line-height: var(--lh-tight);
 }
 
-.wp-where { font-size: var(--t-meta); color: var(--ink-soft); }
 
 .worst-tag {
   padding: 1px 8px;
@@ -786,6 +923,7 @@
 }
 
 .wp-conf small { font-size: var(--t-meta); font-weight: var(--w-normal); color: var(--ink-soft); }
+.wp-conf .conf-meter { align-self: center; width: 48px; margin-top: 0; }
 
 /* Wide enough, the figures move up beside the name. */
 @media (min-width: 560px) {
@@ -798,7 +936,7 @@
 
 /* On a split desktop column the side is narrow again, so the stacked shape
    comes back rather than squeezing the name to a word per line. */
-@media (min-width: 900px) and (max-width: 1239.98px) {
+@media (min-width: 900px) {
   .wp-card summary {
     grid-template-columns: 26px minmax(0, 1fr);
     grid-template-areas: "num head" "num figs";
@@ -814,7 +952,6 @@
 
 .wp-body .eyebrow { margin-top: var(--s2); }
 
-.wp-blurb { font-size: var(--t-body); line-height: var(--lh-snug); }
 
 .wp-facts {
   display: grid;
@@ -906,21 +1043,15 @@
 
 .inputs-all[open] summary { margin-bottom: var(--s3); }
 
-.outlook-foot {
-  margin-top: var(--s4);
-  font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  color: var(--ink-soft);
-  max-width: var(--measure);
-}
+.forecast details.outlook-foot { margin-top: var(--s4); }
 
 /* ── the ledger: how good the forecasts have been ─────────────────────
    Blue, because every number here describes a model's reasoning. The model's
    bars are the info hue and the baselines' are neutral ink, so the comparison
    reads at a glance without either looking like a warning. */
 .skill {
-  margin-top: var(--s7);
-  padding-top: var(--s6);
+  margin-top: var(--s6);
+  padding-top: var(--s5);
   border-top: 1px solid var(--line);
 }
 
@@ -928,13 +1059,19 @@
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
   gap: var(--s3);
-  align-items: start;
-  margin-bottom: var(--s5);
+  align-items: center;
+  margin-bottom: var(--s4);
 }
 
-.skill-head h2 { font-size: var(--t-title); margin-bottom: var(--s2); }
-.skill-head p { color: var(--ink-soft); max-width: var(--measure); }
-.skill-head .forecast-label { margin-top: var(--s3); }
+.skill-head h2 { font-size: var(--t-title); }
+.skill-head p { margin-top: 2px; color: var(--ink-soft); max-width: var(--measure); }
+
+.skill-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+}
 
 .skill-mark {
   display: grid;
@@ -953,7 +1090,7 @@
 
 .skill-top { display: grid; gap: var(--s3); margin-bottom: var(--s3); }
 
-.skill-n, .skill-overall, .skill-vs, .skill-empty {
+.skill-n, .skill-overall, .skill-vs {
   padding: var(--s4);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -961,33 +1098,58 @@
   box-shadow: var(--shadow-1);
 }
 
-/* The sample size is the headline, so it gets the biggest type on the panel. */
-.skill-n { display: grid; gap: var(--s1); align-content: start; }
+/* The sample size is the headline, so the counts get the biggest type on the
+   panel, and "scored" is the one set in the model blue. */
+.skill-n { display: grid; gap: var(--s3); align-content: start; }
 
-.skill-n > strong {
+.skill-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.skill-counts li {
+  display: grid;
+  gap: 2px;
+  padding: var(--s3);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.skill-counts strong {
   font-size: var(--t-display);
   font-weight: var(--w-semi);
   line-height: 1;
   letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
-.skill-n > span { color: var(--ink-soft); }
+.skill-counts li.is-key { background: var(--info-tint); border-color: var(--info-line); }
+.skill-counts li.is-key strong { color: var(--info); }
+.skill-counts li.is-window { background: var(--surface-2); border-style: dashed; }
 
-.skill-n-sub {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s1) var(--s3);
-  margin: var(--s2) 0 0;
-  padding: 0;
-  list-style: none;
+.skill-n .skill-counts li { background: var(--surface-2); }
+.skill-n .skill-counts li.is-key { background: var(--info-tint); }
+
+.skill-top.is-empty { display: grid; gap: var(--s2); }
+
+.skill-none {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
   font-size: var(--t-meta);
   color: var(--ink-soft);
 }
 
-.skill-n-sub li + li::before { content: "·"; margin-right: var(--s3); }
+.skill-none svg { width: 16px; height: 16px; color: var(--info); }
 
 .skill-small {
-  margin-top: var(--s2);
   padding: var(--s2) var(--s3);
   font-size: var(--t-meta);
   line-height: var(--lh-snug);
@@ -1044,13 +1206,21 @@
   border-radius: var(--radius-pill);
 }
 
-.skill-vs-what, .skill-vs-read {
+.skill-vs h4 { display: inline-flex; align-items: center; }
+
+.skill-vs-read {
+  justify-self: start;
+  padding: 2px 10px;
   font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  color: var(--ink-soft);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
 }
 
-.skill-vs-read { color: var(--ink); }
+.skill-vs-read.is-ahead { color: var(--info); background: var(--info-tint);
+  border-color: var(--info-line); }
 
 .skill-bars { display: grid; gap: 6px; }
 
@@ -1092,10 +1262,6 @@
 
 .skill-bar-value { min-width: 7.5ch; text-align: right; font-weight: var(--w-semi); }
 
-.skill-empty { display: grid; gap: var(--s2); margin-bottom: var(--s3);
-  border-style: dashed; border-color: var(--info-line); background: var(--info-tint); }
-.skill-empty p { max-width: var(--measure); }
-.skill-empty strong { font-weight: var(--w-semi); }
 .skill-vs.is-empty { box-shadow: none; background: var(--surface-2); }
 
 .skill-confusion {
@@ -1134,22 +1300,17 @@
 .skill-matrix td.is-zero { color: var(--ink-soft); font-weight: var(--w-normal); }
 .skill-matrix td.is-hit { background: var(--info-tint); color: var(--info); }
 
-.skill-caveat {
-  display: grid;
-  gap: var(--s1);
-  margin-bottom: var(--s5);
+.forecast details.skill-caveat { margin: var(--s3) 0 var(--s2); }
+
+.skill-ledger-head { margin-top: var(--s4); }
+
+.ledger-empty {
   padding: var(--s3) var(--s4);
   font-size: var(--t-meta);
-  line-height: var(--lh-snug);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--info);
-  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
 }
-
-.skill-caveat strong { font-weight: var(--w-semi); }
-.skill-caveat p { max-width: var(--measure); }
-.skill-basis { color: var(--ink-soft); }
 
 .ledger-list {
   display: grid;
@@ -1221,7 +1382,7 @@
 .ledger-reason { font-size: var(--t-meta); color: var(--ink-soft); }
 
 @media (min-width: 760px) {
-  .skill-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .skill-top:not(.is-empty) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .skill-vs-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -1232,8 +1393,8 @@
 /* ── the network ─────────────────────────────────────────────────────── */
 
 .network {
-  margin-top: var(--s7);
-  padding-top: var(--s6);
+  margin-top: var(--s6);
+  padding-top: var(--s5);
   border-top: 1px solid var(--line);
 }
 
@@ -1242,12 +1403,13 @@
   grid-template-columns: 44px minmax(0, 1fr);
   gap: var(--s3);
   align-items: start;
-  margin-bottom: var(--s5);
+  margin-bottom: var(--s4);
 }
 
-.network-head h2 { font-size: var(--t-title); margin-bottom: var(--s2); }
+.network-head h2 { font-size: var(--t-title); }
 
-.network-head p { color: var(--ink-soft); max-width: var(--measure); }
+.network-head > div > p { margin-top: 2px; color: var(--ink-soft); max-width: var(--measure); }
+.network-head details.why { margin-top: var(--s1); }
 
 .network-mark {
   display: grid;
@@ -1325,15 +1487,30 @@
 
 .net-empty {
   display: grid;
-  gap: var(--s2);
-  padding: var(--s4);
+  justify-items: center;
+  gap: var(--s1);
+  padding: var(--s5) var(--s4);
+  text-align: center;
   background: var(--surface-2);
   border: 1px dashed var(--line-strong);
   border-radius: var(--radius-sm);
 }
 
-.net-empty svg { width: 28px; height: 28px; color: var(--ink-soft); }
-.net-empty p strong { color: var(--ink); font-weight: var(--w-semi); }
+.net-empty-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--s2);
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+
+.net-empty-mark svg { width: 24px; height: 24px; }
+.net-empty p strong { color: var(--ink); font-size: var(--t-body); font-weight: var(--w-semi); }
+.net-empty p[title] { cursor: help; }
 
 .neighbour-list { display: grid; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
 
@@ -1382,8 +1559,51 @@
 .network-col { display: grid; gap: var(--s3); align-content: start; min-width: 0; }
 
 .net-forecaster .net-card-head { align-items: center; flex-wrap: wrap; }
-.net-forecaster dd { max-width: 70%; }
-.fc-models { font-size: var(--t-eyebrow); color: var(--ink-soft); }
+.net-forecaster .net-card-head .eyebrow { cursor: help; }
+
+/* The forecaster's three settings as tiles: a number is read before a row. */
+.net-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.net-tiles li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--s2);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.net-tiles strong {
+  white-space: nowrap;
+  font-size: var(--t-lead);
+  font-weight: var(--w-semi);
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.fc-models { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fc-provider { font-size: var(--t-meta); font-weight: var(--w-semi); margin-right: 2px; }
+.forecast .fc-models code { font-size: var(--t-eyebrow); }
+.forecast .fc-models .fc-hash { color: var(--ink-soft); cursor: help; }
+
+.net-record {
+  padding-top: var(--s2);
+  font-size: var(--t-meta);
+  color: var(--ink-soft);
+  border-top: 1px dashed var(--line);
+}
+
+.net-small { color: var(--attention); font-weight: var(--w-semi); }
 
 /* How a neighbour forecasts, against this node. Green only for "the same";
    every other state is neutral or blue, because a difference is information,
@@ -1455,19 +1675,19 @@
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) 16px;
   gap: var(--s3);
-  align-items: start;
-  padding: var(--s4);
+  align-items: center;
+  padding: var(--s3) var(--s4);
   color: var(--ink);
   text-decoration: none;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-1);
-  transition: border-color .15s ease, box-shadow .15s ease;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
-.feed-link:hover { border-color: var(--ok); box-shadow: var(--shadow-2); }
-.feed-link > svg { width: 16px; height: 16px; color: var(--ink-soft); margin-top: 4px; }
+.feed-link:hover { border-color: var(--ok); box-shadow: var(--shadow-2); transform: translateY(-1px); }
+.feed-link > svg { width: 16px; height: 16px; color: var(--ink-soft); }
 .feed-link:hover > svg { color: var(--ok); }
 
 .feed-icon {
@@ -1482,7 +1702,7 @@
 
 .feed-icon svg { width: 20px; height: 20px; }
 
-.feed-text { display: grid; gap: var(--s1); min-width: 0; }
+.feed-text { display: grid; gap: 2px; min-width: 0; }
 
 .feed-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
 
@@ -1510,6 +1730,12 @@
 
 @media (min-width: 760px) {
   .network-grid, .feed-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Wide enough, node, forecaster and neighbours sit as three equal columns. */
+@media (min-width: 1180px) {
+  .network-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .network-col { display: contents; }
 }
 
 @media (prefers-contrast: more) {

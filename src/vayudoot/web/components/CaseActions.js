@@ -43,6 +43,9 @@ import {
  * truncating it — so the field stops at the same number. */
 const NOTE_MAX = 500;
 
+const WHY_RECORD = "Nothing reaches this tracker on its own. Tell it when the authority "
+  + "replies, or when the problem stops, and the case stays honest about where it is.";
+
 /* Local midnight on the chosen day, as an instant, never in the future.
  *
  * A reader east of UTC has a local "today" that begins hours before UTC's, so
@@ -159,16 +162,16 @@ export function CaseActions({ record, onUpdate }) {
             <${Fragment}>
               <p class="eyebrow">Your decision</p>
               <p class="decision">
-                Filing sends this complaint${authority ? ` to ${authority}` : ""} as it is
-                written above. Nothing has gone anywhere yet.
+                Files the draft above, as written${authority
+                  ? html`, to <strong>${authority}</strong>` : ""}.
               </p>
               <button type="button" class="primary" disabled=${working}
                       onClick=${() => send("decision", "confirm", "Filing…")}>
                 ${busy || html`<${SendIcon} /> Confirm and file this complaint`}
               </button>
-              <p class="help">
+              <p class="help case-sandbox">
                 <${LockIcon} />
-                <span>Filing writes to the local sandbox outbox. No authority is contacted.</span>
+                <span>Sandbox · written to a local outbox, no authority is contacted</span>
               </p>
             <//>`}
 
@@ -179,11 +182,9 @@ export function CaseActions({ record, onUpdate }) {
               </p>
               <p class="decision">
                 ${record.status === "acknowledged"
-                  ? `${authority || "The authority"} acknowledged this on `
-                    + `${onDate(record.acknowledged_at)}, and the ${days}-day `
+                  ? `Acknowledged on ${onDate(record.acknowledged_at)}; the ${days}-day `
                     + `${statutory ? "window" : "follow-up interval (not statutory)"} since `
-                    + "that reply has passed with no remedial action. An acknowledgement is "
-                    + "a receipt, not a remedy. "
+                    + "has passed with no action. "
                   : `${capital(windowPhrase(record.jurisdiction))} has `
                     + `${statutory ? "lapsed" : "passed"} with no acknowledgement. `}
                 Escalating raises the case a tier.
@@ -203,11 +204,11 @@ export function CaseActions({ record, onUpdate }) {
           ? "updates-heading" : null}>
           ${(acknowledging || resolving) && html`
             <${Fragment}>
-              <h3 class="section-label" id="updates-heading">Record what happened</h3>
-              <p class="updates-lead">
-                Nothing reaches this tracker on its own. Tell it when the authority replies, or
-                when the problem itself stops, and the case stays honest about where it is.
-              </p>
+              <h3 class="section-label" id="updates-heading">
+                Record what happened
+                <span class="case-info" tabindex="0" role="img"
+                      aria-label=${WHY_RECORD} title=${WHY_RECORD}>ⓘ</span>
+              </h3>
               <div class="update-row">
                 ${acknowledging && html`
                   <button type="button" class="secondary" id="acknowledge-toggle"
@@ -228,10 +229,9 @@ export function CaseActions({ record, onUpdate }) {
           ${open === "acknowledge" && html`
             <div class="update-panel" id="panel-acknowledge">
               <p class="decision">
-                Recording a reply does not close the case. It restarts the
+                A reply doesn't close the case: it restarts the
                 ${days ? ` ${days}-day` : ""}${statutory ? " clock" : " follow-up interval"}${" "}
-                from the day the response arrived, so an authority that answers and then does
-                nothing is still escalated a full ${statutory ? "window" : "interval"} later.
+                from the day it arrived.
               </p>
               <div class="field">
                 <label for="ack-day">When did the response arrive?</label>
@@ -241,8 +241,7 @@ export function CaseActions({ record, onUpdate }) {
                 <p class="help" id="ack-day-help">
                   ${futureDated
                     ? html`<span class="error">A response cannot have arrived after today.</span>`
-                    : "A letter dated last week counts from last week. Leave it on today if the "
-                      + "reply has only just come in."}
+                    : "The date on the reply, or today if it has just come in."}
                 </p>
               </div>
               <div class="field">
@@ -269,9 +268,8 @@ export function CaseActions({ record, onUpdate }) {
           ${open === "resolve" && html`
             <div class="update-panel" id="panel-resolve">
               <p class="decision">
-                Close this only when the pollution itself has stopped — not when a reply has
-                arrived. A resolved case is finished: the escalation clock stops and nothing
-                further is filed.
+                Only once the pollution itself has stopped. The clock stops and nothing more
+                is filed.
               </p>
               <div class="field">
                 <label for="resolve-note">
@@ -300,12 +298,9 @@ export function CaseActions({ record, onUpdate }) {
                   <div class="update-panel" id="panel-withdraw">
                     <p class="eyebrow">Withdrawing this complaint</p>
                     <p class="decision">
-                      This ends the case for good. It cannot afterwards be filed, escalated,
-                      resolved or reopened.
+                      Ends the case for good — no filing, escalation or reopening.
                       ${record.filed_at
-                        ? ` The complaint already sent to ${authority || "the authority"} is `
-                          + "not recalled — an authority cannot un-receive a letter — but this "
-                          + "instance stops tracking it and will never escalate it."
+                        ? " The complaint already sent is not recalled, but tracking stops."
                         : " Nothing has been sent, and now nothing will be."}
                     </p>
                     <div class="field">
@@ -315,8 +310,7 @@ export function CaseActions({ record, onUpdate }) {
                                 placeholder="Reported the wrong location."
                                 onInput=${(e) => setNote(e.target.value)}></textarea>
                       <p class="help" id="withdraw-note-help">
-                        A reason is required here, and only here. It goes on the record as the
-                        last thing anyone reading this case will see.
+                        Required. It is the last entry on the record.
                       </p>
                       ${counter(note)}
                     </div>

@@ -14,7 +14,10 @@ import { ThemeToggle } from "./ThemeToggle.js";
  * are the same question at two times. Report sits in the middle rather than
  * buried: it is the intake channel the whole detection layer is fed by, and
  * the centre of a five-item bar under the thumb is the easiest reach on a
- * phone held in front of the problem. */
+ * phone held in front of the problem.
+ *
+ * Each hint is the item's tooltip rather than a second line under its label:
+ * five labels read at a glance, five labels with five sentences do not. */
 const SECTIONS = [
   { view: "ops", target: "", label: "Live", hint: "Hotspots detected right now",
     Icon: HotspotIcon },
@@ -37,7 +40,7 @@ export function Sidebar({ view, collapsed, onCollapse, theme, onTheme }) {
         <span class="mark" aria-hidden="true"><${WindMark} /></span>
         <div class="brand-text">
           <h1>Vayudoot</h1>
-          <p>Hyper-local pollution detection</p>
+          <p>Hyper-local air radar</p>
         </div>
         <button type="button" class="collapse" aria-expanded=${String(!collapsed)}
                 aria-label=${label} title=${label} onClick=${onCollapse}>
@@ -54,11 +57,11 @@ export function Sidebar({ view, collapsed, onCollapse, theme, onTheme }) {
             || (name === "cases" && (view === "case" || view === "cluster"));
           return html`
             <button key=${name} class=${`nav-item${active ? " is-active" : ""}`}
+                    data-view=${name} title=${hint}
                     aria-current=${active ? "page" : null}
                     onClick=${() => navigate(target)}>
               <${Icon} />
               <span class="nav-label">${text}</span>
-              <span class="nav-hint">${hint}</span>
             </button>`;
         })}
       </nav>

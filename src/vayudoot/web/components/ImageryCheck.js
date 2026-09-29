@@ -8,10 +8,11 @@
  * **It is an annotation, never evidence**, and the panel is built to say so
  * before anything else can be read into it. The picture shown is the exact
  * file the model read, not a fresher tile, so the operator can disagree with
- * it. Everything the model wrote sits under the model mark; the server's
- * disclaimer is shown verbatim in the information blue; and the panel says in
- * words that the reading does not move the hotspot's confidence or its
- * corroboration — `agents/imagery.py` records why that line is drawn there.
+ * it. Everything the model wrote sits under the model mark; the panel says in
+ * words, in the information blue, that the reading does not move the hotspot's
+ * confidence or its corroboration, and the server's disclaimer is kept verbatim
+ * behind a "Why?" under it — `agents/imagery.py` records why that line is drawn
+ * there.
  *
  * The hotspot's area is outlined on the picture as a circle at its true
  * radius, scaled from the frame's own bounding box. A circle, never a point:
@@ -102,10 +103,9 @@ function Snapshot({ reading, hotspot, stamp }) {
             <span class="tnum">${bar.km} km</span></span>`}
         <span class="imagery-north" aria-hidden="true">N ↑</span>
       </div>
-      <figcaption>
-        The exact picture the model read: ${layerLabel(reading.layer)}, pass of
-        ${" "}${reading.image_date} (UTC), about ${Math.round(shape ? shape.widthKm : 50)} km
-        across. North is up.
+      <figcaption class="tnum">
+        The exact picture the model read · ${layerLabel(reading.layer)} ·
+        ${" "}${reading.image_date} UTC · ~${Math.round(shape ? shape.widthKm : 50)} km across
       </figcaption>
     </figure>`;
 }
@@ -134,8 +134,8 @@ function Reading({ reading, hotspot, stamp }) {
         </div>
       </div>
       ${reading.cloud_obscured && !reading.plume_visible && html`
-        <p class="imagery-cloudnote">Cloud over the centre means the picture cannot answer
-          the question. "Not visible" here is not "no smoke".</p>`}
+        <p class="imagery-cloudnote">Cloud hides the ground: "not visible" is not "no
+          smoke".</p>`}
       <blockquote class="imagery-says">
         <span class="model-mark"><${ModelIcon} />What the model says it sees</span>
         <p>${reading.description}</p>
@@ -144,9 +144,11 @@ function Reading({ reading, hotspot, stamp }) {
         <${ModelIcon} />
         <div>
           <strong>An annotation, not a measurement</strong>
-          <p>${reading.disclaimer}</p>
-          <p class="imagery-nochange">This hotspot's confidence and corroboration are exactly
-            what they were before the picture was read.</p>
+          <p class="imagery-nochange">Confidence and corroboration are unchanged by it.</p>
+          <details class="why">
+            <summary>Why?</summary>
+            <p>${reading.disclaimer}</p>
+          </details>
         </div>
       </aside>
       <p class="imagery-meta tnum">
@@ -204,12 +206,12 @@ export function ImageryCheck({ hotspot }) {
 
       ${reading === null && !busy && html`
         <${Fragment}>
-          <p class="alert-why">
-            Fetches the latest VIIRS true-colour pass of a ~50 km square around this hotspot
-            from NASA GIBS, and asks a model whether a smoke plume is visible and whether cloud
-            is in the way. One model call. <strong>An annotation for you, not evidence</strong>:
-            it cannot change this hotspot's confidence.
-          </p>
+          <ul class="alert-steps" aria-label="What the check does">
+            <li><${SatelliteIcon} />Latest VIIRS pass, ~50 km</li>
+            <li><${ModelIcon} />One model call</li>
+          </ul>
+          <p class="alert-why">A model looks for smoke and cloud. <strong>An annotation, not
+            evidence</strong> — confidence does not change.</p>
           <button type="button" class="secondary imagery-go" onClick=${check}>
             <${SatelliteIcon} /> Check satellite imagery
           </button>
