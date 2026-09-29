@@ -10,10 +10,22 @@ without a reset, submissions made by one test count against the next one and the
 suite starts failing in whatever order it happens to run.
 """
 
+import os
+
 import pytest
 
 from vayudoot.config import settings
 from vayudoot.ratelimit import limiter
+
+
+def pytest_collection_modifyitems(config, items):
+    """Under `VAYUDOOT_TEST_STORE=firestore`, skip tests about the JSON files themselves."""
+    if os.environ.get("VAYUDOOT_TEST_STORE") != "firestore":
+        return
+    skip = pytest.mark.skip(reason="exercises the JSON-file store directly")
+    for item in items:
+        if item.get_closest_marker("json_files"):
+            item.add_marker(skip)
 
 
 @pytest.fixture(autouse=True)
@@ -33,8 +45,30 @@ def isolated_storage(tmp_path, monkeypatch):
     # stray DATABASE_URL must never make the suite touch a real database.
     # test_store_postgres.py overrides this deliberately.
     monkeypatch.setattr(settings, "database_url", "")
+    # Same for a Firebase key in `.env`: test_store_firestore.py swaps in an
+    # in-memory Firestore, and nothing else may reach the real one.
+    monkeypatch.setattr(settings, "firebase_service_account", "")
+    if os.environ.get("VAYUDOOT_TEST_STORE") == "firestore":
+        _use_memory_firestore(monkeypatch)
     limiter.reset()
     return tmp_path
+
+
+def _use_memory_firestore(monkeypatch):
+    """Run the whole suite against the Firestore backend, over an in-memory fake.
+
+    `VAYUDOOT_TEST_STORE=firestore pytest` repeats every test that touches the
+    store on that backend instead of JSON files, which is how the backend is
+    shown to behave like the other two rather than only in its own tests. Each
+    test gets an empty database and a cold mirror.
+    """
+    from fakes import MemoryFirestore
+    from vayudoot import firestore_store
+
+    remote = MemoryFirestore()
+    monkeypatch.setattr(settings, "firebase_service_account", "memory")
+    monkeypatch.setattr(firestore_store, "_connect", lambda *_: remote)
+    firestore_store.reset()
 
 
 @pytest.fixture(autouse=True)

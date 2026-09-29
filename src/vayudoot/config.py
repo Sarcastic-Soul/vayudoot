@@ -106,6 +106,22 @@ class Settings(BaseSettings):
     #: deployment, where the container's disk does not survive a restart.
     database_url: str = ""
 
+    #: A Firebase service-account key, as the JSON text itself (what a hosting
+    #: provider's environment variable holds) or as a path to the downloaded
+    #: file. Set, it keeps cases, signals, alerts and the forecast ledger in
+    #: Cloud Firestore on Firebase's free Spark plan, and it wins over
+    #: `database_url`; see `firestore_store.py`. Unprefixed for the same reason.
+    firebase_service_account: str = ""
+    #: The Firestore database id. "(default)" is the one the console creates.
+    firebase_database: str = "(default)"
+
+    #: Browser origins, besides the API's own, that may call it: the Firebase
+    #: Hosting domains when the web UI is served from there rather than by this
+    #: process. Comma separated, for example
+    #: `https://vayudoot.web.app,https://vayudoot.firebaseapp.com`. Empty allows
+    #: none, which is right when the UI and API share one origin.
+    vayudoot_cors_origins: str = ""
+
     # Intake limits. One report costs about ten model calls, so an open endpoint
     # on a public URL is an open tap on the day's free-tier quota: a single
     # crawler that finds the form empties it before a citizen gets there. Both

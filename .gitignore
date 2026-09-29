@@ -24,3 +24,10 @@ src/vayudoot/data/authorities.*.json
 
 # Agent worktrees made by Claude Code
 .claude/worktrees/
+
+# Firebase: the CLI's cache and logs, and any downloaded service-account key.
+# The key is a credential; it goes in the host's environment, never the repo.
+.firebase/
+firebase-debug.log
+firestore-debug.log
+*firebase-adminsdk*.json

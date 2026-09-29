@@ -224,3 +224,38 @@ def image_bytes(fmt: str = "PNG", size: tuple[int, int] = (24, 18), mode: str = 
     buffer = io.BytesIO()
     image.save(buffer, format=fmt)
     return buffer.getvalue()
+
+
+class MemoryFirestore:
+    """An in-memory stand-in for `firestore_store.Remote`, counting what it bills.
+
+    Firestore charges per document read and per document written, and the Spark
+    plan's daily allowance of both is what `firestore_store` is built around, so
+    the counts are the thing its tests assert on. A query that matches nothing
+    still costs one read, as it does on the real service.
+    """
+
+    def __init__(self) -> None:
+        self.docs: dict[str, dict[str, dict]] = {}
+        self.reads = 0
+        self.writes = 0
+
+    def _billed(self, found: dict[str, dict]) -> dict[str, dict]:
+        self.reads += max(1, len(found))
+        return {doc_id: dict(data) for doc_id, data in found.items()}
+
+    def read_all(self, collection: str) -> dict[str, dict]:
+        return self._billed(self.docs.get(collection, {}))
+
+    def read_range(self, collection: str, field: str, low: str, high: str | None):
+        return self._billed(
+            {
+                doc_id: data
+                for doc_id, data in self.docs.get(collection, {}).items()
+                if data.get(field, "") >= low and (high is None or data.get(field, "") < high)
+            }
+        )
+
+    def write(self, collection: str, doc_id: str, data: dict) -> None:
+        self.writes += 1
+        self.docs.setdefault(collection, {})[doc_id] = dict(data)

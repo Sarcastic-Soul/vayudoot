@@ -286,6 +286,7 @@ LEGACY_CASE = """{
 }"""
 
 
+@pytest.mark.json_files
 def test_a_case_saved_before_these_fields_existed_still_loads():
     (settings.vayudoot_case_dir).mkdir(parents=True, exist_ok=True)
     (settings.vayudoot_case_dir / "VD-OLDCASE.json").write_text(LEGACY_CASE)
@@ -298,6 +299,7 @@ def test_a_case_saved_before_these_fields_existed_still_loads():
     assert [c.case_id for c in store.all_cases()] == ["VD-OLDCASE"]
 
 
+@pytest.mark.json_files
 def test_the_cases_already_on_this_machine_still_load(tmp_path):
     """The real store, not a fixture: whatever is on this machine must keep loading.
 

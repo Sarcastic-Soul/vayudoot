@@ -3,16 +3,19 @@
 A complaint filed today is chased for weeks, and a satellite pass that happened
 last night cannot be re-fetched after the fact, so both have to survive process
 restarts — and, on a public deployment, a container that gets rebuilt or
-redeployed under them. Two backends, chosen by whether `VAYUDOOT_DATABASE_URL`
-is set:
+redeployed under them. Three backends, chosen by what is configured:
 
-* unset (the default, and what every test uses) — JSON files on disk. Fast,
+* nothing (the default, and what every test uses) — JSON files on disk. Fast,
   needs nothing running, and wrong for a public URL: the disk is ephemeral
   there.
-* set — one row per object in Postgres, `data` as `jsonb`. Any standard Postgres
-  works; nothing here is provider-specific.
+* `FIREBASE_SERVICE_ACCOUNT` — Cloud Firestore on Firebase's free Spark plan,
+  through an in-memory mirror that keeps reads inside the daily quota. The
+  shipped deployment's choice, and it wins if both are set. See
+  `firestore_store.py`, which holds all of it.
+* `DATABASE_URL` — one row per object in Postgres, `data` as `jsonb`. Any
+  standard Postgres works; nothing here is provider-specific.
 
-Either way the interface above this module is the same handful of functions, so
+Whichever it is, the interface above this module is the same handful of functions, so
 the pipeline, the API, `clustering.py` and `scan.py` never know which backend
 they are talking to.
 
@@ -39,6 +42,7 @@ from pathlib import Path
 from psycopg.types.json import Jsonb
 from psycopg_pool import ConnectionPool
 
+from . import firestore_store
 from .config import settings
 from .schemas import Case, ForecastRecord, HotspotAlert, ImageryReading, Signal
 
@@ -46,8 +50,12 @@ _pool: ConnectionPool | None = None
 _pool_url: str | None = None
 
 
+def _use_firestore() -> bool:
+    return bool(settings.firebase_service_account)
+
+
 def _use_postgres() -> bool:
-    return bool(settings.database_url)
+    return bool(settings.database_url) and not _use_firestore()
 
 
 def _dir() -> Path:
@@ -117,6 +125,8 @@ def _pg() -> ConnectionPool:
 
 
 def save(case: Case) -> None:
+    if _use_firestore():
+        return firestore_store.save(case)
     if _use_postgres():
         with _pg().connection() as conn:
             conn.execute(
@@ -133,6 +143,8 @@ def save(case: Case) -> None:
 
 
 def load(case_id: str) -> Case | None:
+    if _use_firestore():
+        return firestore_store.load(case_id)
     if _use_postgres():
         with _pg().connection() as conn:
             row = conn.execute("SELECT data FROM cases WHERE case_id = %s", (case_id,)).fetchone()
@@ -145,6 +157,8 @@ def load(case_id: str) -> Case | None:
 
 
 def all_cases() -> list[Case]:
+    if _use_firestore():
+        return firestore_store.all_cases()
     if _use_postgres():
         with _pg().connection() as conn:
             rows = conn.execute("SELECT data FROM cases ORDER BY created_at DESC").fetchall()
@@ -231,6 +245,9 @@ def save_signals(signals: list[Signal]) -> int:
     if not unique:
         return 0
 
+    if _use_firestore():
+        return firestore_store.save_signals(list(unique.values()))
+
     if _use_postgres():
         inserted = 0
         with _pg().connection() as conn:
@@ -270,6 +287,9 @@ def live_signals() -> list[Signal]:
     """
     cutoff = datetime.now(UTC) - timedelta(days=settings.vayudoot_signal_retention_days)
 
+    if _use_firestore():
+        return firestore_store.signals_since(cutoff)
+
     if _use_postgres():
         with _pg().connection() as conn:
             rows = conn.execute(
@@ -287,6 +307,8 @@ def all_signals() -> list[Signal]:
     The whole record, retention window included, for tests and for answering
     "what did this instance actually see" when a hotspot needs explaining.
     """
+    if _use_firestore():
+        return firestore_store.signals_since(None)
     if _use_postgres():
         with _pg().connection() as conn:
             rows = conn.execute("SELECT data FROM signals ORDER BY observed_at DESC").fetchall()
@@ -347,6 +369,8 @@ def _safe_name(identifier: str) -> str:
 
 
 def save_alert(alert: HotspotAlert) -> None:
+    if _use_firestore():
+        return firestore_store.save_alert(alert)
     if _use_postgres():
         with _pg().connection() as conn:
             conn.execute(
@@ -363,6 +387,8 @@ def save_alert(alert: HotspotAlert) -> None:
 
 
 def load_alert(alert_id: str) -> HotspotAlert | None:
+    if _use_firestore():
+        return firestore_store.load_alert(alert_id)
     if _use_postgres():
         with _pg().connection() as conn:
             row = conn.execute(
@@ -381,6 +407,8 @@ def load_alert(alert_id: str) -> HotspotAlert | None:
 
 def all_alerts() -> list[HotspotAlert]:
     """Every alert, newest first, skipping any the current schema rejects."""
+    if _use_firestore():
+        return firestore_store.all_alerts()
     if _use_postgres():
         with _pg().connection() as conn:
             rows = conn.execute("SELECT data FROM alerts ORDER BY created_at DESC").fetchall()
@@ -418,6 +446,8 @@ def _forecast_dir() -> Path:
 
 
 def save_forecast_record(record: ForecastRecord) -> None:
+    if _use_firestore():
+        return firestore_store.save_forecast_record(record)
     if _use_postgres():
         with _pg().connection() as conn:
             conn.execute(
@@ -438,6 +468,8 @@ def save_forecast_record(record: ForecastRecord) -> None:
 
 
 def load_forecast_record(forecast_id: str) -> ForecastRecord | None:
+    if _use_firestore():
+        return firestore_store.load_forecast_record(forecast_id)
     if _use_postgres():
         with _pg().connection() as conn:
             row = conn.execute(
@@ -459,6 +491,8 @@ def forecast_records(since: datetime | None = None) -> list[ForecastRecord]:
 
     Records the current schema rejects are skipped, as everywhere else here.
     """
+    if _use_firestore():
+        return firestore_store.forecast_records(since)
     if _use_postgres():
         with _pg().connection() as conn:
             if since is None:

@@ -18,6 +18,9 @@ import pytest
 
 from vayudoot import hotspots
 
+# Demo prep seeds a local node's JSON store; see `docs/deployment.md`.
+pytestmark = pytest.mark.json_files
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
