@@ -31,6 +31,7 @@ from google.adk.runners import InMemoryRunner
 from google.genai import types
 from google.genai.errors import APIError
 from pydantic import BaseModel, Field, PrivateAttr
+from pydantic_core import to_jsonable_python
 
 from .config import Tier, settings
 
@@ -213,6 +214,7 @@ class Agent:
             output_schema=output_schema,
             output_key=output_key,
             include_contents=include_contents,
+            after_tool_callback=_jsonable_model_response,
         )
 
     async def invoke_async(
@@ -230,6 +232,22 @@ class Agent:
                 else structured_output_model.model_validate(answer)
             )
         return AgentResult(structured_output=structured, text=text)
+
+
+def _jsonable_model_response(tool: Any, args: Any, tool_context: Any, tool_response: Any) -> None:
+    """Make a structured answer JSON-safe before ADK serialises it.
+
+    An agent that has tools and an output schema answers through ADK's
+    `set_model_response` tool. ADK 2.10 validates the answer against the schema,
+    keeps `model_dump()` of it — Python objects, so a `datetime` stays a
+    `datetime` — and then passes that to `json.dumps`, which refuses it. Every
+    corridor outlook failed this way in production with "Object of type datetime
+    is not JSON serializable", because `AirQualityForecast` carries timestamps.
+    Converting the stored answer in place leaves the tool's reply alone.
+    """
+    actions = tool_context.actions
+    if tool.name == "set_model_response" and actions.set_model_response is not None:
+        actions.set_model_response = to_jsonable_python(actions.set_model_response)
 
 
 async def run_once(

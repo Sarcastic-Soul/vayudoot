@@ -140,3 +140,45 @@ def test_the_tier_temperature_reaches_the_request(ids, fake_gemini):
     asked, _ = fake_gemini
     _run(models.build_model(temperature=0.0, tier="fast"))
     assert asked[0].config.temperature == 0.0
+
+
+def test_a_structured_answer_with_a_timestamp_survives_set_model_response(monkeypatch):
+    """Every live corridor outlook failed with "datetime is not JSON serializable".
+
+    An agent with tools answers through ADK's `set_model_response` tool, which
+    stores `model_dump()` of the answer and then `json.dumps` it. The offline
+    fakes elsewhere answer in plain text and never took that path, which is how
+    the bug reached production. This one answers the way Gemini does.
+    """
+    from datetime import datetime
+
+    from vayudoot.schemas import AirQualityForecast
+
+    monkeypatch.setattr(settings, "gemini_api_key", "test-key")
+    answer = {
+        "latitude": 28.6,
+        "longitude": 77.2,
+        "risk": "high",
+        "confidence": 0.6,
+        "generated_at": "2026-09-29T12:00:00Z",
+        "peak_window_start": "2026-09-30T06:00:00Z",
+    }
+
+    async def answers_through_the_tool(self, llm_request, stream=False):
+        call = types.FunctionCall(name="set_model_response", args=answer)
+        content = types.Content(role="model", parts=[types.Part(function_call=call)])
+        yield LlmResponse(content=content)
+
+    monkeypatch.setattr(Gemini, "generate_content_async", answers_through_the_tool)
+
+    def a_tool(place: str) -> dict:
+        """A tool, so that ADK routes the answer through set_model_response."""
+        return {"place": place}
+
+    agent = models.Agent(
+        name="forecast", model=models.build_model(tier="fast"), system_prompt="x", tools=[a_tool]
+    )
+    result = asyncio.run(agent.invoke_async("Delhi", structured_output_model=AirQualityForecast))
+
+    assert result.structured_output.risk == "high"
+    assert isinstance(result.structured_output.peak_window_start, datetime)
