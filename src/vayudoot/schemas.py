@@ -1,6 +1,6 @@
 """Typed contracts between pipeline stages.
 
-Each agent stage produces one of these via Strands structured output, so the
+Each agent stage produces one of these via ADK structured output, so the
 handoff between stages is a validated object rather than free text.
 """
 

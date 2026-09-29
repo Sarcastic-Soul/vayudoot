@@ -22,7 +22,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from vayudoot.config import settings
+from vayudoot.config import PROVIDER, settings
 from vayudoot.schemas import EvidencePacket, Report
 
 from . import guards, replay, scoring
@@ -300,9 +300,9 @@ def guards_fingerprints(manifest: Manifest) -> dict[str, str]:
 
 def _model_description() -> dict[str, str]:
     return {
-        "primary_provider": settings.provider_for("primary"),
+        "primary_provider": PROVIDER,
         "primary_id": settings.model_id_for("primary"),
-        "fast_provider": settings.provider_for("fast"),
+        "fast_provider": PROVIDER,
         "fast_id": settings.model_id_for("fast"),
         "temperature": str(settings.vayudoot_model_temperature),
     }

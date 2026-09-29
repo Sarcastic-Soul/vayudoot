@@ -301,70 +301,40 @@ async def test_a_corridor_missing_a_waypoint_is_served_but_not_cached(client, mo
     assert "corridor:ncr" not in api_module._forecast_cache
 
 
-class _SlowForecastModel:
-    """A Strands model that answers a forecast after a pause, like a real one.
+def _slow_gemini(monkeypatch) -> None:
+    """Make every Gemini call answer a forecast after a pause, like a real one.
 
-    Used with the real `strands.Agent`, not a stub, because the bug it guards
-    against lives in the SDK's own behaviour: an `Agent` refuses a second
-    invocation while one is in flight. A stub that tolerates concurrency is
-    exactly what let the shared-agent corridor pass every test while failing
-    every live run.
+    Used with the real `models.Agent`, not a stub, because the bug it guards
+    against lived in the agent layer rather than in any stage: an agent that
+    refused a second invocation while one was in flight. A stub that tolerates
+    concurrency is exactly what let the shared-agent corridor pass every test
+    while failing every live run.
     """
+    import asyncio
+    import json
 
-    def __new__(cls):
-        import asyncio
-        import json
+    from google.adk.models import Gemini
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
 
-        from strands.models import Model
+    payload = json.dumps({"latitude": 0, "longitude": 0, "risk": "elevated", "confidence": 0.5})
 
-        class Slow(Model):
-            def update_config(self, **kwargs):
-                pass
+    async def slow(self, llm_request, stream=False):
+        await asyncio.sleep(0.05)
+        yield LlmResponse(content=types.Content(role="model", parts=[types.Part(text=payload)]))
 
-            def get_config(self):
-                return {}
-
-            async def structured_output(self, *args, **kwargs):
-                raise NotImplementedError
-                yield  # pragma: no cover
-
-            async def stream(self, messages, tool_specs=None, system_prompt=None, **kwargs):
-                await asyncio.sleep(0.05)
-                name = next(
-                    (t["name"] for t in tool_specs or [] if "Forecast" in t["name"]),
-                    "AirQualityForecast",
-                )
-                payload = json.dumps(
-                    {"latitude": 0, "longitude": 0, "risk": "elevated", "confidence": 0.5}
-                )
-                yield {"messageStart": {"role": "assistant"}}
-                yield {
-                    "contentBlockStart": {
-                        "start": {"toolUse": {"toolUseId": "t1", "name": name}}
-                    }
-                }
-                yield {"contentBlockDelta": {"delta": {"toolUse": {"input": payload}}}}
-                yield {"contentBlockStop": {}}
-                yield {"messageStop": {"stopReason": "tool_use"}}
-
-        return Slow()
+    monkeypatch.setattr(Gemini, "generate_content_async", slow)
 
 
 async def test_every_waypoint_of_a_live_corridor_is_forecast(monkeypatch):
-    """Regression: one shared `Agent` made every waypoint but the first fail.
+    """Regression: one shared agent made every waypoint but the first fail.
 
-    The SDK raises `ConcurrencyException` on a second concurrent invocation of
-    the same agent, and the corridor dropped those as ordinary provider errors,
-    so a live corridor reported one waypoint out of five. Each waypoint must get
-    an agent of its own.
+    The agent SDK this project first used raised on a second concurrent
+    invocation of the same agent, and the corridor dropped those as ordinary
+    provider errors, so a live corridor reported one waypoint out of five. Each
+    waypoint must still be forecast when they run at once.
     """
-    from strands import Agent
-
-    monkeypatch.setattr(
-        forecast,
-        "build_forecast_agent",
-        lambda: Agent(model=_SlowForecastModel(), callback_handler=None),
-    )
+    _slow_gemini(monkeypatch)
 
     result = await forecast.forecast_corridor(corridor(4))
 
@@ -739,8 +709,8 @@ def test_the_forecast_tools_ask_for_hours_from_now_not_from_midnight(respx_mock)
         )
     )
 
-    get_air_quality_forecast._tool_func(28.6, 77.2, 72)
-    get_wind_forecast._tool_func(28.6, 77.2, 72)
+    get_air_quality_forecast(28.6, 77.2, 72)
+    get_wind_forecast(28.6, 77.2, 72)
 
     for route in (air, wind):
         params = route.calls.last.request.url.params

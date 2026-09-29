@@ -165,7 +165,7 @@ def voice_account() -> VoiceAccount:
 
 
 class StubAgent:
-    """Stands in for a Strands `Agent`.
+    """Stands in for a `models.Agent`.
 
     Records the prompt it was given, which is how a test can assert what a stage
     actually told the model, and answers with a fixed structured output.

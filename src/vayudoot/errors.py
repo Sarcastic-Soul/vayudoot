@@ -1,15 +1,10 @@
-"""Turn a model provider's rate-limit error into one sentence a citizen can read.
+"""Turn a Gemini rate-limit error into one sentence a citizen can read.
 
-Every agent in this project asks for structured output (see `CLAUDE.md`), and
-neither SDK's structured-output path wraps its own exceptions the way each
-provider's plain chat path does: a 429 from Gemini surfaces as
-`google.genai.errors.ClientError`, whose message is the API's full JSON error
-body, and Ollama's `ollama.ResponseError` carries only a bare HTTP status code.
-Both are written for a developer's log, not for someone waiting on their
-report. This module recognises the two shapes — and Strands' own
-`ModelThrottledException`, in case a future call path goes through it instead,
-and `callbudget.OllamaBudgetExceeded`, this deployment's own safety cap — and
-replaces them with a plain sentence naming the provider and tier. Every other
+A 429 from Gemini surfaces as `google.genai.errors.ClientError` (ADK re-raises
+it as a subclass of the same), whose message is the API's full JSON error body
+with a paragraph of developer advice on top. That is written for a developer's
+log, not for someone waiting on their report. This module recognises it and
+replaces it with a plain sentence naming the model and tier. Every other
 exception is left exactly as it was; nothing here changes what gets logged,
 only what a citizen is shown.
 """
@@ -18,7 +13,8 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from .callbudget import OllamaBudgetExceeded
+from google.genai.errors import ClientError
+
 from .config import Tier, settings
 
 #: What each tier was doing when it failed, for the sentence that names it.
@@ -36,57 +32,45 @@ _GEMINI_KNOWN_LIMITS = {
 
 
 def is_rate_limit(exc: Exception, tier: Tier) -> bool:
-    """Whether `exc` is a recognised free-tier rate limit from `tier`'s provider."""
-    return _is_rate_limit(exc, settings.provider_for(tier))
+    """Whether `exc` is a recognised Gemini free-tier rate limit.
+
+    `tier` is unused now that both tiers are on Gemini; it stays so callers
+    keep naming the stage that failed.
+    """
+    return any(_is_gemini_rate_limit(candidate) for candidate in _chain(exc))
 
 
 def describe(exc: Exception, tier: Tier) -> str:
     """A message for `case.error`.
 
-    A clean sentence when `exc` is a recognised free-tier rate limit from the
-    provider configured for `tier`; otherwise the same `Type: message` format
-    every other pipeline failure has always used.
+    A clean sentence when `exc` is a recognised Gemini free-tier rate limit;
+    otherwise the same `Type: message` format every other pipeline failure has
+    always used.
     """
-    fallback = f"{type(exc).__name__}: {exc}"
-    budget_trip = _find(exc, OllamaBudgetExceeded)
-    if budget_trip is not None:
-        # callbudget.py already wrote the full sentence; nothing to add here.
-        return str(budget_trip)
     if not is_rate_limit(exc, tier):
-        return fallback
+        return f"{type(exc).__name__}: {exc}"
 
-    provider = settings.provider_for(tier)
     model_id = settings.model_id_for(tier)
     work = _TIER_WORK[tier]
-
-    if provider == "gemini":
-        limits = _GEMINI_KNOWN_LIMITS.get(model_id)
-        known = f" Its free-tier limits are {limits}." if limits else ""
-        retry = _gemini_retry_seconds(exc)
-        if is_daily_quota(exc):
-            # Checked before the retry delay: a spent daily quota still comes
-            # with a RetryInfo of a few seconds, and following it only spends
-            # another rejected request.
-            wait = f"{DAILY_QUOTA_SPENT}; it resets at midnight Pacific time."
-        elif retry is not None:
-            wait = f"Retry in about {retry} seconds."
-        else:
-            wait = (
-                "Per-minute limits clear within a minute; the daily allowance resets at "
-                "midnight Pacific time."
-            )
-        return (
-            f"{model_id} (Gemini) has hit its free-tier request quota while {work}."
-            f"{known} {wait}"
+    limits = _GEMINI_KNOWN_LIMITS.get(model_id)
+    known = f" Its free-tier limits are {limits}." if limits else ""
+    retry = _gemini_retry_seconds(exc)
+    if is_daily_quota(exc):
+        # Checked before the retry delay: a spent daily quota still comes with a
+        # RetryInfo of a few seconds, and following it only spends another
+        # rejected request.
+        wait = f"{DAILY_QUOTA_SPENT}; it resets at midnight Pacific time."
+    elif retry is not None:
+        wait = f"Retry in about {retry} seconds."
+    else:
+        wait = (
+            "Per-minute limits clear within a minute; the daily allowance resets at "
+            "midnight Pacific time."
         )
-    if provider == "ollama":
-        return (
-            f"{model_id} (Ollama Cloud) has hit its free-tier quota while {work}. "
-            "The allowance is published as a session and weekly percentage rather "
-            "than a request count — check the meter at https://ollama.com/settings/keys "
-            "and try again shortly."
-        )
-    return fallback
+    return (
+        f"{model_id} (Gemini) has hit its free-tier request quota while {work}."
+        f"{known} {wait}"
+    )
 
 
 #: The words a daily-quota failure carries in its message. A caller that retries
@@ -105,35 +89,10 @@ def is_daily_quota(exc: Exception) -> bool:
     return any("PerDay" in str(candidate) for candidate in _chain(exc))
 
 
-def _is_rate_limit(exc: Exception, provider: str) -> bool:
-    from strands.types.exceptions import ModelThrottledException
-
-    for candidate in _chain(exc):
-        if isinstance(candidate, (ModelThrottledException, OllamaBudgetExceeded)):
-            return True
-        if provider == "gemini" and _is_gemini_rate_limit(candidate):
-            return True
-        if provider == "ollama" and _is_ollama_rate_limit(candidate):
-            return True
-    return False
-
-
 def _is_gemini_rate_limit(exc: Exception) -> bool:
-    try:
-        from google.genai.errors import ClientError
-    except ImportError:
-        return False
     return isinstance(exc, ClientError) and (
         exc.code == 429 or exc.status == "RESOURCE_EXHAUSTED"
     )
-
-
-def _is_ollama_rate_limit(exc: Exception) -> bool:
-    try:
-        from ollama import ResponseError
-    except ImportError:
-        return False
-    return isinstance(exc, ResponseError) and exc.status_code == 429
 
 
 def _gemini_retry_seconds(exc: Exception | None) -> int | None:
@@ -162,20 +121,12 @@ def _gemini_retry_seconds(exc: Exception | None) -> int | None:
     return None
 
 
-def _find(exc: Exception | None, kind: type) -> Exception | None:
-    for candidate in _chain(exc):
-        if isinstance(candidate, kind):
-            return candidate
-    return None
-
-
 def _chain(exc: Exception | None) -> Iterator[Exception]:
     """`exc`, then each exception it was raised from or during.
 
-    A Strands graph node (`corroborate`'s parallel fan-out) can wrap the
-    provider's own exception rather than let it propagate directly, so every
-    lookup in this module has to walk the chain rather than inspect `exc`
-    alone.
+    ADK re-raises a 429 as its own exception `from` the SDK's, and a stage may
+    wrap either in its own error, so every lookup in this module has to walk
+    the chain rather than inspect `exc` alone.
     """
     seen: set[int] = set()
     current = exc

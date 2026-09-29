@@ -196,9 +196,10 @@ async def test_provenance_comes_from_the_fetch_not_the_model():
 
     (content,) = agent.contents
     text, image = content
-    assert image == {"image": {"format": "jpeg", "source": {"bytes": GROUND}}}
+    assert image.inline_data.mime_type == "image/jpeg"
+    assert image.inline_data.data == GROUND
     # The model is not told what it is expected to find.
-    lowered = text["text"].lower()
+    lowered = text.text.lower()
     assert "location of interest" in lowered
     for leading in ("fire", "burning", "hotspot", "detected"):
         assert leading not in lowered

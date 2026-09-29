@@ -17,9 +17,7 @@ conditions, never accusations; no responsible party named or implied.
 
 from __future__ import annotations
 
-from strands import Agent
-
-from ..models import build_model
+from ..models import Agent, build_model
 from ..schemas import AlertBrief, Jurisdiction
 from .prompts import ALERT, local_language_line
 
@@ -29,7 +27,6 @@ def build_alert_agent() -> Agent:
         name="alert",
         model=build_model(temperature=0.2, tier="fast"),
         system_prompt=ALERT,
-        callback_handler=None,
     )
 
 

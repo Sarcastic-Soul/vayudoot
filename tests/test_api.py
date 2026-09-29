@@ -259,7 +259,6 @@ async def test_a_provider_rate_limit_is_shown_as_a_plain_sentence_over_http(clie
             },
         )
 
-    monkeypatch.setattr(settings, "vayudoot_model_provider_fast", "gemini")
     patch_stages(monkeypatch, pipeline, fail_at="jurisdiction", fail_with=quota_exceeded)
     case_id = (await _submit(client))["case_id"]
     await _drain()

@@ -40,8 +40,6 @@ import unicodedata
 from functools import lru_cache
 from pathlib import Path
 
-from strands import tool
-
 from ..config import settings
 
 #: Where the tables live. India's keep their original names,
@@ -126,7 +124,6 @@ def access_to_information_law(country: str | None = None) -> str:
     return _load(country).get("access_to_information", "")
 
 
-@tool
 def lookup_authority(
     state: str, city: str = "", pollution_type: str = "", country: str = ""
 ) -> dict:

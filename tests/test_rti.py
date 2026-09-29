@@ -149,7 +149,6 @@ async def test_drafting_stores_the_application_on_the_case(client, stub_agent):
 async def test_a_provider_rate_limit_during_drafting_is_a_clean_503(client, monkeypatch):
     """The endpoint's own except block, not just `errors.py` in isolation."""
     case = make_case()
-    monkeypatch.setattr(settings, "vayudoot_model_provider", "gemini")
 
     async def exploding(*args, **kwargs):
         raise ClientError(

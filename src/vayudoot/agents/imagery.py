@@ -40,11 +40,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from strands import Agent
-from strands.types.content import ContentBlock
-
 from .. import store
-from ..models import build_model
+from ..models import Agent, build_model, media_part, text_part
 from ..schemas import Hotspot, ImageryAssessment, ImageryReading
 from ..tools.imagery import fetch_true_colour
 from .prompts import IMAGERY
@@ -59,7 +56,6 @@ def build_imagery_agent() -> Agent:
         name="imagery",
         model=build_model(temperature=0.0, tier="primary"),
         system_prompt=IMAGERY,
-        callback_handler=None,
     )
 
 
@@ -76,11 +72,9 @@ async def assess_snapshot(
         "interest.\n\n"
         "Is a smoke plume visible, and does cloud hide the centre?"
     )
-    content: list[ContentBlock] = [
-        {"text": prompt},
-        # The Bedrock-shaped envelope Strands translates for every provider;
-        # see CLAUDE.md under "Verify, do not remember".
-        {"image": {"format": snapshot["format"], "source": {"bytes": snapshot["image"]}}},
+    content = [
+        text_part(prompt),
+        media_part(snapshot["image"], f"image/{snapshot['format']}"),
     ]
     result = await agent.invoke_async(content, structured_output_model=ImageryAssessment)
     return result.structured_output

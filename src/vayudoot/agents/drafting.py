@@ -11,10 +11,8 @@ jurisdiction adds one line, "Country: India".
 
 from __future__ import annotations
 
-from strands import Agent
-
 from ..clustering import describe
-from ..models import build_model
+from ..models import Agent, build_model
 from ..schemas import (
     Cluster,
     Complaint,
@@ -34,7 +32,6 @@ def build_drafting_agent() -> Agent:
         name="drafting",
         model=build_model(temperature=0.3),
         system_prompt=DRAFTING,
-        callback_handler=None,
     )
 
 

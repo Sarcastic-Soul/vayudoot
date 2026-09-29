@@ -9,10 +9,8 @@ happens, for how long, what it smells like, who is coughing.
 
 **Gemini hears the audio itself.** Cloud Speech-to-Text and Translation need a
 billing account, which is why voice was out of scope before; Gemini through AI
-Studio takes audio as an ordinary content block on the free tier. Strands'
-Gemini provider does not send audio blocks, so `models.FallbackGeminiModel`
-adds the one missing branch — see its `_format_request_content_part`. On Ollama
-there is no audio input at all, and this stage says so instead of pretending.
+Studio takes audio as ordinary inline data on the free tier, the same way it
+takes a photograph.
 
 **No named party leaves this module.** The model is asked to replace every
 name of a person or business with `[name omitted]` and to list what it left
@@ -43,12 +41,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from strands import Agent
-from strands.types.content import ContentBlock
+from google.genai import types
 
-from ..audio import UnsupportedAudio, sniff
-from ..config import settings
-from ..models import build_model
+from ..audio import UnsupportedAudio, mime_type, sniff
+from ..models import Agent, build_model, media_part, text_part
 from ..schemas import NAME_OMITTED, Report, VoiceAccount, VoiceHearing
 from .prompts import VOICE
 
@@ -62,35 +58,31 @@ from .prompts import VOICE
 _TRAILING_NAME = re.compile(re.escape(NAME_OMITTED) + r"(?:[ ]+[A-Z][\w&.'-]*)+")
 
 #: The tier this stage runs on. Named once so the pipeline can attribute a
-#: failure here to the provider actually responsible for it.
+#: failure here to the model actually responsible for it.
 TIER = "fast"
 
 
 class VoiceUnavailable(RuntimeError):
-    """The voice note cannot be heard: missing, unreadable, or no audio-capable model."""
+    """The voice note cannot be heard: missing or unreadable."""
 
 
 def build_voice_agent() -> Agent:
-    if settings.provider_for(TIER) != "gemini":
-        raise VoiceUnavailable(
-            "Voice notes are heard by Gemini, and the fast tier is configured for "
-            f"{settings.provider_for(TIER)}, which takes no audio input."
-        )
     return Agent(
         name="voice",
         model=build_model(temperature=0.0, tier=TIER),
         system_prompt=VOICE,
-        callback_handler=None,
     )
 
 
-def _audio_block(path: Path) -> ContentBlock:
+def _audio_part(path: Path) -> types.Part:
     data = path.read_bytes()
     try:
         audio_format = sniff(data)
     except UnsupportedAudio as exc:
         raise VoiceUnavailable(f"The stored voice note could not be read: {exc}") from exc
-    return {"audio": {"format": audio_format, "source": {"bytes": data}}}
+    # The MIME type comes from `audio.AUDIO_FORMATS`, not `mimetypes`, which has
+    # no entry for WebM or M4A audio on most systems.
+    return media_part(data, mime_type(audio_format))
 
 
 async def hear_voice_note(report: Report, agent: Agent | None = None) -> VoiceAccount:
@@ -99,17 +91,18 @@ async def hear_voice_note(report: Report, agent: Agent | None = None) -> VoiceAc
     if path is None or not path.exists():
         raise VoiceUnavailable("The report's voice note is no longer on disk.")
 
-    block = _audio_block(path)
+    part = _audio_part(path)
     agent = agent or build_voice_agent()
     prompt = (
         f"A citizen recorded this voice note at {report.observed_at.isoformat()} to report air "
         "pollution near them. Transcribe it, translate it into English, and fill in what it "
         "describes. Leave out every name."
     )
-    content: list[ContentBlock] = [{"text": prompt}, block]
-    result = await agent.invoke_async(content, structured_output_model=VoiceHearing)
-    model = getattr(getattr(agent, "model", None), "config", {}) or {}
-    return redact(result.structured_output, model=model.get("model_id", ""))
+    result = await agent.invoke_async(
+        [text_part(prompt), part], structured_output_model=VoiceHearing
+    )
+    model = getattr(getattr(agent, "model", None), "answered_by", "")
+    return redact(result.structured_output, model=model)
 
 
 def redact(hearing: VoiceHearing, model: str = "") -> VoiceAccount:

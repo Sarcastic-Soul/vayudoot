@@ -1,7 +1,7 @@
 """Normalise a submitted photograph into something a model can read.
 
 A citizen photographs a pollution event with whatever is in their pocket, and
-what arrives is not necessarily what a model accepts. Model content blocks take
+what arrives is not necessarily what a model accepts. The model is sent one of
 four formats — PNG, JPEG, GIF, WebP — while phones produce HEIC by default on
 iOS, and people upload TIFF, BMP and anything else a camera or a screenshot tool
 emits. Trusting the file extension is worse than useless here: an unrecognised

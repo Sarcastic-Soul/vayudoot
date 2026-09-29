@@ -8,7 +8,6 @@ official reading that the authority itself will recognise.
 from __future__ import annotations
 
 import httpx
-from strands import tool
 
 from ..config import settings
 from .geo import haversine_km
@@ -20,7 +19,6 @@ def _headers() -> dict[str, str]:
     return {"X-API-Key": settings.openaq_api_key}
 
 
-@tool
 def get_nearby_air_quality(latitude: float, longitude: float, radius_km: float = 25.0) -> dict:
     """Get the most recent air quality readings from ground stations near a location.
 

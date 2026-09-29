@@ -23,10 +23,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 
-from strands import Agent
-
 from ..config import settings
-from ..models import build_model
+from ..models import Agent, build_model
 from ..schemas import AirQualityForecast, Corridor, CorridorForecast, Hotspot
 from ..tools import get_air_quality_forecast, get_wind_forecast
 from ..tools.geo import haversine_km
@@ -64,7 +62,6 @@ def build_forecast_agent() -> Agent:
         model=build_model(temperature=0.1, tier="fast"),
         system_prompt=FORECAST,
         tools=[get_air_quality_forecast, get_wind_forecast],
-        callback_handler=None,
     )
 
 
@@ -147,15 +144,15 @@ async def forecast_corridor(
     what an authority needs to see, and averaging it away would hide exactly the
     thing worth acting on.
 
-    **Each waypoint gets an agent of its own.** A Strands `Agent` refuses a
-    second invocation while one is in flight and raises `ConcurrencyException`,
-    and it keeps its conversation between calls. Sharing one across the gather
-    made every waypoint but the first fail, the failures were then dropped as
-    ordinary provider errors, and a live corridor reported "1 of 5 waypoints"
-    with the worst risk taken from whichever one happened to win the lock.
-    Sequential reuse would be wrong too: the second waypoint would read the
-    first waypoint's tool results in its own context. An `agent` passed in is
-    shared, which is only for tests whose stub tolerates it.
+    **Each waypoint gets an agent of its own.** The agent SDK this project
+    first used refused a second invocation while one was in flight and kept its
+    conversation between calls. Sharing one across the gather made every
+    waypoint but the first fail, the failures were then dropped as ordinary
+    model errors, and a live corridor reported "1 of 5 waypoints" with the worst
+    risk taken from whichever one happened to win the lock. `models.Agent` opens
+    a fresh session per call, so neither can happen now, but an agent per
+    waypoint keeps each waypoint's tool results out of every other's context by
+    construction. An `agent` passed in is shared, which is only for tests.
     """
     pool = hotspots or []
 

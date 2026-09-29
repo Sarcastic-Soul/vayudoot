@@ -43,9 +43,8 @@ does, and a model that has read news about Delhi on 5 November 2025 could
 otherwise remember the answer. What it may still know is climatology — Delhi in
 November is usually bad — which a live forecaster knows too.
 
-**Every agent run gets a fresh agent**, run one at a time. A Strands `Agent`
-keeps its conversation, and a reused one would read the previous case's tool
-results.
+**Every agent run gets a fresh agent**, run one at a time, so no case can ever
+read another case's tool results.
 
 Everything fetched is cached under `data/backtest/` (git-ignored), and so is
 every model answer, keyed by the forecaster version and prompt hash. A rerun

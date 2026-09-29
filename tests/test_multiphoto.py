@@ -54,6 +54,11 @@ def _content(agent: StubAgent) -> list:
     return agent.prompts[0]
 
 
+def _images(content: list) -> list:
+    """The image parts of a message; the text part carries no inline data."""
+    return [part for part in content if part.inline_data is not None]
+
+
 # --------------------------------------------------------------------------- #
 # The schema keeps reading what is already on disk
 # --------------------------------------------------------------------------- #
@@ -100,11 +105,11 @@ async def test_every_photograph_becomes_its_own_image_block(tmp_path):
     await analyse_evidence(report, agent=agent)
 
     content = _content(agent)
-    images = [block for block in content if "image" in block]
+    images = _images(content)
     assert len(images) == 2
-    assert {block["image"]["format"] for block in images} == {"png", "jpeg"}
-    assert all(block["image"]["source"]["bytes"] for block in images)
-    assert "2 photographs are attached" in content[0]["text"]
+    assert {part.inline_data.mime_type for part in images} == {"image/png", "image/jpeg"}
+    assert all(part.inline_data.data for part in images)
+    assert "2 photographs are attached" in content[0].text
 
 
 async def test_a_legacy_single_photograph_case_still_classifies(tmp_path):
@@ -125,9 +130,9 @@ async def test_a_legacy_single_photograph_case_still_classifies(tmp_path):
 
     content = _content(agent)
     assert packet.confidence == 0.9
-    assert [block for block in content if "image" in block]
+    assert _images(content)
     # A single photograph gets no "several photographs" preamble.
-    assert "photographs are attached" not in content[0]["text"]
+    assert "photographs are attached" not in content[0].text
 
 
 async def test_a_report_with_no_photograph_says_so_to_the_model():
@@ -137,8 +142,8 @@ async def test_a_report_with_no_photograph_says_so_to_the_model():
     await analyse_evidence(report, agent=agent)
 
     content = _content(agent)
-    assert not [block for block in content if "image" in block]
-    assert "No photograph was attached" in content[0]["text"]
+    assert not _images(content)
+    assert "No photograph was attached" in content[0].text
 
 
 async def test_the_stage_caps_the_images_even_when_the_case_carries_more(tmp_path, monkeypatch):
@@ -155,7 +160,7 @@ async def test_the_stage_caps_the_images_even_when_the_case_carries_more(tmp_pat
         Report(report_id="r", latitude=28.6, longitude=77.2, image_paths=paths), agent=agent
     )
 
-    assert len([block for block in _content(agent) if "image" in block]) == 2
+    assert len(_images(_content(agent))) == 2
 
 
 async def test_a_missing_file_is_skipped_rather_than_fatal(tmp_path):
@@ -171,7 +176,7 @@ async def test_a_missing_file_is_skipped_rather_than_fatal(tmp_path):
 
     await analyse_evidence(report, agent=agent)
 
-    assert len([block for block in _content(agent) if "image" in block]) == 1
+    assert len(_images(_content(agent))) == 1
 
 
 # --------------------------------------------------------------------------- #

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import httpx
-from strands import tool
 
 from ..standards import for_country as air_standard
 from .geo import upwind_point
@@ -11,7 +10,6 @@ from .geo import upwind_point
 _URL = "https://api.open-meteo.com/v1/forecast"
 
 
-@tool
 def get_wind_conditions(latitude: float, longitude: float) -> dict:
     """Get current wind and weather at a location, and back-trace the plume upwind.
 
@@ -60,7 +58,6 @@ def get_wind_conditions(latitude: float, longitude: float) -> dict:
 _AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
 
-@tool
 def get_air_quality_forecast(latitude: float, longitude: float, hours: int = 72) -> dict:
     """Get the hourly air quality and wind outlook for a location.
 
@@ -135,7 +132,6 @@ def get_air_quality_forecast(latitude: float, longitude: float, hours: int = 72)
     return out
 
 
-@tool
 def get_wind_forecast(latitude: float, longitude: float, hours: int = 72) -> dict:
     """Get the hourly wind outlook for a location.
 

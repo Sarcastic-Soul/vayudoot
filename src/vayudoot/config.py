@@ -1,8 +1,12 @@
 """Runtime configuration.
 
-Everything that varies between deployments lives here, so that switching model
-provider or deployment target is a configuration change rather than a code
-change. That is the whole reason the Strands provider abstraction is worth using.
+Everything that varies between deployments lives here, so that choosing a model
+or a deployment target is a configuration change rather than a code change.
+
+Gemini is the only model provider. The hackathon this is built for does not
+consider a submission without Google AI, and every model call — the two that
+need judgement and the eight that do not — goes to Gemini through a free Google
+AI Studio key. See `CLAUDE.md`, hard constraint 6.
 """
 
 from __future__ import annotations
@@ -12,8 +16,11 @@ from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-Provider = Literal["gemini", "ollama"]
 Tier = Literal["primary", "fast"]
+
+#: The one model provider. Kept as a named constant because it is published — in
+#: `/health` and in the forecaster spec a node shares with its neighbours.
+PROVIDER = "gemini"
 
 # Two tiers, because inference is the only real running cost of this project.
 #
@@ -23,20 +30,9 @@ Tier = Literal["primary", "fast"]
 # The corroboration graph runs three agents in parallel and each does nothing but
 # call a tool and summarise. Running those on the primary model multiplies the
 # cost of every report for no gain in quality.
-DEFAULT_MODEL_IDS: dict[str, dict[str, str]] = {
-    "gemini": {
-        "primary": "gemini-3.8-flash",
-        "fast": "gemini-3.5-flash-lite",
-    },
-    # Ollama defaults are the Ollama Cloud free-tier models rather than local
-    # ones, because a laptop that cannot host a vision model is the common case.
-    # gemma4:31b is multimodal, which the evidence stage requires; nothing else on
-    # the free tier reads an image. Point OLLAMA_HOST at localhost and override
-    # both ids to run locally instead.
-    "ollama": {
-        "primary": "gemma4:31b",
-        "fast": "gpt-oss:20b",
-    },
+DEFAULT_MODEL_IDS: dict[Tier, str] = {
+    "primary": "gemini-3.8-flash",
+    "fast": "gemini-3.5-flash-lite",
 }
 
 # Where a tier goes when its model answers 429. AI Studio's free tier meters
@@ -52,17 +48,14 @@ DEFAULT_MODEL_IDS: dict[str, dict[str, str]] = {
 # hours while the newer Flash models were idle, so they sit last, where they
 # cost nothing unless everything ahead of them is spent. gemini-2.5-flash is gone
 # because it answers 404 — retired — and a dead entry costs a request per minute.
-MODEL_FALLBACKS: dict[str, dict[str, tuple[str, ...]]] = {
-    "gemini": {
-        "primary": (
-            "gemini-3.7-flash",
-            "gemini-3.6-flash",
-            "gemini-3.5-flash",
-            "gemini-3-flash-preview",
-        ),
-        "fast": ("gemini-3.1-flash-lite",),
-    },
-    "ollama": {"primary": (), "fast": ()},
+MODEL_FALLBACKS: dict[Tier, tuple[str, ...]] = {
+    "primary": (
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "gemini-3-flash-preview",
+    ),
+    "fast": ("gemini-3.1-flash-lite",),
 }
 
 
@@ -74,33 +67,12 @@ class Settings(BaseSettings):
         protected_namespaces=(),
     )
 
-    # Model provider. The fast tier can run on a different provider from the
-    # primary one, which is how the running cost is spread across two free tiers:
-    # the eight mechanical calls a report makes go to whichever provider has the
-    # generous request allowance, and the two that need judgement go to whichever
-    # has the better model. Leave the fast one unset to use a single provider.
-    vayudoot_model_provider: Provider = "gemini"
-    vayudoot_model_provider_fast: Provider | None = None
+    # An explicit model per tier, overriding the default and its fallback chain.
     vayudoot_model_id: str = ""
     vayudoot_model_id_fast: str = ""
     vayudoot_model_temperature: float = 0.2
 
     gemini_api_key: str = ""
-    ollama_host: str = "https://ollama.com"
-    ollama_api_key: str = ""
-
-    # Ollama Cloud's free tier publishes no request count, only a session
-    # percentage (resets every 4 hours) and a weekly one (resets every 5 days) —
-    # see `docs/deployment.md`. There is nothing to mirror precisely, so this is
-    # a safety cap rather than a copy of the real quota: high enough that normal
-    # use and the test suite never reach it, low enough to stop a retry loop or a
-    # scheduler bug from quietly burning a session or a week of the budget.
-    # `errors.py` turns a trip into the same kind of plain sentence as an actual
-    # provider rate limit.
-    vayudoot_ollama_session_call_limit: int = 200
-    vayudoot_ollama_session_window_hours: float = 4
-    vayudoot_ollama_weekly_call_limit: int = 1000
-    vayudoot_ollama_weekly_window_days: float = 5
 
     # Evidence sources
     firms_map_key: str = ""
@@ -362,22 +334,16 @@ class Settings(BaseSettings):
     def neighbour_feeds(self) -> list[str]:
         return [url.strip() for url in self.vayudoot_neighbour_feeds.split(",") if url.strip()]
 
-    def provider_for(self, tier: Tier = "primary") -> Provider:
-        if tier == "fast" and self.vayudoot_model_provider_fast:
-            return self.vayudoot_model_provider_fast
-        return self.vayudoot_model_provider
-
     def model_id_for(self, tier: Tier = "primary") -> str:
         override = self.vayudoot_model_id if tier == "primary" else self.vayudoot_model_id_fast
-        return override or DEFAULT_MODEL_IDS[self.provider_for(tier)][tier]
+        return override or DEFAULT_MODEL_IDS[tier]
 
     def model_chain_for(self, tier: Tier = "primary") -> list[str]:
         """The model to use, then the ones to try if it is rate limited."""
         override = self.vayudoot_model_id if tier == "primary" else self.vayudoot_model_id_fast
         if override:
             return [override]
-        provider = self.provider_for(tier)
-        return [DEFAULT_MODEL_IDS[provider][tier], *MODEL_FALLBACKS[provider][tier]]
+        return [DEFAULT_MODEL_IDS[tier], *MODEL_FALLBACKS[tier]]
 
     @property
     def model_id(self) -> str:

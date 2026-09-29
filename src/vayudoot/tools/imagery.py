@@ -26,8 +26,8 @@ assumed:
   GIBS answers 200 with a JPEG that is entirely black. So "did it work" is
   decided by looking at the pixels, not the status code.
 
-Not a Strands `@tool`. It returns image bytes, which are no use to a model as a
-tool result; the imagery agent is handed the picture as a content block instead.
+Not a model tool. It returns image bytes, which are no use to a model as a
+tool result; the imagery agent is handed the picture as an image part instead.
 It keeps the tool convention all the same — a plain dict, never an exception —
 because a snapshot that could not be fetched is an ordinary answer for an
 operator to read, not a crash.

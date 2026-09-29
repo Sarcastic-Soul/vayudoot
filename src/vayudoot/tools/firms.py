@@ -11,7 +11,6 @@ import csv
 import io
 
 import httpx
-from strands import tool
 
 from ..config import settings
 from .geo import bbox_around, haversine_km
@@ -20,7 +19,6 @@ _BASE = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
 _SOURCE = "VIIRS_SNPP_NRT"
 
 
-@tool
 def find_satellite_fire_detections(
     latitude: float, longitude: float, radius_km: float = 10.0, days: int = 1
 ) -> dict:

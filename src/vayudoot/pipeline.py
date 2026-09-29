@@ -1,8 +1,8 @@
 """The case pipeline: photo in, filed and tracked complaint out.
 
 Stages hand typed objects to one another rather than free text, so a failure is
-localised and every intermediate result is inspectable. Stage 2 fans out into a
-Strands agent graph internally; the rest are single agents.
+localised and every intermediate result is inspectable. Stage 2 fans out into
+parallel ADK agents internally; the rest are single agents.
 
 The case is persisted after every stage rather than once at the end. A full run
 is minutes of model calls, and the interface polls the case while it runs, so

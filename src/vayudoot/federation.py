@@ -63,7 +63,7 @@ from __future__ import annotations
 
 import httpx
 
-from .config import settings
+from .config import PROVIDER, settings
 from .schemas import (
     FeedHotspot,
     ForecasterSkillSummary,
@@ -148,7 +148,7 @@ def forecaster_spec() -> ForecasterSpec:
         horizon_hours=settings.vayudoot_forecast_horizon_hours,
         upwind_km=settings.vayudoot_forecast_upwind_km,
         tier="fast",
-        provider=settings.provider_for("fast"),
+        provider=PROVIDER,
         model_ids=settings.model_chain_for("fast"),
         bands=ledger.band_definitions(),
         band_basis=ledger.band_basis(),

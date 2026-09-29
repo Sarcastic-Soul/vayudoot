@@ -1,10 +1,8 @@
 """Stage 1: what does the submission show?
 
 A report carries zero or more photographs. All of them go into one message as
-separate image content blocks, because they are angles on a single event and the
-model has to reason across them rather than about each alone. The content block
-shape is Bedrock's, which is what the Strands providers translate from:
-`{"image": {"format": ..., "source": {"bytes": ...}}}`.
+separate Gemini inline-data parts, because they are angles on a single event and
+the model has to reason across them rather than about each alone.
 
 A report with no photograph at all is a supported path, not an error: a citizen
 who cannot photograph safely — a fire at night, a vehicle already gone — still
@@ -24,12 +22,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from strands import Agent
-from strands.types.content import ContentBlock
+from google.genai import types
 
 from ..config import settings
 from ..images import read_normalised
-from ..models import build_model
+from ..models import Agent, build_model, media_part, text_part
 from ..schemas import EvidencePacket, Report, VoiceAccount
 from .prompts import EVIDENCE
 from .voice import spoken_account_block
@@ -42,13 +39,13 @@ from .voice import spoken_account_block
 ACCOUNT_ONLY_CEILING = 0.8
 
 
-def _image_block(path: Path) -> ContentBlock:
+def _image_part(path: Path) -> types.Part:
     # The format comes from the file's contents, not its name: a submission can
     # arrive as HEIC, TIFF or anything else a camera emits, and an extension is
     # only a claim. `read_normalised` converts whatever it finds into one of the
-    # four formats a content block accepts.
+    # four formats every model reads.
     fmt, data = read_normalised(path)
-    return {"image": {"format": fmt, "source": {"bytes": data}}}
+    return media_part(data, f"image/{fmt}")
 
 
 def build_evidence_agent() -> Agent:
@@ -56,7 +53,6 @@ def build_evidence_agent() -> Agent:
         name="evidence",
         model=build_model(temperature=0.0),
         system_prompt=EVIDENCE,
-        callback_handler=None,
     )
 
 
@@ -73,26 +69,24 @@ async def analyse_evidence(
         + (f"\n{spoken}" if spoken else "")
         + "\nClassify what this report shows."
     )
-    content: list[ContentBlock] = [{"text": prompt}]
-
     # The cap is enforced at intake, but a case can also be loaded from disk or
     # built by a script, so it is enforced again here: the cost of an extra image
-    # block is paid at this call and nowhere else.
+    # is paid at this call and nowhere else.
     existing = [Path(p) for p in report.image_paths if Path(p).exists()]
     used = existing[: settings.vayudoot_max_images_per_report]
-    content.extend(_image_block(path) for path in used)
 
     if not used:
-        content[0]["text"] += (
+        prompt += (
             "\n\nNo photograph was attached. Classify from the citizen's account alone, and "
             "say in your reasoning that this rests on the citizen's description rather "
             "than on an image."
         )
     elif len(used) > 1:
-        content[0]["text"] += (
+        prompt += (
             f"\n\n{len(used)} photographs are attached. They are the citizen's angles on "
             "one event; read them together."
         )
+    content = [text_part(prompt), *(_image_part(path) for path in used)]
 
     result = await agent.invoke_async(content, structured_output_model=EvidencePacket)
     packet: EvidencePacket = result.structured_output

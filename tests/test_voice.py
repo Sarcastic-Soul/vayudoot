@@ -26,7 +26,6 @@ from vayudoot.agents import drafting as drafting_agent
 from vayudoot.agents import evidence as evidence_agent
 from vayudoot.agents import voice as voice_agent
 from vayudoot.config import settings
-from vayudoot.models import build_model
 from vayudoot.schemas import (
     NAME_OMITTED,
     VOICE_DISCLAIMER,
@@ -154,56 +153,28 @@ def test_every_accepted_format_has_a_mime_type_gemini_reads():
 
 
 # --------------------------------------------------------------------------- #
-# models.py: the audio block reaches Gemini
+# agents/voice.py: the recording reaches Gemini as inline audio
 # --------------------------------------------------------------------------- #
 
 
-def _gemini(monkeypatch, tier="fast"):
-    monkeypatch.setattr(settings, "vayudoot_model_provider", "gemini")
-    monkeypatch.setattr(settings, "vayudoot_model_provider_fast", "gemini")
-    monkeypatch.setattr(settings, "gemini_api_key", "test-key")
-    return build_model(tier=tier)
-
-
-def test_an_audio_block_is_sent_to_gemini_as_inline_audio(monkeypatch):
-    """The hook in `FallbackGeminiModel`. If this fails after a Strands upgrade,
-    the private method it overrides has moved, and voice notes have stopped
-    reaching the model."""
-    model = _gemini(monkeypatch)
+def test_a_voice_note_is_sent_as_inline_audio_with_its_own_mime_type(tmp_path):
+    """The MIME type comes from `audio.AUDIO_FORMATS`, not `mimetypes`, which has
+    no entry for WebM or M4A audio on most systems."""
     clip = wav_bytes(0.5)
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {"text": "Transcribe."},
-                {"audio": {"format": "wav", "source": {"bytes": clip}}},
-            ],
-        }
-    ]
-    parts = model._format_request_content(messages)[0].parts
-    assert parts[0].text == "Transcribe."
-    assert parts[1].inline_data.mime_type == "audio/wav"
-    assert parts[1].inline_data.data == clip
+    path = tmp_path / "note.wav"
+    path.write_bytes(clip)
+
+    part = voice_agent._audio_part(path)
+
+    assert part.inline_data.mime_type == "audio/wav"
+    assert part.inline_data.data == clip
 
 
-def test_strands_gemini_still_needs_the_hook(monkeypatch):
-    """Why the hook exists. Skips, rather than fails, the day Strands formats
-    audio itself — at which point the override in `models.py` can go."""
-    from strands.models.gemini import GeminiModel
-
-    base = GeminiModel(client_args={"api_key": "test-key"}, model_id="gemini-test")
-    block = {"audio": {"format": "wav", "source": {"bytes": b"RIFF"}}}
-    try:
-        base._format_request_content_part(block, {})
-    except TypeError:
-        return
-    pytest.skip("Strands now formats audio blocks itself; the models.py hook can go")
-
-
-def test_a_non_gemini_fast_tier_says_it_cannot_hear(monkeypatch):
-    monkeypatch.setattr(settings, "vayudoot_model_provider_fast", "ollama")
-    with pytest.raises(voice_agent.VoiceUnavailable, match="no audio input"):
-        voice_agent.build_voice_agent()
+def test_an_unreadable_recording_is_refused_before_any_model_call(tmp_path):
+    path = tmp_path / "note.bin"
+    path.write_bytes(b"not audio at all")
+    with pytest.raises(voice_agent.VoiceUnavailable, match="could not be read"):
+        voice_agent._audio_part(path)
 
 
 # --------------------------------------------------------------------------- #
@@ -255,8 +226,8 @@ async def test_hearing_sends_the_recording_and_returns_a_clean_account(tmp_path)
     account = await voice_agent.hear_voice_note(report, agent=agent)
 
     sent = agent.prompts[0]
-    assert sent[1]["audio"]["format"] == "ogg"
-    assert sent[1]["audio"]["source"]["bytes"] == clip.read_bytes()
+    assert sent[1].inline_data.mime_type == "audio/ogg"
+    assert sent[1].inline_data.data == clip.read_bytes()
     assert isinstance(account, VoiceAccount)
     assert "sharma" not in _names_in(account)
     assert account.disclaimer == VOICE_DISCLAIMER
@@ -295,7 +266,7 @@ async def test_evidence_sees_the_account_and_stays_under_the_testimony_ceiling()
 
     packet = await evidence_agent.analyse_evidence(report, agent=agent, voice=voice_account())
 
-    prompt = agent.prompts[0][0]["text"]
+    prompt = agent.prompts[0][0].text
     assert "REPORTER'S SPOKEN ACCOUNT" in prompt
     assert "Sharma" not in prompt
     assert packet.confidence == evidence_agent.ACCOUNT_ONLY_CEILING

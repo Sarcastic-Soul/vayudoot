@@ -12,7 +12,6 @@ suite starts failing in whatever order it happens to run.
 
 import pytest
 
-from vayudoot.callbudget import budget as ollama_budget
 from vayudoot.config import settings
 from vayudoot.ratelimit import limiter
 
@@ -35,7 +34,6 @@ def isolated_storage(tmp_path, monkeypatch):
     # test_store_postgres.py overrides this deliberately.
     monkeypatch.setattr(settings, "database_url", "")
     limiter.reset()
-    ollama_budget.reset()
     return tmp_path
 
 

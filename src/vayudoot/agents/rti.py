@@ -32,9 +32,7 @@ is one call for the small minority of cases that go unanswered past their window
 
 from __future__ import annotations
 
-from strands import Agent
-
-from ..models import build_model
+from ..models import Agent, build_model
 from ..schemas import Case, RTIApplication
 from .prompts import RTI
 
@@ -53,7 +51,6 @@ def build_rti_agent() -> Agent:
         name="rti",
         model=build_model(temperature=0.2),
         system_prompt=RTI,
-        callback_handler=None,
     )
 
 

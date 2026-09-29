@@ -27,9 +27,8 @@ import struct
 
 #: What each accepted format is sent to the model as, and stored as.
 #:
-#: The keys are the formats Strands' `AudioFormat` literal already names, so an
-#: audio content block built from them is the SDK's own shape. The MIME types
-#: are what Gemini's inline data accepts; `audio/mp4` rather than `audio/m4a`,
+#: The keys are short format names, stored on the report. The MIME types are
+#: what Gemini's inline data accepts; `audio/mp4` rather than `audio/m4a`,
 #: because the second is not a registered type and is refused.
 AUDIO_FORMATS: dict[str, tuple[str, str]] = {
     "webm": ("audio/webm", ".webm"),

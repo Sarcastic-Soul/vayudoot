@@ -8,7 +8,6 @@ to stay under one request per second, both of which this respects.
 from __future__ import annotations
 
 import httpx
-from strands import tool
 
 from ..config import settings
 
@@ -17,7 +16,6 @@ _SEARCH_URL = "https://nominatim.openstreetmap.org/search"
 _UA = "vayudoot/0.1 (pollution complaint agent; https://github.com/Sarcastic-Soul)"
 
 
-@tool
 def reverse_geocode(latitude: float, longitude: float) -> dict:
     """Resolve coordinates to an administrative address.
 

@@ -43,7 +43,7 @@ from .audio import UnsupportedAudio
 from .audio import duration_seconds as audio_duration
 from .audio import sniff as sniff_audio
 from .audio import suffix_for as audio_suffix
-from .config import settings
+from .config import PROVIDER, settings
 from .images import UnsupportedImage, normalise, suffix_for
 from .pipeline import new_case, run
 from .ratelimit import limiter
@@ -366,7 +366,7 @@ def _client_key(request: Request) -> str:
 def health() -> dict:
     return {
         "status": "ok",
-        "model_provider": settings.vayudoot_model_provider,
+        "model_provider": PROVIDER,
         "model_id": settings.model_id,
         "live_filing": settings.vayudoot_live_filing,
         "running_cases": len(_running),

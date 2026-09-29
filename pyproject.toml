@@ -6,8 +6,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = [
-    "strands-agents[gemini,ollama,otel]>=1.54.0",
-    "strands-agents-tools>=0.2.0",
+    "google-adk>=2.10.0",
+    "google-genai>=2.25.0",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "httpx>=0.27",
