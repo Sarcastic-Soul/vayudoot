@@ -121,3 +121,63 @@ main:focus { outline: none; }
 
   .page-head h2 { font-size: var(--t-display); }
 }
+
+/* ── waking the server ───────────────────────────────────────────────────
+   A small floating note while a sleeping API instance starts (WakeBanner.js).
+   It floats, so it casts the second shadow; it sits above the phone's bottom
+   bar and at the foot of the page elsewhere, clear of the navigation either
+   way. Info rather than attention: nothing is wrong, it is only slow. It is
+   rendered inside `.app` so it can read the navigation's width; being fixed,
+   it takes no cell in that grid. */
+
+.wake {
+  position: fixed;
+  z-index: 700;
+  inset: auto var(--s4) calc(84px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.wake-note {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  max-width: 40rem;
+  padding: var(--s2) var(--s4);
+  font-size: var(--t-meta);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--info-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  pointer-events: auto;
+  animation: wake-in .24s ease both;
+}
+
+.wake-note strong { font-weight: var(--w-semi); color: var(--info); }
+
+.wake-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--info);
+  transform: translateY(-1px);
+  animation: wake-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes wake-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes wake-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+
+@media (min-width: 700px) {
+  .wake { inset: auto var(--s5) var(--s5) calc(var(--nav-width) + var(--s5)); }
+}

@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
-import { api } from "../lib/api.js";
+import { api, apiUrl } from "../lib/api.js";
 import { navigate } from "../lib/router.js";
 import { useCase, useCaseCluster } from "../lib/store.js";
 import { whereOf } from "../lib/format.js";
@@ -79,7 +79,7 @@ export function CaseView({ caseId }) {
                 photoCount(record) > 1
                   ? `The ${photoCount(record)} photographs reported`
                   : "The photograph reported"}</h3>
-              <img class="case-photo" src=${`/cases/${caseId}/photo`}
+              <img class="case-photo" src=${apiUrl(`/cases/${caseId}/photo`)}
                    alt=${photoCount(record) > 1
                      ? "The first photograph submitted with this report"
                      : "The photograph submitted with this report"} />
@@ -87,7 +87,7 @@ export function CaseView({ caseId }) {
                 <ul class="photo-strip">
                   ${record.report.image_paths.slice(1).map((_, i) => html`
                     <li key=${i}>
-                      <img src=${`/cases/${caseId}/photo/${i + 1}`}
+                      <img src=${apiUrl(`/cases/${caseId}/photo/${i + 1}`)}
                            alt=${`Photograph ${i + 2} of ${photoCount(record)}`} />
                     </li>`)}
                 </ul>

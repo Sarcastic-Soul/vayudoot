@@ -31,6 +31,7 @@
  */
 
 import { html } from "../lib/html.js";
+import { apiUrl } from "../lib/api.js";
 import { useNetwork } from "../lib/store.js";
 import {
   countryName, plural, rateText, shortHash, shortWhen,
@@ -262,9 +263,12 @@ function Neighbours({ neighbours, ownCountry }) {
     </div>`;
 }
 
+/* `href` is a path on this node's API, not on whoever served the page, so it
+   goes through `apiUrl`; `title` stays the bare path, which is what a
+   neighbour node would ask for. */
 function FeedLink({ href, Icon, title, format, children }) {
   return html`
-    <a class="feed-link" href=${href} target="_blank" rel="noopener">
+    <a class="feed-link" href=${apiUrl(href)} target="_blank" rel="noopener">
       <span class="feed-icon"><${Icon} /></span>
       <span class="feed-text">
         <span class="feed-title"><code>${title}</code><span class="feed-format">${format}</span>

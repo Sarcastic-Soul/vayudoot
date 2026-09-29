@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -207,6 +208,21 @@ async def refuse_an_oversized_body(request: Request, call_next):
         return JSONResponse(status_code=413, content={"detail": _too_large(int(declared))})
     return await call_next(request)
 
+
+# Added after the size check so it wraps it: Starlette runs the middleware added
+# last first, and a refused upload needs CORS headers too, or the browser hides
+# the 413 and the page cannot say why the report failed.
+#
+# Only needed when the web UI is served from somewhere else, which is Firebase
+# Hosting in the shipped setup (`firebase.json`). Credentials stay off: nothing
+# here uses cookies, so a cross-origin page gets exactly what `curl` would.
+if _cors_origins := [o.strip() for o in settings.vayudoot_cors_origins.split(",") if o.strip()]:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 def _body_budget() -> int:
     return settings.vayudoot_max_upload_bytes * max(1, settings.vayudoot_max_images_per_report)

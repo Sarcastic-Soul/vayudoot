@@ -23,7 +23,7 @@
 
 import { useEffect, useState } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
-import { api } from "../lib/api.js";
+import { api, apiUrl } from "../lib/api.js";
 import { percent, onDate, atTime, radiusLabel } from "../lib/format.js";
 import { Elapsed } from "./HotspotAlert.js";
 import { SEVERITY_COLOUR } from "./HotspotsMap.js";
@@ -73,8 +73,8 @@ function Snapshot({ reading, hotspot, stamp }) {
   /* The ring is the map's ring: same severity colour, same dash when not
      corroborated, same white halo under it so it reads on any sky. */
   const colour = SEVERITY_COLOUR[hotspot.severity] || SEVERITY_COLOUR.moderate;
-  const src = `/hotspots/${encodeURIComponent(hotspot.hotspot_id)}/imagery.jpg?d=`
-    + `${encodeURIComponent(reading.image_date)}&t=${stamp}`;
+  const src = apiUrl(`/hotspots/${encodeURIComponent(hotspot.hotspot_id)}/imagery.jpg?d=`
+    + `${encodeURIComponent(reading.image_date)}&t=${stamp}`);
   return html`
     <figure class="imagery-frame">
       <div class="imagery-pic">

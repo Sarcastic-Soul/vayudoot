@@ -28,7 +28,7 @@
 
 import { useEffect, useState } from "../vendor/hooks.mjs";
 import { html, Fragment } from "../lib/html.js";
-import { api } from "../lib/api.js";
+import { api, apiUrl } from "../lib/api.js";
 import { navigate } from "../lib/router.js";
 import { onDate, atTime, words } from "../lib/format.js";
 import {
@@ -403,7 +403,7 @@ function AlertFailure({ failure, onRetry }) {
       <p class="alert-failure-hint">${hint}</p>
       <div class="alert-failure-actions">
         ${abroad && html`
-          <a class="secondary-link" href="/feed.geojson" target="_blank" rel="noopener">
+          <a class="secondary-link" href=${apiUrl("/feed.geojson")} target="_blank" rel="noopener">
             <${FeedIcon} /> Open the federation feed</a>`}
         ${(busy || status === 502 || !status) && html`
           <button type="button" class="secondary" onClick=${onRetry}>

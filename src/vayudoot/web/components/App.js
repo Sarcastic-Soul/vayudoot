@@ -29,6 +29,7 @@ import { CasesView } from "./CasesView.js";
 import { ClusterView } from "./ClusterView.js";
 import { CoverageView } from "./CoverageView.js";
 import { ForecastView } from "./ForecastView.js";
+import { WakeBanner } from "./WakeBanner.js";
 
 export function App() {
   const route = useRoute();
@@ -98,6 +99,7 @@ export function App() {
             ${route.view === "coverage" && html`<${CoverageView} />`}
           </section>
         </main>
+        <${WakeBanner} />
       </div>
     <//>`;
 }

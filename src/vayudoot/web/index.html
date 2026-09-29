@@ -10,6 +10,9 @@
 <meta name="theme-color" content="#1b1b1f" media="(prefers-color-scheme: dark)">
 <title>Vayudoot — hyper-local pollution detection</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🜁</text></svg>">
+<!-- Before every module: it says where the API is, and app.js asks as soon
+     as it runs. See the comment in the file. -->
+<script src="/config.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <!-- Several files rather than one, and several <link>s rather than @import,
      which would serialise the requests. -->
