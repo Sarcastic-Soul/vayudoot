@@ -274,9 +274,10 @@ fast call — and takes the **worst** risk any of them carries rather than an av
 corridor is a population strip and a supply line, so the segment in trouble is what an
 authority needs to see, and averaging it away would hide exactly the thing worth acting on.
 A waypoint whose call failed is dropped rather than allowed to sink the corridor, and the
-summary reports how many of the waypoints answered. Each waypoint gets its own agent: a
-Strands `Agent` refuses a second concurrent call, and one agent shared across parallel
-waypoints once meant every waypoint but one failed silently.
+summary reports how many of the waypoints answered. Each waypoint gets its own agent: the
+agent SDK this project first used refused a second concurrent call, and one agent shared
+across parallel waypoints once meant every waypoint but one failed silently. `models.Agent`
+opens a fresh session per call, so sharing is now safe, but the test that caught it stays.
 
 **Every forecast is scored — `ledger.py`.** Each forecast served is written to a ledger at
 the moment it is made, with the no-model CAMS baseline fetched alongside, so nothing
@@ -353,13 +354,13 @@ a pipeline.
 
 Corroboration is different. Satellite thermal detections, ground station readings, and
 meteorological conditions are independent of one another, and none needs the others' output.
-That is a real fan-out, so it is a Strands agent graph with three entry points converging on
-a synthesis node. Using a graph for the whole system would have been decoration; using one
+That is a real fan-out, so it is an ADK `Workflow` graph with three branches from the start
+node, joined before one synthesis agent. Using a graph for the whole system would have been decoration; using one
 here is the shape of the problem.
 
 ### 0. Intake — `images.py`
 
-Not an agent, and it runs before the pipeline does. Model content blocks accept four image
+Not an agent, and it runs before the pipeline does. The model is sent one of four image
 formats; phones do not restrict themselves to four. iOS produces HEIC by default, and people
 upload TIFF, BMP, and screenshots in whatever the tool emitted.
 
@@ -391,8 +392,8 @@ transcoded. `agents/voice.py` hands the audio to Gemini on `fast` — Gemini hea
 directly, so no Speech-to-Text or Translation service is needed, and those need billing —
 and gets back a `VoiceAccount`: the transcript in the language spoken, an English
 translation, and the useful details. Names of people and businesses are removed in code,
-whatever the model did. Strands' Gemini provider does not send audio blocks, so
-`FallbackGeminiModel` adds that one branch.
+whatever the model did. The audio goes to Gemini as inline data, the same way a
+photograph does.
 
 It runs inside the evidence stage, not as a stage of its own. The account is handed to the
 evidence and drafting agents marked as the reporter's own claim; it is never a signal and
@@ -402,7 +403,7 @@ has a photograph or a written note, and is fatal when it was the whole report.
 ### 1. Evidence — `agents/evidence.py`
 
 A single agent with no tools, on the `primary` tier. Up to four photographs are passed as
-Strands image content blocks in one message and the agent returns an `EvidencePacket`
+Gemini inline-data parts in one message and the agent returns an `EvidencePacket`
 through structured output. Four is a budget line, not a design limit: each image is roughly
 1,500 tokens at the 1568-pixel edge intake normalises to, and inference is the only running
 cost here.
@@ -422,8 +423,9 @@ evidence, weaker evidence, and the number says so.
 
 ### 2. Corroboration — `agents/corroboration.py`
 
-A `GraphBuilder` graph, three parallel entry points into one synthesis node. Every node is
-on the `fast` tier, synthesis included: each one calls a tool and summarises, which is what
+An ADK `Workflow`: three source agents run at once, each writing its summary into session
+state; a `JoinNode` waits for all three; one synthesis agent reads the task and the three
+summaries from state and returns a `Corroboration`. Every agent is on the `fast` tier, synthesis included: each one calls a tool and summarises, which is what
 the cheap tier is for.
 
 | Node | Tool | Source |
@@ -693,23 +695,26 @@ Live runs print their projected call count before spending anything, and compari
 is a first-class operation, because comparing a prompt before and after an edit is the
 entire point.
 
-## Provider abstraction
+## Models and the agent layer
 
-`models.build_model()` is the only place a provider is constructed, and
-`settings.provider_for(tier)` is the only thing that decides which one.
+Every model call goes to Gemini, and every agent is built on Google's Agent Development
+Kit. That is hard constraint 6 and it is a rule rather than a preference: the target
+hackathon does not consider a submission without Google AI integration. Earlier versions
+ran on the Strands Agents SDK with Ollama as a second provider; both were removed so that
+nothing in the stack is another cloud company's.
 
-**The shipped configuration puts both tiers on Gemini** — primary on flash, fast on
-flash-lite. That is hard constraint 6 and it is a rule rather than a preference: the target
-hackathon does not consider a submission without Google AI integration, and shipping the two
-judgement calls on Ollama would put the only inference a judge would call meaningful on a
-non-Google model.
+`models.build_model()` is the only place a model is constructed. It returns a
+`FallbackGemini` — ADK's `Gemini` model with one addition: when a model answers 429, 503
+or 404 before its first response, the call moves to the next model in that tier's chain,
+and the failed model is skipped for a minute. AI Studio meters each model separately, so
+the chain is the daily allowance.
 
-The abstraction survives that narrowing for two reasons. Ollama remains a supported provider
-for local development and the offline test suite. And a system a state could run on its own
-hardware is part of the deployability argument, so being able to move the whole thing with
-one environment variable earns its keep even while nobody is using it in production.
+`models.Agent` is the one agent shape the stages use. It wraps ADK's `LlmAgent` and
+`InMemoryRunner`: every stage is one question with one typed answer, so each call opens a
+fresh in-memory session, runs, and reads the answer from session state. A multi-agent
+stage composes `Agent.llm_agent()` into an ADK `Workflow`, as corroboration does.
 
-The tier split also survives, as a cost control inside one provider. Two agents are on
+The tier split is a cost control inside Gemini. Two agents are on
 `primary`: evidence, which reads a photograph, and drafting, which writes a legal complaint.
 Everything else — the three corroboration nodes, the synthesis node, jurisdiction, and the
 forecast stage — is on `fast`, because each of them calls a tool and summarises what came

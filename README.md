@@ -9,9 +9,9 @@ photographs into a live map of where pollution is happening — forecasts where
 air quality is about to degrade, and hands the responsible authority a
 corroborated case when somebody wants to act on one.
 
-Built on the [Strands Agents SDK](https://strandsagents.com/), with
-[Gemini](https://ai.google.dev/) doing the inference. Runs on free tiers with no
-credit card.
+Built on Google's [Agent Development Kit](https://google.github.io/adk-docs/)
+(ADK), with [Gemini](https://ai.google.dev/) doing all of the inference. Runs on
+free tiers with no credit card.
 
 Live at <https://vayudoot.onrender.com>.
 
@@ -244,8 +244,8 @@ here. It runs end to end on one photograph.
    names observable things, at a confidence that says it was testimony rather
    than a picture. Below a floor of 0.55 the case halts for human review rather
    than proceeding.
-2. **Corroboration.** Three independent sources are queried in parallel by a
-   Strands agent graph — NASA FIRMS, OpenAQ and Open-Meteo wind — and a
+2. **Corroboration.** Three independent sources are queried in parallel by an
+   ADK workflow graph — NASA FIRMS, OpenAQ and Open-Meteo wind — and a
    synthesis node joins them. The plume is back-traced upwind to a plausible
    source. The result is an evidence packet, not one photograph.
 3. **Jurisdiction.** The coordinates are reverse geocoded and matched against a
@@ -435,29 +435,27 @@ accused party or claiming certainty the evidence does not support.
 
 </details>
 
-## Model providers
+## Models
 
-No module constructs a provider directly. `vayudoot.models.build_model()` reads
-the configured provider at runtime, so the same agent code runs on Google Gemini
-or on Ollama with one environment variable changed.
+Every model call goes to Gemini through Google AI Studio's free tier, and every
+agent is built on Google's ADK. No module constructs a model directly;
+`vayudoot.models.build_model()` is the one place the API key, model id and
+fallback chain are decided.
 
 Models come in two tiers. `primary` is judgement — reading a photograph, drafting
 a legal complaint. `fast` is mechanical — call one tool, summarise the output.
-The shipped configuration puts **both on Gemini**: primary on Flash, fast on
-Flash-Lite. The tier split survives as a cost control inside one provider, since
-only two of the ten model calls a report makes need judgement.
+Primary runs on Gemini Flash, fast on Gemini Flash-Lite. The split is a cost
+control, since only two of the ten model calls a report makes need judgement.
 
-AI Studio's free tier meters each model separately, so the primary tier walks a
-chain of Flash models and moves to the next one when a model answers 429
+AI Studio's free tier meters each model separately, so each tier walks a
+chain of models and moves to the next one when a model answers 429
 (quota spent), 503 (overloaded) or 404 (retired). See `MODEL_FALLBACKS` in
 [`config.py`](src/vayudoot/config.py).
 
-Ollama remains supported for local development and the offline test suite. A
-system a state could run on its own hardware is part of the deployability
-argument, so the abstraction earns its keep.
-
 ```bash
-VAYUDOOT_MODEL_PROVIDER=gemini   # or ollama
+GEMINI_API_KEY=...          # free, from https://aistudio.google.com/apikey
+VAYUDOOT_MODEL_ID=          # empty: the primary tier's default chain
+VAYUDOOT_MODEL_ID_FAST=     # empty: the fast tier's default chain
 ```
 
 ## Data sources
@@ -486,14 +484,14 @@ uv venv
 uv pip install -e ".[dev]"
 cp .env.example .env      # then fill in your keys
 
-uv run pytest             # the whole suite runs offline, with no model provider
+uv run pytest             # the whole suite runs offline, with no API key
 uv run uvicorn vayudoot.api:app --reload
 ```
 
 Then open <http://localhost:8000>. The interface is served by the same process,
 so there is one URL and no CORS to configure.
 
-`GET /health` reports the active provider and confirms that live filing is off.
+`GET /health` reports the active model and confirms that live filing is off.
 
 For a run without the browser, `uv run python scripts/demo.py photo.jpg 28.6139
 77.2090` prints every intermediate result and asks before filing.
@@ -572,7 +570,7 @@ Punjab detecting while Delhi forecasts.
 | `GET` | `/register/{id}` | One public case |
 | `GET` | `/authorities` | The jurisdiction table this instance runs on, and its coverage counts |
 | `GET` | `/geocode` | `?lat=&lon=` for an address, `?q=` to search a place. Backs the map |
-| `GET` | `/health` | Active provider, and confirmation that live filing is off |
+| `GET` | `/health` | Active model, and confirmation that live filing is off |
 
 **Analysis and demo tooling** (scripts, not endpoints): `scripts/export_bigquery.py`
 exports signals, hotspots (as areas), alert statuses and corridors for the free

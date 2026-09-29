@@ -26,7 +26,7 @@ evidence seed hotspots on their own; a citizen photograph upgrades one. If you
 find yourself writing code that assumes otherwise, read the v0.3 section before
 continuing.
 
-Built on the Strands Agents SDK. See `README.md` for the user-facing description
+Built on Google's Agent Development Kit (ADK) with Gemini. See `README.md` for the user-facing description
 and `docs/architecture.md` for how the pieces fit and why.
 
 ## Hard constraints
@@ -100,13 +100,11 @@ not judgement; the judgement about what the report shows stays with evidence on
 primary call, and flash-lite heard Hindi, Tamil and Portuguese accurately in
 live tests.
 
-**The two tiers can sit on different providers.** `VAYUDOOT_MODEL_PROVIDER_FAST`
-overrides the provider for the fast tier only, and `settings.provider_for(tier)`
-is the single thing that decides. That is deliberate, not incidental: it spreads
-one report across two free tiers, putting the eight mechanical calls where the
-request allowance is and the two judgement calls where the better model is. Keep
-`build_model()` as the only place a provider is constructed, and keep the
-decision in `provider_for()`.
+**The two tiers are two Gemini models, each with its own fallback chain.** AI
+Studio meters every model separately, so the eight mechanical calls go where
+the request allowance is (flash-lite) and the two judgement calls go where the
+better model is (flash). `config.DEFAULT_MODEL_IDS` and `MODEL_FALLBACKS` hold
+the choice; keep `build_model()` as the only place a model is constructed.
 
 ### 6. Google AI is mandatory, and it is a rule, not a preference
 
@@ -115,14 +113,12 @@ statement 02. Its first rule is that a submission without Google AI integration
 is not considered. The shipped configuration therefore puts **both** tiers on
 Gemini — primary on flash, fast on flash-lite.
 
-This narrows constraint 5 without cancelling it. The tier split survives as a
-cost control inside one provider; what does not survive is shipping with the two
-judgement calls on Ollama, because that puts the only inference a judge would
-call meaningful on a non-Google model. Ollama stays a supported provider for
-local development and the offline test suite, and `build_model()` stays the only
-place a provider is constructed — a system a state could run on its own
-hardware is part of the deployability argument, so the abstraction earns its
-keep.
+Gemini is the only model provider, and Google's ADK is the agent framework.
+Through v0.3 the project ran on the Strands Agents SDK (an AWS project) with
+Ollama as a second provider; both were removed so that nothing in the stack is
+another cloud company's. Do not add a non-Google model provider or agent
+framework back. The offline test suite needs neither: it replaces
+`Gemini.generate_content_async` or the whole stage.
 
 Free tier still binds, and it decides which Google services are available:
 Gemini via AI Studio, BigQuery sandbox, Firebase Spark and Earth Engine
@@ -157,12 +153,18 @@ real harm to real lungs.
 
 ## Conventions
 
-- **Never construct a model provider directly.** Call `models.build_model()`. It
-  is the only place a provider is instantiated, which is what lets the whole
-  system move between Gemini and Ollama with one environment variable.
+- **Never construct a model directly.** Call `models.build_model()`. It is the
+  only place a model is instantiated, which is where the API key, the tier's
+  model id and the fallback chain are decided.
+- **Stages go through `models.Agent`**, not ADK's `LlmAgent` directly. It is a
+  thin wrapper that runs one question in a fresh in-memory session and hands
+  back `result.structured_output`. A multi-agent stage composes
+  `Agent.llm_agent()` into an ADK `Workflow` (see `agents/corroboration.py`).
 - **Stages hand each other typed objects**, not free text. Every stage returns a
-  Pydantic model from `schemas.py` via Strands structured output. If you add a
+  Pydantic model from `schemas.py` via ADK's `output_schema`. If you add a
   stage, give it a schema.
+- **Tools are plain functions** with typed arguments and a docstring; ADK reads
+  both to describe the tool to the model. There is no decorator.
 - **Tools return plain dicts and never raise.** A failed API call comes back as
   `{"error": ...}` so the agent can reason about it. Do not let an HTTP error
   crash the pipeline.
@@ -175,16 +177,22 @@ real harm to real lungs.
 
 ## Verify, do not remember
 
-The Strands SDK moves quickly. Two things that memory gets wrong:
+Google's ADK moves quickly. Things that memory gets wrong:
 
-- Structured output is `agent(prompt, structured_output_model=Model)`. The
-  `Agent.structured_output()` method is deprecated.
-- Image content blocks use the SDK's Bedrock-shaped envelope, whatever the
-  configured provider is:
-  `{"image": {"format": "jpeg", "source": {"bytes": ...}}}`.
+- A string `instruction` on an `LlmAgent` is a template: ADK fills `{name}` from
+  session state and fails on a brace it cannot fill. `models.Agent` always
+  passes the instruction as a function, which ADK uses as written.
+- `ParallelAgent` and `SequentialAgent` are deprecated in ADK 2 in favour of
+  `google.adk.workflow.Workflow`, which takes edges; a `JoinNode` waits for
+  every predecessor.
+- Images and audio go to the model as `google.genai.types.Part` inline data —
+  `models.media_part(data, "image/jpeg")` — not as any SDK-specific envelope.
+- On the AI Studio backend ADK cannot pair tools with a native response schema,
+  so it gives the model a `set_model_response` tool instead. The answer still
+  lands in state under the agent's `output_key`.
 
 When unsure about the SDK, read the installed package
-(`.venv/bin/python -c "import inspect, strands; ..."`) rather than guessing.
+(`.venv/bin/python -c "import inspect, google.adk; ..."`) rather than guessing.
 
 ## Commits
 

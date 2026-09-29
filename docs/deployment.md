@@ -16,7 +16,7 @@ There are only four things that could cost money.
 
 | | Cost | Covered by |
 | --- | --- | --- |
-| Model inference | the only real one | Gemini free tier (Ollama offline, for development) |
+| Model inference | the only real one | Gemini free tier, through Google AI Studio |
 | Compute to run the service | free tier | Render |
 | Storage | free tier | Neon Postgres (JSON files if `DATABASE_URL` is unset) |
 | The evidence APIs | free | FIRMS, OpenAQ, Open-Meteo, Nominatim |
@@ -39,22 +39,16 @@ without a citizen having submitted anything.
 constraint 6 in `CLAUDE.md`: the event this is built for does not consider a
 submission without Google AI, and the two primary calls — reading the photograph
 and drafting the complaint — are the only inference anyone would call meaningful.
-Putting them on Ollama would put that inference on a non-Google model.
+The agents themselves run on Google's Agent Development Kit (ADK).
 
-```bash
-VAYUDOOT_MODEL_PROVIDER=gemini   # primary: evidence, drafting  -> flash
-VAYUDOOT_MODEL_PROVIDER_FAST=    # empty: fast tier follows      -> flash-lite
-```
+The tier split lives *inside* Gemini: flash for the two primary calls,
+flash-lite for the eight fast ones, which is why the 20-a-day flash quota is the
+number to watch and not the total.
 
-An earlier configuration split the tiers across two providers, with the
-judgement calls on Ollama Cloud and the mechanical ones on Gemini flash-lite, to
-spread one report across two free tiers. That is no longer available. What it was
-buying is still worth having, so the tier split stays *inside* Gemini: flash for
-the two primary calls, flash-lite for the eight fast ones, which is why the
-20-a-day flash quota is the number to watch and not the total.
-
-Amazon Bedrock was removed earlier for a different reason: it bills, and
-constraint 3 says a dependency has to be free or already paid for.
+Earlier versions used Amazon Bedrock, then Ollama as a second provider, and the
+Strands Agents SDK (an AWS project) as the agent framework. Bedrock went because
+it bills (constraint 3); Ollama and Strands went so that nothing in the stack is
+another cloud company's.
 
 ### The scan, which costs no inference at all
 
@@ -96,7 +90,7 @@ the one mandatory piece, and it is the free one.
 Nothing in the event rules requires hosting on Google Cloud — only that Google AI
 is integrated. The deployment therefore stays on Render.
 
-1. **Gemini free tier** via Google AI Studio. `VAYUDOOT_MODEL_PROVIDER=gemini`.
+1. **Gemini free tier** via Google AI Studio, with `GEMINI_API_KEY` set.
    The daily caps are the real budget: 20 requests a day on the flash tier, 500
    on flash-lite (also 15 requests/minute and 250,000 tokens/minute), and the
    pro models are paid. `errors.py` uses these exact numbers — for
@@ -118,32 +112,6 @@ is integrated. The deployment therefore stays on Render.
    VAYUDOOT_MODEL_ID=gemini-3.8-flash        # primary; turns the chain off
    VAYUDOOT_MODEL_ID_FAST=gemini-3.5-flash-lite
    ```
-
-2. **Ollama, the offline path.** Not the shipped provider. It is here for two
-   reasons worth keeping: developing and running the eval harness without
-   spending a metered quota, and the claim that a state could run this on its own
-   hardware, which is part of the deployability argument rather than a
-   convenience. `VAYUDOOT_MODEL_PROVIDER=ollama` with
-   `OLLAMA_HOST=https://ollama.com` and a key from
-   <https://ollama.com/settings/keys>.
-
-   This is the only free option that can serve *both* primary agents, because
-   `gemma4:31b` reads images and carries 256K of context. That matters: the
-   evidence stage needs a multimodal model, and neither Groq's free tier nor a
-   laptop without a GPU offers one. The defaults are the cloud model ids for
-   that reason.
-
-   The quota is published as session and weekly percentages rather than request
-   counts, so treat it as opaque and watch the meter in the Ollama console.
-   Since there is no number to check a report against, `callbudget.py` adds a
-   safety cap of its own — generous defaults so real use and the test suite
-   never reach it, there only to stop a bug from silently burning the whole
-   session or week. It is a backstop, not a substitute for watching the meter.
-
-   The same provider also drives a local daemon — set
-   `OLLAMA_HOST=http://localhost:11434`, drop the key, and override both model
-   ids. That needs a GPU to host a vision model; without one the evidence stage
-   is the part that suffers first.
 
 Before deploying, check the container carries everything: the pack template, the
 vendored ES modules and the authority table all ship in the wheel, and
@@ -235,7 +203,7 @@ cache it.
    assigns; nothing to configure there.
 3. Set every secret from `.env.example` as an environment variable in the
    service's Environment tab. **Never commit a `.env`.**
-4. Confirm `GET /health` reports the expected provider and, critically, that
+4. Confirm `GET /health` reports the expected model and, critically, that
    `live_filing` is `false`.
 
 ## Pre-demo checklist
@@ -243,7 +211,7 @@ cache it.
 - [ ] Wake the service, and the database if one is in use. Render's free
       instance sleeps after 15 minutes idle and the first request takes 30-60
       seconds
-- [ ] `GET /health` returns the expected provider and `live_filing: false`
+- [ ] `GET /health` returns the expected model and `live_filing: false`
 - [ ] `GET /hotspots` is **not empty**. An empty map is the worst thing a viewer
       can be shown, and it looks identical to clean air. If it is empty, either
       the scan has not run or `DATABASE_URL` is unset and the store was wiped by
