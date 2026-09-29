@@ -608,11 +608,11 @@
         <tbody>
           <tr><td class="tick">Inference</td><td>Gemini via Google AI Studio — no billing account, no card</td></tr>
           <tr><td class="tick">Fallback</td><td>AI Studio meters each model separately, so each tier walks a chain of free Gemini models on 429, 503 or 404 — about fifty reports a day instead of ten</td></tr>
-          <tr><td class="tick">Compute</td><td>Render free tier, one FastAPI process for API and interface</td></tr>
-          <tr><td class="tick">Storage</td><td>Neon Postgres free tier; JSON files when unset</td></tr>
+          <tr><td class="tick">Compute</td><td>Render free tier, one FastAPI process for the API; the same process can serve the interface</td></tr>
+          <tr><td class="tick">Storage</td><td>Cloud Firestore on Firebase Spark; Postgres or JSON files as alternatives</td></tr>
           <tr><td class="tick">Evidence</td><td>NASA FIRMS, NASA GIBS, OpenAQ, Open-Meteo, Nominatim, GeoNames — all free</td></tr>
-          <tr><td class="tick">Analytics</td><td>BigQuery sandbox export — hotspots, alerts and forecast scores compared across countries in SQL. Free, no card</td></tr>
-          <tr><td class="tick">Interface</td><td>Preact as native ES modules. No bundler, no build step, no Node</td></tr>
+          <tr><td class="tick">Analytics</td><td>BigQuery sandbox export — hotspots, alerts and forecast scores compared across countries in SQL, with a Looker Studio dashboard over it. Free, no card</td></tr>
+          <tr><td class="tick">Interface</td><td>Preact as native ES modules on Firebase Hosting. No bundler, no build step, no Node</td></tr>
         </tbody>
       </table>
     </div>

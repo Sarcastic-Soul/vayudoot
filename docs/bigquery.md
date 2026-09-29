@@ -407,3 +407,71 @@ query that no longer matches the schema fails the suite. That test needs
 `sqlglot` (`uv pip install sqlglot`) and is skipped without it. It proves the
 queries are well-formed and consistent with the schema; it cannot prove
 BigQuery's own type checks, so the first real run is still worth watching.
+
+## A dashboard in Looker Studio
+
+Looker Studio (<https://lookerstudio.google.com/>) is free with a Google account,
+needs no billing account and no card, and reads BigQuery sandbox tables through
+its own BigQuery connector. That makes it the dashboard for the tables above
+without a line of code, and it stays inside hard constraint 3.
+
+### Getting production data into the sandbox
+
+The export reads whatever store its environment points at. With the deployment
+on Firestore, run it from your own machine with the same key the server uses and
+it exports the live node's data:
+
+```bash
+FIREBASE_SERVICE_ACCOUNT=~/keys/vayudoot-firebase.json \
+VAYUDOOT_NODE_COUNTRY=IN \
+  .venv/bin/python scripts/export_bigquery.py --project YOUR_PROJECT_ID
+```
+
+It reads each Firestore collection once (a few hundred document reads out of the
+50,000 a day Spark allows) and writes nothing to it. Run it again whenever the
+dashboard should move forward; each run appends a snapshot and the views pick
+the latest.
+
+### Building the dashboard
+
+1. Open Looker Studio, choose **Blank report**, and add data with the
+   **BigQuery** connector. Pick your project, the `vayudoot` dataset, and a
+   **view** — never a raw table, for the reason under "Snapshots, not updates".
+2. Add one data source per page. The ones worth having:
+
+   | Page | Data source | Charts |
+   | --- | --- | --- |
+   | Map | `hotspots_current` | Google Maps chart, type **Filled map**, location field `area`; colour by `severity`; tooltip `confidence`, `corroborated`, `signal_count` |
+   | Trend | custom query 1 above | Time series of `hotspots` and `corroborated` by `week`, broken down by `country` |
+   | Evidence | `hotspots_current` | Scorecards for total and corroborated; a table of query 2 as a custom query |
+   | Alerts | `alerts_current` | Table by `authority_name` and `status`; scorecard of `awaiting_confirmation` |
+   | Forecasts | `forecast_ledger_latest` | Table of query 7 as a custom query |
+
+   To use one of the ready queries, add data with the BigQuery connector,
+   choose **Custom query**, pick the project, and paste the SQL.
+3. `area` arrives as a **Geospatial** field because it is a `GEOGRAPHY` column.
+   Leave it that way; the Filled map needs it.
+4. Under **Resource > Manage added data sources**, set each source's **data
+   freshness** to 1 hour, so the dashboard shows a new export soon after it is
+   loaded without re-querying on every view.
+5. **Share** the report as "anyone with the link can view". Viewers see the data
+   through your credentials, so they need no Google Cloud access of their own,
+   and their views count against your sandbox's 1 TiB a month, which a demo
+   dashboard does not come near.
+
+### Rules the dashboard has to keep
+
+The dashboard is a public surface, like the map, so hard constraint 7 applies
+to it as it does to the app:
+
+- **Map the `area` polygon, never the centre.** `hotspots_current` also has
+  `centre_latitude` and `centre_longitude`; a bubble map of those draws a point
+  on a building, which is the public accusation the minimum radius exists to
+  prevent. Do not add a chart that uses them.
+- **Show confidence and corroboration next to every hotspot count.** A count
+  without them presents a citizen-only hotspot as settled.
+- **Label the forecast page as model output.** Put a text box on it saying the
+  numbers are this system's model scored against station readings, not a CPCB
+  or IMD forecast.
+- **Tables expire after 60 days in the sandbox.** A chart that goes blank has
+  usually lost its table, not its data: load the export directories again.

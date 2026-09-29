@@ -53,7 +53,9 @@ That sentence is the whole target. Anything that does not serve it is out.
 ### Delivery
 - [x] Deployed on a public URL, free tier, no credit card — live at
       https://vayudoot.onrender.com
-- [x] Frontend served by the same FastAPI process, so there is one deployment
+- [x] Frontend served by the same FastAPI process, so there is one deployment;
+      the same files are also published to Firebase Hosting (free Spark plan),
+      which calls the API across origins
 - [x] `README.md` and `docs/architecture.md` accurate to what actually ships
 - [x] Architecture diagram as an image, not only the ASCII sketch
 

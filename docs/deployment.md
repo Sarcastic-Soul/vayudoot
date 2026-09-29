@@ -12,13 +12,14 @@ when a specific provider does not.
 
 ## Cost surface
 
-There are only four things that could cost money.
+There are only five things that could cost money.
 
 | | Cost | Covered by |
 | --- | --- | --- |
 | Model inference | the only real one | Gemini free tier, through Google AI Studio |
-| Compute to run the service | free tier | Render |
-| Storage | free tier | Neon Postgres (JSON files if `DATABASE_URL` is unset) |
+| Compute to run the API | free tier | Render |
+| Serving the web UI | free tier | Firebase Hosting, Spark plan |
+| Storage | free tier | Cloud Firestore, Spark plan (Postgres or JSON files as alternatives) |
 | The evidence APIs | free | FIRMS, OpenAQ, Open-Meteo, Nominatim |
 
 ### Inference
@@ -87,8 +88,17 @@ The Gemini API through Google AI Studio is the exception and the reason this
 works at all: it needs a Google account, no card and no billing account. It is
 the one mandatory piece, and it is the free one.
 
+Firebase's **Spark** plan is the other exception. It needs no card either, and
+two of its products fit this project: Hosting for the web UI and Cloud Firestore
+for storage. The rest of Firebase that would help — Cloud Functions, and Cloud
+Storage for Firebase for photographs — needs the paid Blaze plan, so it is out.
+So is a Hosting rewrite to Cloud Run, which is the usual way to put an API
+behind a Firebase domain. The BigQuery sandbox and Looker Studio complete the
+free Google set, for analysis rather than serving.
+
 Nothing in the event rules requires hosting on Google Cloud — only that Google AI
-is integrated. The deployment therefore stays on Render.
+is integrated. The API therefore stays on Render, the one piece of compute no
+free Google product can run.
 
 1. **Gemini free tier** via Google AI Studio, with `GEMINI_API_KEY` set.
    The daily caps are the real budget: 20 requests a day on the flash tier, 500
@@ -151,22 +161,49 @@ Rejected, and why:
 
 ### Frontend
 
-**Served by the same FastAPI process.** Mount the built static files and be done.
-One deployment, one URL, no CORS configuration, no second free tier to keep
-alive. Splitting the frontend onto Vercel or Pages buys nothing at this size and
-costs a moving part.
+**Firebase Hosting for the public URL, and still served by FastAPI too.** The
+web UI is static files with no build step, so the same directory,
+`src/vayudoot/web`, is both what FastAPI mounts and what `firebase.json`
+publishes. Firebase's CDN answers the page instantly even while Render's
+instance is asleep, and the page says so ("Waking the server") rather than
+showing an empty map for a minute.
+
+What the split costs is one cross-origin hop. Spark cannot proxy a path to an
+outside host, so a page served from a Firebase domain calls the Render API
+directly: `web/config.js` sets the API base when the page's host ends in
+`.web.app` or `.firebaseapp.com`, and leaves it empty everywhere else, so the
+same files still work same-origin when FastAPI serves them. The API allows the
+Firebase origins through `VAYUDOOT_CORS_ORIGINS`, and allows none by default.
 
 ### Storage
 
-Cases are JSON files under `data/cases/` when `DATABASE_URL` is unset. On a
+Cases are JSON files under `data/cases/` when nothing else is configured. On a
 free container that disk is ephemeral: a restart or a rebuild loses them. Fine
-for a demo, not for anything else — which is why `store.py` supports a second
-backend: set `DATABASE_URL` to any standard Postgres connection string and
-cases become rows instead, `data` as `jsonb`. Nothing in `store.py` is
-provider-specific; **Neon** is what this deployment actually uses, chosen for
-its free tier with no card, but Supabase's free Postgres works exactly the
-same way. Either one pauses after a stretch of inactivity, so wake it before a
-demo alongside the compute host.
+for a demo, not for anything else — which is why `store.py` has two more
+backends.
+
+**Cloud Firestore** is the one this deployment uses, chosen when
+`FIREBASE_SERVICE_ACCOUNT` is set. Spark gives 1 GiB stored, 50,000 document
+reads and 20,000 writes a day, and `firestore_store.py` is built around those
+two numbers: the one API process keeps an in-memory copy of what it has read and
+writes through to Firestore, so map views cost no reads at all after the first,
+and signals are grouped into day documents so an hourly scan costs a few writes
+rather than one per observation. A cold start reads each collection once. The
+catch is that there must be one writing process — see the module docstring
+before running more than one worker. Unlike a free Postgres, Firestore does not
+pause when idle.
+
+**Postgres** is the alternative, chosen when `DATABASE_URL` is set and
+`FIREBASE_SERVICE_ACCOUNT` is not: cases become rows, `data` as `jsonb`, on any
+standard Postgres. Neon and Supabase both have free tiers with no card; both
+pause after a stretch of inactivity, so wake one before a demo alongside the
+compute host.
+
+Photographs, voice notes and cached satellite imagery stay on the container's
+disk whichever backend is chosen, because the free way to keep files, Cloud
+Storage for Firebase, now needs the Blaze plan. A redeploy therefore keeps every
+case but loses its photograph: the photograph URL answers 404, "Photograph is no
+longer available", and the rest of the case is intact.
 
 ### Analytics (optional): BigQuery sandbox
 
@@ -179,7 +216,9 @@ account and no card: 10 GiB of storage, 1 TiB of queries a month, and every
 table is deleted after 60 days. It does not allow streaming inserts or DML, so
 the export uses load jobs only and appends snapshots that views deduplicate.
 Nothing in the server depends on it. Setup, tables and queries:
-`docs/bigquery.md`.
+`docs/bigquery.md`, which also builds a **Looker Studio** dashboard over the
+tables. Looker Studio is free, needs no card, and reads the sandbox through its
+own BigQuery connector.
 
 ### Evidence APIs
 
@@ -206,16 +245,68 @@ cache it.
 4. Confirm `GET /health` reports the expected model and, critically, that
    `live_filing` is `false`.
 
+## Setting up Firebase
+
+One Firebase project serves both the web UI and the store. Everything below is
+on the free Spark plan; if the console offers to upgrade to Blaze, decline.
+
+### The project
+
+1. Go to <https://console.firebase.google.com/>, **Create a project**, and
+   decline Google Analytics (nothing here uses it). The project id it gives you,
+   for example `vayudoot-4f2a1`, is used below.
+2. Put that id in `.firebaserc` in place of the placeholder `vayudoot`.
+
+### Firestore
+
+1. In the console, **Build > Firestore Database > Create database**. Choose
+   **Production mode** — the server reaches Firestore with a service account,
+   which security rules do not restrict, and production mode denies every
+   browser client, which is right because the web UI never talks to Firestore.
+   Pick the location closest to the Render region; it cannot be changed later.
+2. **Project settings > Service accounts > Generate new private key.** This
+   downloads a JSON key. Treat it like a password: never commit it, and never
+   paste it anywhere public.
+3. In Render's Environment tab, add `FIREBASE_SERVICE_ACCOUNT` and paste the
+   whole JSON file as its value. (Locally, the variable may instead hold the
+   file's path.) Remove `DATABASE_URL` or leave it; Firestore wins when both
+   are set.
+4. Redeploy, open the map once, and check the console: collections `cases`,
+   `signals`, `alerts` and `forecasts` appear as data is written. Each document
+   holds the object as JSON text in a `json` field, and signals are grouped by
+   day under ids like `2026-09-29-3`; see `firestore_store.py` for why.
+
+Moving existing data across is not automated. Cases on the old store stay there;
+a Firestore deployment starts with an empty map until the next scan.
+
+### Hosting
+
+1. Install the CLI and sign in: `npm install -g firebase-tools`, then
+   `firebase login`.
+2. From the repository root: `firebase deploy --only hosting`. It publishes
+   `src/vayudoot/web` as configured in `firebase.json` and prints the site's
+   URLs, `https://PROJECT_ID.web.app` and `https://PROJECT_ID.firebaseapp.com`.
+3. In Render, set `VAYUDOOT_CORS_ORIGINS` to both of those URLs, comma
+   separated, and redeploy the API. Until this is done the page loads but every
+   API request fails, and the wake-up note stays on screen.
+4. If the API is not at `https://vayudoot.onrender.com`, change the one URL in
+   `src/vayudoot/web/config.js` and deploy hosting again.
+
+Hosting serves the files exactly as they are in the repository, so a change to
+the web UI needs `firebase deploy --only hosting` as well as the Render deploy.
+`firebase.json` marks the app's own files `no-cache` so a deploy is seen at
+once; only the vendored libraries are cached for a week.
+
 ## Pre-demo checklist
 
-- [ ] Wake the service, and the database if one is in use. Render's free
+- [ ] Wake the service, and the database if Postgres is in use. Render's free
       instance sleeps after 15 minutes idle and the first request takes 30-60
-      seconds
+      seconds. Opening the Firebase URL does it, and says so while it waits
 - [ ] `GET /health` returns the expected model and `live_filing: false`
 - [ ] `GET /hotspots` is **not empty**. An empty map is the worst thing a viewer
       can be shown, and it looks identical to clean air. If it is empty, either
-      the scan has not run or `DATABASE_URL` is unset and the store was wiped by
-      the last spin-down
+      the scan has not run or no store is configured (`FIREBASE_SERVICE_ACCOUNT`
+      or `DATABASE_URL`) and the JSON files were wiped by the last spin-down
 - [ ] `GET /forecast?lat=&lon=` returns 200 rather than a 429-degraded outlook
 - [ ] Credits or free-tier quota confirmed to have headroom
 - [ ] One full run completed today, since a stale deployment is the usual failure

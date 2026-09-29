@@ -276,8 +276,10 @@ here. It runs end to end on one photograph.
 ## The interface
 
 One page of Preact components running as native ES modules — **no bundler, no
-build step, no Node** — served by the same FastAPI process that runs the agents,
-because this is used on a phone while standing in front of the problem. Preact
+build step, no Node** — because this is used on a phone while standing in front
+of the problem. The same files are served two ways: by the FastAPI process that
+runs the agents, and from Firebase Hosting, which answers instantly while the
+free API instance wakes up. Preact
 and htm are vendored into [`web/vendor/`](src/vayudoot/web/vendor/) rather than
 fetched from a CDN: a third party in the request path of a page a citizen uses
 to report pollution was avoidable. Leaflet, for the maps, is the one exception.
@@ -489,7 +491,7 @@ uv run uvicorn vayudoot.api:app --reload
 ```
 
 Then open <http://localhost:8000>. The interface is served by the same process,
-so there is one URL and no CORS to configure.
+so locally there is one URL and no CORS to configure.
 
 `GET /health` reports the active model and confirms that live filing is off.
 
@@ -574,8 +576,8 @@ Punjab detecting while Delhi forecasts.
 
 **Analysis and demo tooling** (scripts, not endpoints): `scripts/export_bigquery.py`
 exports signals, hotspots (as areas), alert statuses and corridors for the free
-BigQuery sandbox, with queries that compare countries in
-[`docs/bigquery.md`](docs/bigquery.md). `scripts/demo_prep.py` makes every model
+BigQuery sandbox, with queries that compare countries and a Looker Studio
+dashboard over them in [`docs/bigquery.md`](docs/bigquery.md). `scripts/demo_prep.py` makes every model
 call a demo shows ahead of time, so a recording cannot be spoiled by a busy
 free-tier model; it never confirms or files anything.
 
@@ -634,11 +636,17 @@ docker build -t vayudoot .
 docker run -p 7860:7860 --env-file .env vayudoot
 ```
 
+The web UI is also published to Firebase Hosting (`firebase deploy --only
+hosting`, configured in [`firebase.json`](firebase.json)) and calls the Render
+API across origins. Storage is Cloud Firestore when `FIREBASE_SERVICE_ACCOUNT` is
+set, Postgres when `DATABASE_URL` is, and JSON files otherwise. Both Firebase
+products are on the free Spark plan.
+
 The container binds to `$PORT` when it's set (Render assigns one at runtime) and
 falls back to 7860 for a local run like the one above. The uid-1000 user is for
 compatibility with hosts that require a non-root user. See
-[`docs/deployment.md`](docs/deployment.md) for the free-tier reasoning and the
-pre-demo checklist. Confirm `GET /health` reports `live_filing: false` on any
+[`docs/deployment.md`](docs/deployment.md) for the free-tier reasoning, the
+Firebase setup and the pre-demo checklist. Confirm `GET /health` reports `live_filing: false` on any
 deployment.
 
 ## Licence

@@ -598,8 +598,11 @@ prompt nobody asked for.
 
 The interface is static files served by the same process — a Preact app in native ES
 modules, with the runtime vendored under `web/vendor/` so there is no build step and no CDN
-in the request path. One deployment, one URL, no CORS. It is mounted last so it cannot
-shadow an API route.
+in the request path. It is mounted last so it cannot shadow an API route. The public URL
+serves the same directory from Firebase Hosting instead, which cannot proxy to Render on
+the free plan, so `web/config.js` points the page at the API's origin when it is served from
+a Firebase domain, every request goes through `apiUrl()` in `web/lib/api.js`, and the API
+allows those origins through `VAYUDOOT_CORS_ORIGINS`.
 
 The HTTP surface divides the same way the system does:
 
@@ -654,8 +657,11 @@ because an open write to the signal store is an open write to the map.
 `Case` is the single object that accumulates across the reporting pipeline, holding the
 report, every intermediate result, a status, a stage, any error, and an append-only history.
 It is persisted as JSON by `store.py` because a case outlives the request that created it: a
-complaint filed today is chased for weeks. Setting `DATABASE_URL` moves the same store to
-Postgres; nothing else changes, which is the property the module was written for.
+complaint filed today is chased for weeks. Setting `FIREBASE_SERVICE_ACCOUNT` moves the
+same store to Cloud Firestore, and `DATABASE_URL` to Postgres; nothing else changes, which
+is the property the module was written for. The Firestore backend keeps an in-memory copy
+and writes through, because the free plan's daily read allowance would not survive a map
+that reads every case on every view.
 
 `Signal` is the detection layer's stored object and the second thing `store.py` keeps. It is
 stored rather than derived because an observation is a fact about a moment that has passed,

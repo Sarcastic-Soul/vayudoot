@@ -121,10 +121,13 @@ framework back. The offline test suite needs neither: it replaces
 `Gemini.generate_content_async` or the whole stage.
 
 Free tier still binds, and it decides which Google services are available:
-Gemini via AI Studio, BigQuery sandbox, Firebase Spark and Earth Engine
-noncommercial need no card. Vertex AI, Cloud Run, Maps Platform, Speech-to-Text
-and Translation all need a billing account and are therefore out. See
-`docs/SCOPE.md` under v0.3.
+Gemini via AI Studio, BigQuery sandbox, Looker Studio, Firebase Spark and Earth
+Engine noncommercial need no card. Vertex AI, Cloud Run, Maps Platform,
+Speech-to-Text and Translation all need a billing account and are therefore out.
+So are the Firebase products that need Blaze: Cloud Functions, Cloud Storage for
+Firebase, and Hosting rewrites to Cloud Run. What ships on Spark is Hosting for
+the web UI and Firestore for the store. See `docs/SCOPE.md` under v0.3 and
+`docs/deployment.md`.
 
 ### 7. A hotspot is a public claim about a place. Treat it as one
 
