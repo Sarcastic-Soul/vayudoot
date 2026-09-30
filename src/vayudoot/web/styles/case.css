@@ -1128,7 +1128,9 @@ button.quiet.history-more:hover { color: var(--ink); background: none; }
   border-radius: var(--radius);
 }
 
-.empty svg {
+/* The child combinator matters: a button inside the empty state carries its
+   own icon, which must keep the button's colour rather than this grey. */
+.empty > svg {
   width: 32px;
   height: 32px;
   color: var(--ink-soft);

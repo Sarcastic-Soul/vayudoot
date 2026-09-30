@@ -342,6 +342,7 @@
 /* ── the ranked list ─────────────────────────────────────────────────── */
 
 .ops-list-panel {
+  container: hs-list / inline-size;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -1002,6 +1003,15 @@
 
 @media (max-width: 899.98px) {
   .ops-map { height: 46vh; min-height: 280px; max-height: 380px; }
+}
+
+/* Beside the map on a tablet or a small laptop the list is as narrow as a
+   phone's, so it takes the same tight columns. Keyed to the list's own width,
+   not the screen's: the sidebar makes the two disagree. */
+@container hs-list (max-width: 379.98px) {
+  .hs-row, .ops-list-head { grid-template-columns: minmax(0, 1fr) 62px 44px; gap: var(--s2); }
+  .hs-sub { gap: 2px 4px; }
+  .hs-sub > * + *::before { margin-right: 4px; }
 }
 
 @media (max-width: 419.98px) {
