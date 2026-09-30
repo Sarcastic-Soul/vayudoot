@@ -150,25 +150,6 @@
 .nav-item.is-active { color: var(--ok); font-weight: var(--w-medium); }
 .nav-item:hover:not(.is-active) { color: var(--ink); }
 
-/* Live is live: a small pulse beside the label, the one moving thing in the
-   navigation. Colour is not what says it — the label does. */
-.nav-item[data-view="ops"] .nav-label::after {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-left: 5px;
-  vertical-align: 0.2em;
-  border-radius: 50%;
-  background: var(--ok);
-  animation: live-pulse 2s ease-out infinite;
-}
-
-@keyframes live-pulse {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 55%, transparent); }
-  70%, 100% { box-shadow: 0 0 0 6px transparent; }
-}
-
 .sidebar-foot {
   display: flex;
   align-items: center;
@@ -220,41 +201,8 @@
   box-shadow: var(--shadow-1);
 }
 
-/* The one place a colour is allowed to shout. It is a standing statement that
-   nothing here reaches a regulator, so it is drawn as a label with a dot
-   rather than as an alert that a reader would learn to dismiss. */
-.sandbox-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  font-size: var(--t-eyebrow);
-  font-weight: var(--w-semi);
-  letter-spacing: var(--track-eyebrow);
-  text-transform: uppercase;
-  padding: 5px 10px;
-  color: var(--attention);
-  background: var(--attention-tint);
-  border: 1px solid var(--attention-line);
-  border-radius: var(--radius-pill);
-}
-
-.sandbox-badge::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  flex: none;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.sandbox-badge .short { display: none; }
-
-/* On a phone the header is one row: the brand, then the theme control and
-   the sandbox badge beside it rather than on a second line of their own. */
+/* On a phone the header is one row: the brand, then the theme control beside
+   it rather than on a second line of its own. */
 @media (max-width: 699.98px) {
   .sidebar {
     display: flex;
@@ -269,15 +217,12 @@
 
   .sidebar-foot { margin: 0; padding: 0; gap: var(--s2); }
   .theme button { width: 30px; height: 28px; }
-  .sandbox-badge { padding: 4px 8px; letter-spacing: 0.04em; }
-  .sandbox-badge .full { display: none; }
-  .sandbox-badge .short { display: inline; }
 }
 
 /* The collapse control. Hidden on a phone, where the nav is a bar under the
    thumb and there is nothing to collapse; a real control at every width that
-   has a sidebar at all. It always sits inside the brand, in flow, because an
-   absolutely positioned one ends up underneath the nav. */
+   has a sidebar at all. It sits in the foot beside the theme control, in
+   flow, because an absolutely positioned one ends up underneath the nav. */
 
 .collapse {
   display: none;
@@ -381,26 +326,11 @@
     padding: var(--s3) 0 0;
     border-top: 1px solid var(--line);
   }
-  .sidebar-foot .theme { align-self: center; }
+  .sidebar-foot .theme, .sidebar-foot .collapse { align-self: center; }
 
   .theme { flex-direction: column; border-radius: var(--radius); }
   .theme button { width: 30px; height: 30px; border-radius: var(--radius-sm); }
 
-  /* On a rail there is no room for a pill with a dot in it. The word alone,
-     in a small amber rectangle, still says the one thing it has to say — and
-     the title attribute carries the full sentence. */
-  .sandbox-badge {
-    width: 100%;
-    font-size: 9px;
-    padding: 5px 4px;
-    gap: 0;
-    letter-spacing: 0;
-    border-radius: var(--radius-sm);
-  }
-
-  .sandbox-badge::before { display: none; }
-  .sandbox-badge .full { display: none; }
-  .sandbox-badge .short { display: inline; }
 }
 
 /* Collapsed on a tablet: the rail keeps its icons and drops its labels. */
@@ -408,7 +338,6 @@
   body.is-collapsed .sidebar { padding: var(--s4) 6px; }
   body.is-collapsed .nav-label { display: none; }
   body.is-collapsed .nav-item { min-height: 46px; padding: var(--s2) 2px; }
-  body.is-collapsed .sandbox-badge { font-size: 8px; padding: 5px 2px; }
 }
 
 /* ── desktop: the rail earns its labels ──────────────────────────────── */
@@ -418,7 +347,6 @@
 
   .brand { flex-direction: row; justify-content: flex-start; gap: var(--s3); }
   .brand-text { display: block; }
-  .collapse { border-color: transparent; }
 
   .nav { gap: 2px; }
 
@@ -465,35 +393,15 @@
 
   .nav-item:hover:not(.is-active) { color: var(--ink); background: var(--surface-2); }
 
-  /* Stacked, not side by side. "Sandbox mode" set in tracked uppercase is
-     wider than the space left beside a three-way theme control in a 248px
-     sidebar, and a clipped safety notice is worse than no notice. */
-  .sidebar-foot { flex-direction: column; align-items: stretch; gap: var(--s3); }
-  .sidebar-foot .theme { align-self: start; }
+  /* One row: the theme control, and the collapse control at the far end. */
+  .sidebar-foot { flex-direction: row; align-items: center; justify-content: space-between; }
   .theme { flex-direction: row; border-radius: var(--radius-pill); }
   .theme button { width: 34px; height: 30px; border-radius: var(--radius-pill); }
-
-  /* Back to the full pill: at this width the sidebar is labelled, so the
-     badge can be too. */
-  .sandbox-badge {
-    width: 100%;
-    justify-content: flex-start;
-    font-size: var(--t-eyebrow);
-    padding: 6px 12px;
-    gap: 8px;
-    letter-spacing: var(--track-eyebrow);
-    border-radius: var(--radius-pill);
-  }
-
-  .sandbox-badge::before { display: block; width: 6px; height: 6px; }
-  .sandbox-badge .full { display: inline; }
-  .sandbox-badge .short { display: none; }
 
   /* Collapsed on a desktop is exactly the tablet rail. */
   body.is-collapsed .sidebar { padding: var(--s4) var(--s3); gap: var(--s3); }
   body.is-collapsed .brand { flex-direction: column; justify-content: center; gap: var(--s2); }
   body.is-collapsed .brand-text { display: none; }
-  body.is-collapsed .collapse { border-color: var(--line); }
 
   body.is-collapsed .nav-item {
     grid-template-columns: none;
@@ -519,21 +427,9 @@
   body.is-collapsed .nav-item.is-active::after { display: none; }
   body.is-collapsed .nav-item svg { width: 22px; height: 22px; }
 
-  body.is-collapsed .sidebar-foot { flex-direction: column; }
+  body.is-collapsed .sidebar-foot { flex-direction: column; justify-content: flex-start; }
   body.is-collapsed .theme { flex-direction: column; border-radius: var(--radius); }
   body.is-collapsed .theme button { width: 30px; height: 30px; border-radius: var(--radius-sm); }
-  body.is-collapsed .sandbox-badge {
-    width: 100%;
-    font-size: 9px;
-    padding: 5px 4px;
-    gap: 0;
-    letter-spacing: 0;
-    border-radius: var(--radius-sm);
-  }
-
-  body.is-collapsed .sandbox-badge::before { display: none; }
-  body.is-collapsed .sandbox-badge .full { display: none; }
-  body.is-collapsed .sandbox-badge .short { display: inline; }
 }
 
 @media (prefers-contrast: more) {

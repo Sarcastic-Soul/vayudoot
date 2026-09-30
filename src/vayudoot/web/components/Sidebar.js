@@ -42,10 +42,6 @@ export function Sidebar({ view, collapsed, onCollapse, theme, onTheme }) {
           <h1>Vayudoot</h1>
           <p>Hyper-local air radar</p>
         </div>
-        <button type="button" class="collapse" aria-expanded=${String(!collapsed)}
-                aria-label=${label} title=${label} onClick=${onCollapse}>
-          <${ChevronIcon} />
-        </button>
       </div>
 
       <nav class="nav" aria-label="Sections">
@@ -68,10 +64,10 @@ export function Sidebar({ view, collapsed, onCollapse, theme, onTheme }) {
 
       <div class="sidebar-foot">
         <${ThemeToggle} theme=${theme} onChoose=${onTheme} />
-        <p class="sandbox-badge"
-           title="Filing writes to a local outbox. No authority is contacted.">
-          <span class="full">Sandbox mode</span><span class="short">Sandbox</span>
-        </p>
+        <button type="button" class="collapse" aria-expanded=${String(!collapsed)}
+                aria-label=${label} title=${label} onClick=${onCollapse}>
+          <${ChevronIcon} />
+        </button>
       </div>
     </aside>`;
 }
