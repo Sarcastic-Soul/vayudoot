@@ -36,6 +36,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -48,6 +49,10 @@ from .schemas import Case, ForecastRecord, HotspotAlert, ImageryReading, Signal
 
 _pool: ConnectionPool | None = None
 _pool_url: str | None = None
+_pool_lock = threading.Lock()
+
+#: Any fixed number; every process creating the schema takes the same lock.
+_SCHEMA_LOCK = 0x76617975
 
 
 def _use_firestore() -> bool:
@@ -66,62 +71,77 @@ def _dir() -> Path:
 def _pg() -> ConnectionPool:
     """The connection pool for the configured database, (re)opened whenever
     the URL changes — which in practice is only ever a test switching backends
-    with `monkeypatch`, since a running deployment never changes its own URL."""
+    with `monkeypatch`, since a running deployment never changes its own URL.
+
+    Opening is serialised twice over. FastAPI runs sync routes on a thread
+    pool, so the first page load sends several requests here at once: without
+    the thread lock each opened its own pool, and one could be handed a pool
+    whose tables another thread had not created yet ("relation does not
+    exist"). And `CREATE TABLE IF NOT EXISTS` is not safe when two sessions run
+    it together — both pass the check and one fails on Postgres's catalogue
+    ("duplicate key value violates unique constraint pg_type_typname_nsp_index")
+    — so the schema is created under an advisory lock that also holds between
+    processes. The pool is published only once its tables exist."""
     global _pool, _pool_url
     url = settings.database_url
-    if _pool is None or _pool_url != url:
+    if _pool is not None and _pool_url == url:
+        return _pool
+    with _pool_lock:
+        if _pool is not None and _pool_url == url:
+            return _pool
         if _pool is not None:
             _pool.close()
-        _pool = ConnectionPool(url, min_size=1, max_size=5, open=True)
-        _pool_url = url
-        with _pool.connection() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS cases (
-                    case_id TEXT PRIMARY KEY,
-                    data JSONB NOT NULL,
-                    created_at TIMESTAMPTZ NOT NULL
-                )
-                """
-            )
-            conn.execute("CREATE INDEX IF NOT EXISTS cases_created_at_idx ON cases (created_at)")
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS signals (
-                    signal_id TEXT PRIMARY KEY,
-                    data JSONB NOT NULL,
-                    observed_at TIMESTAMPTZ NOT NULL
-                )
-                """
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS signals_observed_at_idx ON signals (observed_at)"
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS alerts (
-                    alert_id TEXT PRIMARY KEY,
-                    data JSONB NOT NULL,
-                    created_at TIMESTAMPTZ NOT NULL
-                )
-                """
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS alerts_created_at_idx ON alerts (created_at)"
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS forecasts (
-                    forecast_id TEXT PRIMARY KEY,
-                    data JSONB NOT NULL,
-                    made_at TIMESTAMPTZ NOT NULL
-                )
-                """
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS forecasts_made_at_idx ON forecasts (made_at)"
-            )
+            _pool = None
+        pool = ConnectionPool(url, min_size=1, max_size=5, open=True)
+        _create_schema(pool)
+        _pool, _pool_url = pool, url
     return _pool
+
+
+def _create_schema(pool: ConnectionPool) -> None:
+    """Every table and index, in one transaction under `_SCHEMA_LOCK`."""
+    with pool.connection() as conn:
+        conn.execute("SELECT pg_advisory_xact_lock(%s)", (_SCHEMA_LOCK,))
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS cases (
+                case_id TEXT PRIMARY KEY,
+                data JSONB NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS cases_created_at_idx ON cases (created_at)")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS signals (
+                signal_id TEXT PRIMARY KEY,
+                data JSONB NOT NULL,
+                observed_at TIMESTAMPTZ NOT NULL
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS signals_observed_at_idx ON signals (observed_at)")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS alerts (
+                alert_id TEXT PRIMARY KEY,
+                data JSONB NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS alerts_created_at_idx ON alerts (created_at)")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS forecasts (
+                forecast_id TEXT PRIMARY KEY,
+                data JSONB NOT NULL,
+                made_at TIMESTAMPTZ NOT NULL
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS forecasts_made_at_idx ON forecasts (made_at)")
 
 
 def save(case: Case) -> None:
@@ -496,9 +516,7 @@ def forecast_records(since: datetime | None = None) -> list[ForecastRecord]:
     if _use_postgres():
         with _pg().connection() as conn:
             if since is None:
-                rows = conn.execute(
-                    "SELECT data FROM forecasts ORDER BY made_at DESC"
-                ).fetchall()
+                rows = conn.execute("SELECT data FROM forecasts ORDER BY made_at DESC").fetchall()
             else:
                 rows = conn.execute(
                     "SELECT data FROM forecasts WHERE made_at >= %s ORDER BY made_at DESC",
