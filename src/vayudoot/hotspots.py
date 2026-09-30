@@ -263,6 +263,53 @@ def signals_from_stations(payload: dict, observed_fallback: datetime | None = No
     return out
 
 
+#: The National AQI puts each pollutant's ambient standard at a sub-index of 100.
+CPCB_STANDARD_INDEX = 100.0
+
+#: Where a CPCB exceedance reaches full strength. For the particulates that
+#: dominate Indian AQI, a sub-index near 300 is roughly three times the
+#: standard, which is where `_exceedance` reaches 1.0 for a concentration.
+CPCB_FULL_INDEX = 300.0
+
+
+def signals_from_cpcb(payload: dict, observed_fallback: datetime | None = None) -> list[Signal]:
+    """Sub-indices past the national standard, from a `get_cpcb_stations` payload.
+
+    The same rule as `signals_from_stations`, read on the AQI scale instead of
+    in µg/m³: only a pollutant past its standard becomes a signal, placed at the
+    station, one per station and pollutant. The feed's numbers are sub-indices,
+    and the National AQI is built so that 100 is the standard, so the threshold
+    needs no table and no unit conversion.
+    """
+    fallback = observed_fallback or datetime.now(UTC)
+    span = CPCB_FULL_INDEX - CPCB_STANDARD_INDEX
+
+    out: list[Signal] = []
+    for station in payload.get("stations", []):
+        lat, lon = station.get("latitude"), station.get("longitude")
+        if lat is None or lon is None:
+            continue
+        name = station.get("name") or "CPCB station"
+        observed = _parse_time(station.get("observed_at")) or fallback
+        for parameter, index in (station.get("sub_indices") or {}).items():
+            if index is None or index <= CPCB_STANDARD_INDEX:
+                continue
+            out.append(
+                Signal(
+                    source=SignalSource.GROUND_STATION,
+                    signal_id=f"station:cpcb:{name}:{standards.parameter_key(parameter)}",
+                    latitude=float(lat),
+                    longitude=float(lon),
+                    observed_at=observed,
+                    pollution_type=PollutionType.UNCLEAR,
+                    strength=STATION_RELIABILITY,
+                    magnitude=round(min((index - CPCB_STANDARD_INDEX) / span, 1.0), 3),
+                    summary=f"{name}: {parameter} AQI sub-index {index:.0f} (CPCB)",
+                )
+            )
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Grouping
 # --------------------------------------------------------------------------- #

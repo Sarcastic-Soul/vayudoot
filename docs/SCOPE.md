@@ -458,10 +458,13 @@ and free, keyless public data.
       model separately, so the primary tier walks a chain of Flash models and
       moves on at 429, 503 or 404. About fifty reports a day instead of ten.
 
-## Under consideration, not committed
-
-- **CPCB / data.gov.in station data alongside OpenAQ.** More India-specific than
-  OpenAQ and named by the organisers. Cheap if the endpoint behaves.
+- [x] **CPCB station data.** Landed from the board's own feed
+      (`airquality.cpcb.gov.in/caaqms/rss_feed`): about five hundred stations,
+      the current hour, no key, one request for the whole country. data.gov.in
+      republishes the same numbers behind a key and its API host refused
+      connections, so it was not used. The scan reads CPCB where it has a
+      station in range and OpenAQ elsewhere, never both, because OpenAQ's
+      Indian stations are the same instruments. See `tools/cpcb.py`.
 
 ## Still out of scope
 

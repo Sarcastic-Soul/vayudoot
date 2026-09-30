@@ -38,7 +38,7 @@ confident report `severe` regardless of what it showed.
 | Source | Independent? | Where it comes from |
 | --- | --- | --- |
 | `satellite` | yes | NASA FIRMS VIIRS, fetched by the scan |
-| `ground_station` | yes | OpenAQ v3, fetched by the scan |
+| `ground_station` | yes | CPCB's live feed in India, OpenAQ v3 elsewhere, fetched by the scan |
 | `citizen_report` | no | a case that reached the evidence stage |
 | `citizen_sensor` | no | `POST /sensors/readings`, a reading from somebody's own device |
 

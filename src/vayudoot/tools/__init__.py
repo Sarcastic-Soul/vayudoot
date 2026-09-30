@@ -1,4 +1,5 @@
 from .authorities import lookup_authority
+from .cpcb import get_cpcb_stations
 from .firms import find_satellite_fire_detections
 from .geocode import reverse_geocode
 from .openaq import get_nearby_air_quality
@@ -7,6 +8,7 @@ from .weather import get_air_quality_forecast, get_wind_conditions, get_wind_for
 __all__ = [
     "find_satellite_fire_detections",
     "get_air_quality_forecast",
+    "get_cpcb_stations",
     "get_nearby_air_quality",
     "get_wind_conditions",
     "get_wind_forecast",

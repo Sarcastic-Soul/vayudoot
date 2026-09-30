@@ -66,7 +66,7 @@ available from a detection rather than the purpose of the system.
 ### Detection — the map exists without anybody present
 
 [`scan.py`](src/vayudoot/scan.py) fetches NASA FIRMS thermal detections and
-OpenAQ station readings for the places this instance has reason to watch: the
+ground station readings (CPCB's own live feed in India, OpenAQ elsewhere) for the places this instance has reason to watch: the
 coordinates of every stored case, and the waypoints of the economic corridors in
 [`corridors.json`](src/vayudoot/data/corridors.json). Corridors are what give
 the scan reach beyond where citizens have reported, which is most of India — a
@@ -465,6 +465,7 @@ VAYUDOOT_MODEL_ID_FAST=     # empty: the fast tier's default chain
 | Source | Used for | Key |
 | --- | --- | --- |
 | NASA FIRMS | satellite thermal anomalies | free |
+| CPCB live AQI feed | every CPCB station's current AQI, read by the scan in India | none |
 | OpenAQ v3 | ground station pollutant readings | free |
 | Open-Meteo | wind speed and direction, plume back-trace | none |
 | Open-Meteo Air Quality | pollutant forecast for the outlook | none |

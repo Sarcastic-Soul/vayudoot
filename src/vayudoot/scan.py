@@ -6,8 +6,8 @@ getting those detections, so in practice the map only ever showed what somebody
 had photographed — which is the failure mode the v0.3 reframe exists to end, and
 which `hotspots.current` says plainly in its own docstring. This module is the
 missing half: it calls the same FIRMS and OpenAQ tools the corroboration graph
-uses, converts what comes back with the builders already in `hotspots.py`, and
-puts the result in the store.
+uses, plus CPCB's own station feed, converts what comes back with the builders
+already in `hotspots.py`, and puts the result in the store.
 
 Three decisions are worth stating here, because each of them is a thing somebody
 would otherwise reasonably change.
@@ -39,7 +39,7 @@ from datetime import UTC, datetime
 from . import hotspots, store
 from .config import settings
 from .schemas import Signal
-from .tools import find_satellite_fire_detections, get_nearby_air_quality
+from .tools import find_satellite_fire_detections, get_cpcb_stations, get_nearby_air_quality
 from .tools.geo import haversine_km
 
 
@@ -162,6 +162,21 @@ def _scan_point(
     )
     if satellite is not None:
         signals.extend(hotspots.signals_from_satellite(satellite, observed_fallback=fallback))
+
+    # CPCB first, OpenAQ only where CPCB has no station in range. OpenAQ's
+    # Indian stations are CPCB's instruments republished, so asking both would
+    # count one instrument as two readings and inflate the hotspot. CPCB wins
+    # where it reaches because it is the number the authority itself publishes,
+    # it needs no key, and one fetch covers the country. OpenAQ still covers
+    # everywhere else, which is every scan point outside India.
+    official = _call(
+        "CPCB",
+        errors,
+        lambda: get_cpcb_stations(latitude=latitude, longitude=longitude, radius_km=radius),
+    )
+    if official is not None and official.get("stations"):
+        signals.extend(hotspots.signals_from_cpcb(official, observed_fallback=fallback))
+        return signals, errors
 
     stations = _call(
         "OpenAQ",

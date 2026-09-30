@@ -1,6 +1,6 @@
 """The periodic scan, and the signal store underneath it.
 
-Fully offline. No test here touches the network: both source tools are replaced
+Fully offline. No test here touches the network: every source tool is replaced
 with the payload they would have returned, which is also the point — what is
 being tested is the conversion and the storage, not NASA's uptime.
 
@@ -88,6 +88,28 @@ OPENAQ_PAYLOAD = {
 FIRMS_SIGNALS = 2
 OPENAQ_SIGNALS = 1
 
+#: No CPCB station in range, which is what sends a scan point to OpenAQ. The
+#: default, so the tests above about OpenAQ's payload keep exercising it.
+CPCB_NONE = {"source": "CPCB", "stations": []}
+
+#: The same Ludhiana station as CPCB publishes it: PM2.5 past the standard's
+#: sub-index of 100, NO2 under it.
+CPCB_PAYLOAD = {
+    "source": "CPCB",
+    "stations": [
+        {
+            "name": "PAU, Ludhiana - PPCB",
+            "latitude": 30.9008,
+            "longitude": 75.8070,
+            "observed_at": "2026-09-14T11:00:00+05:30",
+            "aqi": 212.0,
+            "predominant": "PM2.5",
+            "sub_indices": {"PM2.5": 212.0, "NO2": 18.0},
+            "distance_km": 4.9,
+        }
+    ],
+}
+
 
 @pytest.fixture
 def sources(monkeypatch):
@@ -96,9 +118,9 @@ def sources(monkeypatch):
     Returned as a dict of lists so a test can assert what the scan asked for —
     and, for the disabled case, that it asked for nothing at all.
     """
-    calls: dict[str, list[dict]] = {"firms": [], "openaq": []}
+    calls: dict[str, list[dict]] = {"firms": [], "openaq": [], "cpcb": []}
 
-    def install(firms=FIRMS_PAYLOAD, openaq=OPENAQ_PAYLOAD):
+    def install(firms=FIRMS_PAYLOAD, openaq=OPENAQ_PAYLOAD, cpcb=CPCB_NONE):
         def fake_firms(**kwargs):
             calls["firms"].append(kwargs)
             return firms() if callable(firms) else firms
@@ -107,8 +129,13 @@ def sources(monkeypatch):
             calls["openaq"].append(kwargs)
             return openaq() if callable(openaq) else openaq
 
+        def fake_cpcb(**kwargs):
+            calls["cpcb"].append(kwargs)
+            return cpcb() if callable(cpcb) else cpcb
+
         monkeypatch.setattr(scan, "find_satellite_fire_detections", fake_firms)
         monkeypatch.setattr(scan, "get_nearby_air_quality", fake_openaq)
+        monkeypatch.setattr(scan, "get_cpcb_stations", fake_cpcb)
         return calls
 
     install.calls = calls
@@ -267,6 +294,32 @@ def test_an_error_from_one_source_still_yields_the_others_signals(sources):
 
     assert new == FIRMS_SIGNALS
     assert all(s.source is SignalSource.SATELLITE for s in store.all_signals())
+
+
+def test_where_cpcb_has_a_station_openaq_is_not_asked(sources):
+    """OpenAQ's Indian stations are CPCB's instruments republished. Asking both
+    would store one instrument's reading twice under two ids, and a hotspot's
+    confidence rises with how many signals agree — so the same PM2.5 figure
+    would talk the map into more certainty than one instrument supports."""
+    calls = sources(cpcb=CPCB_PAYLOAD)
+
+    scan.scan_points([LUDHIANA])
+
+    assert calls["openaq"] == []
+    station = [s for s in store.all_signals() if s.source is SignalSource.GROUND_STATION]
+    assert [s.signal_id for s in station] == ["station:cpcb:PAU, Ludhiana - PPCB:pm25"]
+
+
+def test_where_cpcb_has_no_station_or_fails_openaq_still_answers(sources):
+    """Outside India CPCB has nothing, and a failed feed must not blind the scan."""
+    for cpcb in (CPCB_NONE, {"error": "CPCB feed request failed: timed out", "stations": []}):
+        calls = sources(cpcb=cpcb)
+        calls["openaq"].clear()
+
+        found = scan.scan_point(*LUDHIANA)
+
+        assert len(calls["openaq"]) == 1
+        assert sum(s.source is SignalSource.GROUND_STATION for s in found) == OPENAQ_SIGNALS
 
 
 def test_a_source_that_raises_costs_one_source_not_the_scan(sources):
